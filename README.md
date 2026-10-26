@@ -15,7 +15,7 @@ Imprimantes prises en charge :
 
 1. **Fichier** — ouvrez un SVG. Les formes pleines, les traits (parcours) et les transformations sont pris en compte. Le blanc peut être traité comme du vide. Le texte doit être converti en tracés (Inkscape : *Chemin › Objet en chemin*).
 2. **Imprimante** — choisissez la Centauri Carbon ou la K1 et saisissez son adresse IP (bouton *Rechercher* pour la Centauri Carbon sous Windows et Android).
-3. **Motif** — positif ou négatif, largeur/hauteur (proportions verrouillées ou non), échelle en %, rotation, miroir horizontal/vertical, *Agrandir au plateau*. Par défaut : plaque de 1 mm + motif de 1 mm de haut, marge 5 mm, coins arrondis. Avec une épaisseur de plaque à 0, le mode négatif donne un **pochoir**.
+3. **Motif** — positif ou négatif, largeur/hauteur (proportions verrouillées ou non), échelle en %, rotation, miroir horizontal/vertical, *Agrandir au plateau*. Hauteur du motif réglable de 0,2 à 1 mm (raccourcis 0,2 · 0,4 · 0,6 · 0,8 · 1 mm). Par défaut : plaque de 1 mm + motif de 1 mm, marge 5 mm, coins arrondis. Avec une épaisseur de plaque à 0, le mode négatif donne un **pochoir**.
 4. **Filament** — réglage eSUN PETG+HS optimisé proposé d'office pour chaque imprimante, modifiable et réinitialisable.
 5. **Trancher et imprimer** — aperçu couche par couche, durée et poids estimés, enregistrement du G-code, envoi et lancement de l'impression.
 

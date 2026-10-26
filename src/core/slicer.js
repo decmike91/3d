@@ -111,28 +111,49 @@ export function makePlate(pattern, p) {
 }
 
 // ---------- Couches ----------
+export const RELIEF_MIN = 0.2, RELIEF_MAX = 1.0;
+export function clampRelief(v) {
+  v = Number(v);
+  if (!Number.isFinite(v)) return RELIEF_MAX;
+  return Math.min(RELIEF_MAX, Math.max(RELIEF_MIN, Math.round(v * 100) / 100));
+}
 export function buildLayers(pattern, p) {
   const lh = p.layerHeight, flh = p.firstLayerHeight;
   const plate = p.plateThickness > 0 || p.polarity === 'negative' ? makePlate(pattern, p) : [];
+  // Hauteur du motif limitée à 0,2–1 mm
+  const relief = clampRelief(p.reliefHeight);
+  const plateT = p.plateThickness > 0 ? p.plateThickness : 0;
+  // Découpe une zone [z0, z1] en couches égales proches de lh (la dernière tombe pile sur z1)
   const zs = [];
-  const total = (p.plateThickness > 0 ? p.plateThickness : 0) + p.reliefHeight;
-  let z = flh;
-  zs.push(z);
-  while (z + lh <= total + 1e-6) { z = +(z + lh).toFixed(4); zs.push(z); }
-  if (total - z > lh * 0.4) zs.push(+total.toFixed(4)); // dernière couche partielle
+  const fill = (z0, z1) => {
+    const h = z1 - z0;
+    if (h <= 1e-6) return;
+    const n = Math.max(1, Math.ceil(h / lh - 0.25));
+    for (let k = 1; k <= n; k++) zs.push(+(z0 + (h * k) / n).toFixed(4));
+  };
+  if (plateT > 0) {
+    const first = Math.min(flh, plateT);
+    zs.push(+first.toFixed(4));
+    fill(first, plateT);
+    fill(plateT, plateT + relief);
+  } else {
+    const first = Math.min(flh, relief);
+    zs.push(+first.toFixed(4));
+    fill(first, relief);
+  }
   const layers = [];
   let negRegion = null;
   for (let i = 0; i < zs.length; i++) {
     const zTop = zs[i];
-    const zMid = zTop - (i === 0 ? flh : zTop - zs[i - 1]) / 2;
+    const zMid = zTop - (i === 0 ? zs[0] : zTop - zs[i - 1]) / 2;
     let region;
     let kind;
-    if (p.plateThickness > 0 && zMid < p.plateThickness) { region = plate; kind = 'plate'; }
+    if (plateT > 0 && zMid < plateT) { region = plate; kind = 'plate'; }
     else if (p.polarity === 'negative') {
       negRegion = negRegion || op(plate, pattern, CL.ClipType.ctDifference);
       region = negRegion; kind = 'relief';
     } else { region = pattern; kind = 'relief'; }
-    layers.push({ z: zTop, height: i === 0 ? flh : +(zTop - zs[i - 1]).toFixed(4), region, kind, index: i });
+    layers.push({ z: zTop, height: i === 0 ? zs[0] : +(zTop - zs[i - 1]).toFixed(4), region, kind, index: i });
   }
   return { layers, plate };
 }

@@ -1,5 +1,5 @@
 import { parseSVG, bounds, SCALE } from './core/svg.js';
-import { transformPattern, makePlate } from './core/slicer.js';
+import { transformPattern, makePlate, clampRelief } from './core/slicer.js';
 import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
 import { sendToPrinter, testPrinter } from './net/printers.js';
@@ -35,6 +35,7 @@ try {
       print: { cc: { ...f.print.cc, ...saved.print?.cc }, k1: { ...f.print.k1, ...saved.print?.k1 } } };
   }
 } catch {}
+state.part.reliefHeight = clampRelief(state.part.reliefHeight);
 const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} };
 
 let svgText = null, svgName = 'motif', raw = null, baseSize = null;
@@ -66,6 +67,7 @@ function fillForm() {
   }
   $$('#printerSeg button').forEach((b) => b.classList.toggle('on', b.dataset.printer === state.printer));
   $$('#polaritySeg button').forEach((b) => b.classList.toggle('on', b.dataset.pol === state.part.polarity));
+  $$('#reliefChips button').forEach((b) => b.classList.toggle('on', Math.abs(+b.dataset.relief - state.part.reliefHeight) < 1e-6));
   $('#mirrorX').setAttribute('aria-pressed', state.xf.mirrorX);
   $('#mirrorY').setAttribute('aria-pressed', state.xf.mirrorY);
   const P = PRINTERS[state.printer];
@@ -88,10 +90,16 @@ function onField(e) {
   if (el.type === 'checkbox') v = el.checked;
   else if (el.type === 'number') { v = el.value === '' ? (el.dataset.k === 'port' ? '' : 0) : parseFloat(el.value); if (Number.isNaN(v)) return; }
   else v = el.value.trim();
+  if (el.dataset.k === 'reliefHeight') {
+    const c = clampRelief(v);
+    if (c !== v) log(`Hauteur du motif ramenée à ${String(c).replace('.', ',')} mm (plage autorisée : 0,2 à 1 mm).`);
+    v = c;
+    el.value = c;
+  }
   obj[el.dataset.k] = v;
   save();
   if (el.dataset.g === 'xf' && ['mode', 'strokeWidth', 'whiteIsEmpty'].includes(el.dataset.k)) reparse();
-  else if (el.dataset.g === 'xf' || el.dataset.g === 'part') rebuild();
+  else if (el.dataset.g === 'xf' || el.dataset.g === 'part') { if (el.dataset.k === 'reliefHeight') fillForm(); rebuild(); }
   else if (el.dataset.g === 'fil' || el.dataset.g === 'print') { invalidate(); if (el.dataset.g === 'fil') fillHintOnly(); }
 }
 function fillHintOnly() {
@@ -231,6 +239,10 @@ $('#origBtn').addEventListener('click', () => { state.xf.scale = 1; reparse(); }
 $('#printerSeg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   state.printer = b.dataset.printer; save(); fillForm(); rebuild(); $('#connState').textContent = '';
+});
+$('#reliefChips').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.part.reliefHeight = clampRelief(+b.dataset.relief); save(); fillForm(); rebuild();
 });
 $('#polaritySeg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
