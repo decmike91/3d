@@ -7,7 +7,7 @@
     "build": "node build.mjs",
     "start": "npm run build && electron .",
     "test": "node test/run.mjs test/sample.svg cc positive && node test/run.mjs test/sample.svg k1 negative && node test/check_gcode.mjs && node test/mock_printers.mjs",
-    "dist:win": "npm run build && electron-builder --win nsis portable --x64",
+    "dist:win": "npm run build && electron-builder --win nsis portable --x64 --publish never",
     "android:sync": "npm run build && npx cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
   },
