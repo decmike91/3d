@@ -32,8 +32,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - run: npm run dist:win
+      - name: Compiler l'installateur Windows
+        shell: bash
         env: { CSC_IDENTITY_AUTO_DISCOVERY: 'false' }
+        run: |
+          set -o pipefail
+          npm run dist:win 2>&1 | tee build-win.log || {
+            grep -v '^\s*$' build-win.log | tail -25 | while IFS= read -r l; do echo "::error::${l//%/%25}"; done
+            exit 1
+          }
       - uses: actions/upload-artifact@v4
         with: { name: SVG2Print-windows, path: 'dist/*.exe' }
 
