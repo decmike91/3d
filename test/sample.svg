@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="50mm" viewBox="0 0 80 50">
+  <style>.st{fill:none;stroke:#000;stroke-width:1.5}</style>
+  <rect x="0" y="0" width="80" height="50" fill="#ffffff"/>
+  <path d="M10 40 C 20 5, 40 5, 50 40" class="st"/>
+  <circle cx="62" cy="20" r="10" fill="#222"/>
+  <circle cx="62" cy="20" r="5" fill="white"/>
+  <path fill-rule="evenodd" d="M5 5h20v20h-20z M10 10h10v10h-10z" fill="red" transform="rotate(10 15 15)"/>
+  <polyline points="10,45 30,45 40,48" stroke="black" stroke-width="2" fill="none"/>
+  <text x="5" y="5">hi</text>
+</svg>

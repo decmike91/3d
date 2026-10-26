@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SVG2Print</string>
+    <string name="title_activity_main">SVG2Print</string>
+    <string name="package_name">fr.svg2print.app</string>
+    <string name="custom_url_scheme">fr.svg2print.app</string>
+</resources>

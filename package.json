@@ -1,0 +1,67 @@
+{
+  "name": "svg2print",
+  "version": "1.0.0",
+  "description": "Impression 3D FDM de parcours SVG (positif/négatif) pour Elegoo Centauri Carbon et Creality K1",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "npm run build && electron .",
+    "test": "node test/run.mjs test/sample.svg cc positive && node test/run.mjs test/sample.svg k1 negative && node test/check_gcode.mjs && node test/mock_printers.mjs",
+    "dist:win": "npm run build && electron-builder --win nsis portable --x64",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
+  },
+  "keywords": [],
+  "author": "SVG2Print",
+  "license": "ISC",
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@xmldom/xmldom": "^0.9.12",
+    "clipper-lib": "^6.4.2",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "svgpath": "^2.6.0",
+    "ws": "^8.22.0"
+  },
+  "type": "module",
+  "productName": "SVG2Print",
+  "build": {
+    "appId": "fr.svg2print.app",
+    "productName": "SVG2Print",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "www/**",
+      "electron/**",
+      "build/icon.png",
+      "package.json",
+      "!node_modules/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1036",
+      "artifactName": "SVG2Print-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "SVG2Print-Portable-${version}.${ext}"
+    }
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/filesystem": "^8.1.5",
+    "@capacitor/share": "^8.0.3"
+  }
+}

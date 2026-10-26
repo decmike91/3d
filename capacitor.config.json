@@ -1,0 +1,11 @@
+{
+  "appId": "fr.svg2print.app",
+  "appName": "SVG2Print",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": false }
+  }
+}

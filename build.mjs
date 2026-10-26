@@ -1,0 +1,11 @@
+import * as esbuild from 'esbuild';
+import fs from 'fs';
+fs.rmSync('www', { recursive: true, force: true });
+fs.mkdirSync('www', { recursive: true });
+const common = { bundle: true, minify: true, target: ['chrome100'], logLevel: 'warning' };
+await esbuild.build({ ...common, entryPoints: ['src/app.js'], outfile: 'www/app.js', format: 'iife' });
+await esbuild.build({ ...common, entryPoints: ['src/worker.js'], outfile: 'www/worker.js', format: 'iife' });
+await esbuild.build({ ...common, entryPoints: ['src/app.css'], outfile: 'www/app.css', loader: { '.woff2': 'file', '.woff': 'file' }, assetNames: 'fonts/[name]' });
+fs.copyFileSync('src/index.html', 'www/index.html');
+if (fs.existsSync('src/icon.svg')) fs.copyFileSync('src/icon.svg', 'www/icon.svg');
+console.log('www/ construit');
