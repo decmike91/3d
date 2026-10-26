@@ -7,8 +7,10 @@ android {
         applicationId "fr.svg2print.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        // Numéro de version augmenté à chaque compilation GitHub -> Android accepte la mise à jour
+        def runNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "0").toInteger()
+        versionCode 100 + runNumber
+        versionName "1.0." + runNumber
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +18,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Clé de signature FIXE : toutes les versions ont la même signature,
+    // ce qui permet d'installer une nouvelle version par-dessus l'ancienne.
+    // (Variables ANDROID_KEYSTORE_* : permettent d'utiliser une autre clé si besoin.)
+    signingConfigs {
+        svg2print {
+            storeFile file(System.getenv("ANDROID_KEYSTORE_FILE") ?: "../svg2print.keystore")
+            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "svg2print"
+            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "svg2print"
+            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: "svg2print"
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.svg2print
+        }
         release {
+            signingConfig signingConfigs.svg2print
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

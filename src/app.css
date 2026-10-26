@@ -142,3 +142,4 @@ button:disabled { opacity: .45; cursor: default; }
 .chips { grid-column: 1 / -1; display: flex; gap: 6px; margin-top: -4px; }
 .chips button { flex: 1; padding: 7px 0; background: transparent; border-color: var(--line); font-size: 14px; }
 .chips button.on { background: var(--fil-tint); border-color: var(--fil); font-weight: 650; }
+.version { margin: 8px 0 0; font-size: 12px; color: var(--ink-2); text-align: center; }
