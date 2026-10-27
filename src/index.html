@@ -11,10 +11,19 @@
 <body>
 <header class="topbar">
   <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18v3H3z" fill="currentColor" opacity=".45"/><path d="M6 14c2-6 5-9 6-9s4 3 6 9h-3c-1-3-2-5-3-5s-2 2-3 5z" fill="currentColor"/></svg>SVG2Print</div>
+  <nav class="tabs" role="tablist" aria-label="Outils">
+    <button role="tab" data-tab="vector">Vectoriser</button>
+    <button role="tab" data-tab="print" class="on">Imprimer</button>
+    <button role="tab" data-tab="monitor" id="monitorTab" hidden>Surveiller</button>
+  </nav>
   <div class="printer-pill" id="pill">—</div>
 </header>
 
-<main class="layout">
+<section class="vector-view" id="vectorView" hidden>
+  <iframe id="vectorFrame" title="Vectorisation d'image en SVG"></iframe>
+</section>
+
+<main class="layout" id="printView">
   <section class="stage">
     <div class="stage-tools">
       <div class="seg" role="tablist" aria-label="Vue">
@@ -26,8 +35,9 @@
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="view"></canvas>
       <div class="empty" id="emptyHint">
-        <p>Ouvrez un fichier SVG pour le placer sur le plateau.</p>
+        <p>Ouvrez un fichier SVG pour le placer sur le plateau, ou partez d'une photo avec l'onglet Vectoriser.</p>
         <button class="primary" id="openBtn2">Ouvrir un SVG</button>
+        <button class="ghost" id="toVectorBtn">Vectoriser une image</button>
       </div>
     </div>
     <div class="layer-bar" id="layerBar" hidden>
@@ -193,7 +203,7 @@
       <button class="send" id="sendBtn" disabled>Envoyer à l'imprimante</button>
       <ol class="log" id="log"></ol>
     </section>
-    <p class="version">SVG2Print version __VERSION__</p>
+    <p class="version">SVG2Print version __VERSION__ · vectorisation Trait Fin · surveillance PrintMonitor (Android)</p>
   </aside>
 </main>
 <script src="app.js"></script>

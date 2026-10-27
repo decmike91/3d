@@ -8,5 +8,6 @@ await esbuild.build({ ...common, entryPoints: ['src/worker.js'], outfile: 'www/w
 await esbuild.build({ ...common, entryPoints: ['src/app.css'], outfile: 'www/app.css', loader: { '.woff2': 'file', '.woff': 'file' }, assetNames: 'fonts/[name]' });
 const version = `1.0.${process.env.GITHUB_RUN_NUMBER || 'dev'}`;
 fs.writeFileSync('www/index.html', fs.readFileSync('src/index.html', 'utf8').replaceAll('__VERSION__', version));
+fs.copyFileSync('src/vector/vector.html', 'www/vector.html');
 if (fs.existsSync('src/icon.svg')) fs.copyFileSync('src/icon.svg', 'www/icon.svg');
 console.log('www/ construit');

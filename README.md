@@ -1,6 +1,17 @@
 # SVG2Print
 
-Application Android et Windows qui transforme un dessin **SVG** en pièce imprimée en 3D (FDM) :
+Application unique qui réunit trois outils, organisés en onglets :
+
+| Onglet | Rôle | Plateformes |
+|---|---|---|
+| **Vectoriser** | *Trait Fin* : photo, scan ou croquis → SVG (ligne centrale ou contour), puis bouton **Imprimer en 3D** | Android, Windows |
+| **Imprimer** | *SVG2Print* : tranchage du SVG et envoi à l'imprimante (détails ci-dessous) | Android, Windows |
+| **Surveiller** | *PrintMonitor* : état des 2 Centauri Carbon et de la K1, caméras, prises Tapo, alertes de fin d'impression | Android |
+
+La surveillance est un écran Android natif (Kotlin/Compose) qui garde son service en arrière-plan et ses notifications.
+Elle se règle dans son propre écran *Réglages* (IP des imprimantes, prises Tapo) ; le plan d'adresses et la configuration Livebox sont dans [docs/GUIDE-surveillance.md](docs/GUIDE-surveillance.md).
+
+L'onglet Imprimer transforme un dessin **SVG** en pièce imprimée en 3D (FDM) :
 une plaque avec le motif **en relief (positif)** ou **en creux (négatif)**, parois pleines,
 tranchée directement dans l'application puis **envoyée et lancée** sur l'imprimante.
 
@@ -51,6 +62,9 @@ automatiquement l'**APK Android** et l'**installateur Windows** (onglet *Actions
 un tag `v1.0.0` publie une release avec les deux fichiers.
 
 ## Structure
+
+- `src/vector/vector.html` — vectorisation Trait Fin (page autonome chargée dans un cadre ; elle transmet le SVG à l'onglet Imprimer par `postMessage`).
+- `android/app/src/main/java/fr/printmonitor/` — surveillance PrintMonitor (Kotlin/Compose), ouverte par `PrinterNet.openMonitor()`.
 
 - `src/core/svg.js` — lecture du SVG (styles, classes CSS, transformations, unités) → polygones
 - `src/core/slicer.js` — miroir/rotation/échelle, plaque, couches, périmètres et remplissage

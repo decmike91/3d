@@ -31,9 +31,18 @@ import java.util.Map;
  * Accès réseau natif vers les imprimantes du réseau local :
  * - request : requête HTTP (sans restriction CORS du WebView)
  * - discover : découverte SDCP des Elegoo Centauri Carbon (UDP "M99999" port 3000)
+ * - openMonitor : écran natif de surveillance (PrintMonitor)
  */
 @CapacitorPlugin(name = "PrinterNet")
 public class PrinterNetPlugin extends Plugin {
+
+    /** Ouvre l'écran natif de surveillance des imprimantes (PrintMonitor). */
+    @PluginMethod
+    public void openMonitor(final PluginCall call) {
+        android.content.Intent i = new android.content.Intent(getContext(), fr.printmonitor.MonitorActivity.class);
+        getActivity().startActivity(i);
+        call.resolve();
+    }
 
     @PluginMethod
     public void request(final PluginCall call) {

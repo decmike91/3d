@@ -34,7 +34,7 @@ ipcMain.handle('http', async (_e, req) => {
 
 ipcMain.handle('saveFile', async (e, name, content) => {
   const win = BrowserWindow.fromWebContents(e.sender);
-  const r = await dialog.showSaveDialog(win, { defaultPath: name, filters: [{ name: 'G-code', extensions: ['gcode'] }] });
+  const r = await dialog.showSaveDialog(win, { defaultPath: name, filters: /\.svg$/i.test(name) ? [{ name: 'Image SVG', extensions: ['svg'] }] : [{ name: 'G-code', extensions: ['gcode'] }] });
   if (r.canceled || !r.filePath) return null;
   fs.writeFileSync(r.filePath, content, 'utf8');
   return r.filePath;

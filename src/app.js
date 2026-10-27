@@ -334,24 +334,31 @@ async function doSlice() {
 const fileBase = () => (svgName.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'motif');
 const gcodeName = () => `${fileBase()}_${state.part.polarity === 'negative' ? 'neg' : 'pos'}_${state.printer.toUpperCase()}.gcode`;
 
+// Enregistre un fichier texte selon la plateforme (G-code ou SVG). Renvoie un message ou null.
+async function saveText(name, content, mime) {
+  const p = platform();
+  if (p === 'windows') {
+    const r = await globalThis.electronAPI.saveFile(name, content);
+    return r ? `Enregistré : ${r}` : null;
+  }
+  if (p === 'android') {
+    const { Filesystem, Share } = globalThis.Capacitor.Plugins;
+    const res = await Filesystem.writeFile({ path: name, data: content, directory: 'CACHE', encoding: 'utf8' });
+    await Share.share({ title: name, files: [res.uri], dialogTitle: 'Enregistrer ou partager le fichier' });
+    return null;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime || 'text/plain' }));
+  a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  return `Enregistré : ${name}`;
+}
+
 $('#saveBtn').addEventListener('click', async () => {
   if (!sliced) return;
-  const name = gcodeName();
   try {
-    const p = platform();
-    if (p === 'windows') {
-      const r = await globalThis.electronAPI.saveFile(name, sliced.gcode);
-      if (r) log(`G-code enregistré : ${r}`, 'ok');
-    } else if (p === 'android') {
-      const { Filesystem, Share } = globalThis.Capacitor.Plugins;
-      const res = await Filesystem.writeFile({ path: name, data: sliced.gcode, directory: 'CACHE', encoding: 'utf8' });
-      await Share.share({ title: name, files: [res.uri], dialogTitle: 'Enregistrer ou partager le G-code' });
-    } else {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([sliced.gcode], { type: 'text/plain' }));
-      a.download = name; a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    }
+    const m = await saveText(gcodeName(), sliced.gcode, 'text/plain');
+    if (m) log(m.replace('Enregistré', 'G-code enregistré'), 'ok');
   } catch (e) { log(`Enregistrement impossible : ${e.message}`, 'err'); }
 });
 
@@ -495,6 +502,42 @@ function thumbnail(w, h) {
   return c.toDataURL('image/png').split(',')[1];
 }
 
+// ---------------- Onglets : Vectoriser / Imprimer / Surveiller ----------------
+const TAB_STORE = 'svg2print.tab';
+function showTab(t) {
+  if (t === 'monitor') { openMonitor(); return; }
+  $$('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
+  $('#vectorView').hidden = t !== 'vector';
+  $('#printView').hidden = t !== 'print';
+  if (t === 'vector' && !$('#vectorFrame').src) $('#vectorFrame').src = 'vector.html';
+  if (t === 'print') requestAnimationFrame(draw);
+  try { localStorage.setItem(TAB_STORE, t); } catch {}
+}
+async function openMonitor() {
+  try { await globalThis.Capacitor.Plugins.PrinterNet.openMonitor(); }
+  catch (e) { log(`Surveillance indisponible : ${e.message}`, 'err'); }
+}
+$$('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+$('#monitorTab').hidden = platform() !== 'android';
+$('#toVectorBtn').addEventListener('click', () => showTab('vector'));
+
+// Messages venant de l'outil de vectorisation (cadre vector.html)
+const toVector = (text) => $('#vectorFrame').contentWindow?.postMessage({ source: 'svg2print', type: 'toast', text }, '*');
+window.addEventListener('message', async (e) => {
+  const d = e.data;
+  if (!d || d.source !== 'trait-fin' || e.source !== $('#vectorFrame').contentWindow) return;
+  if (d.type === 'save') {
+    try { const m = await saveText(d.name, d.svg, 'image/svg+xml'); if (m) toVector(m); }
+    catch (err) { toVector(`Enregistrement impossible : ${err.message}`); }
+  } else if (d.type === 'print') {
+    // Le tracé central donne des traits : lecture en mode « parcours » pour les imprimer en lignes
+    state.xf.mode = d.mode === 'center' ? 'stroke' : 'auto';
+    await openFile(new File([d.svg], `${d.name}.svg`, { type: 'image/svg+xml' }));
+    showTab('print');
+    log(`Dessin vectorisé « ${d.name} » chargé. Ajustez la taille et la largeur des traits.`, 'ok');
+  }
+});
+
 // ---------------- Démarrage ----------------
 $('#fileInput').addEventListener('change', (e) => openFile(e.target.files[0]));
 $('#openBtn').addEventListener('click', () => $('#fileInput').click());
@@ -504,3 +547,6 @@ wrap.addEventListener('dragover', (e) => e.preventDefault());
 wrap.addEventListener('drop', (e) => { e.preventDefault(); openFile(e.dataTransfer.files[0]); });
 fillForm();
 draw();
+let startTab = 'print';
+try { startTab = localStorage.getItem(TAB_STORE) || 'print'; } catch {}
+showTab(startTab === 'vector' ? 'vector' : 'print');
