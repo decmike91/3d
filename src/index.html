@@ -16,12 +16,43 @@
     <button role="tab" data-tab="print" class="on">Relief SVG</button>
     <button role="tab" data-tab="model">Modèle 3D</button>
     <button role="tab" data-tab="monitor" id="monitorTab" hidden>Surveiller</button>
+    <button role="tab" data-tab="help" title="Aide (F1)">Aide</button>
   </nav>
   <div class="printer-pill" id="pill">—</div>
 </header>
 
 <section class="vector-view" id="vectorView" hidden>
   <iframe id="vectorFrame" title="Vectorisation d'image en SVG"></iframe>
+</section>
+
+<section class="help-view" id="helpView" hidden>
+  <div class="htool">
+    <button id="hNav" title="Afficher / masquer le volet">☰<span> Volet</span></button>
+    <button id="hBack" title="Page précédemment consultée" disabled>↶<span> Retour</span></button>
+    <button id="hHome" title="Accueil de l’aide">⌂<span> Accueil</span></button>
+    <button id="hPrev" title="Sujet précédent">‹<span> Précédent</span></button>
+    <button id="hNext" title="Sujet suivant"><span>Suivant </span>›</button>
+    <button id="hPrint" title="Imprimer ce sujet">⎙<span> Imprimer</span></button>
+  </div>
+  <div class="hwrap">
+    <aside class="hnav">
+      <div class="hpanes" id="hPanes" role="tablist">
+        <button data-pane="toc" class="on">Sommaire</button>
+        <button data-pane="index">Index</button>
+        <button data-pane="search">Rechercher</button>
+      </div>
+      <div class="hpane" id="hToc"></div>
+      <div class="hpane" id="hIndex" hidden>
+        <label class="hq">Mot-clé à rechercher<input type="search" id="hIndexQ" autocomplete="off" placeholder="ex. supports"></label>
+        <ul class="hlist" id="hIndexList"></ul>
+      </div>
+      <div class="hpane" id="hSearch" hidden>
+        <label class="hq">Mots à rechercher<input type="search" id="hSearchQ" autocomplete="off" placeholder="ex. purge couleur"></label>
+        <ul class="hlist hres" id="hSearchList"></ul>
+      </div>
+    </aside>
+    <article class="hbody" id="hBody"></article>
+  </div>
 </section>
 
 <main class="layout" id="modelView" hidden>

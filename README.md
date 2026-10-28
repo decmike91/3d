@@ -12,6 +12,12 @@ Application unique qui réunit trois outils, organisés en onglets :
 La surveillance est un écran Android natif (Kotlin/Compose) qui garde son service en arrière-plan et ses notifications.
 Elle se règle dans son propre écran *Réglages* (IP des imprimantes, prises Tapo) ; le plan d'adresses et la configuration Livebox sont dans [docs/GUIDE-surveillance.md](docs/GUIDE-surveillance.md).
 
+## Aide et guide PDF
+
+- Onglet **Aide** dans l'application, à la manière d'un fichier .chm : sommaire en arbre, index, recherche plein texte avec surlignage, précédent/suivant, impression. Les boutons **?** de chaque étape (et la touche F1) ouvrent le sujet correspondant.
+- **docs/SVG2Print-Guide.pdf** : le même contenu en guide A4 (couverture, sommaire paginé, captures d'écran), publié aussi dans Releases.
+- Source unique : `src/help/content.js`. Régénérer captures et PDF : `npm run build`, puis `xvfb-run -a node_modules/electron/dist/electron --no-sandbox docs/make-docs.cjs --shots` et `… --pdf`.
+
 ## Onglet Modèle 3D
 
 1. **Fichiers** — un ou plusieurs STL / 3MF / OBJ (glisser-déposer possible). Les projets 3MF de Bambu Studio, OrcaSlicer ou ElegooSlicer gardent leurs objets, pièces, filaments et couleurs. Déplacement des objets au doigt ou à la souris, rotation 90°, échelle.

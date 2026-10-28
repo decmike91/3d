@@ -5,6 +5,7 @@ import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
 import { sendToPrinter, testPrinter, ccCanvas } from './net/printers.js';
 import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume } from './core/materials.js';
 import { initModel3D } from './model3d/ui3d.js';
+import { initHelp } from './help/help.js';
 import { platform } from './net/transport.js';
 
 const $ = (s) => document.querySelector(s);
@@ -552,7 +553,10 @@ function showTab(t) {
   $('#vectorView').hidden = t !== 'vector';
   $('#printView').hidden = t !== 'print';
   $('#modelView').hidden = t !== 'model';
+  $('#helpView').hidden = t !== 'help';
   if (t === 'model') m3.show();
+  if (t === 'help') help.show();
+  curTab = t;
   if (t === 'vector' && !$('#vectorFrame').src) $('#vectorFrame').src = 'vector.html';
   if (t === 'print') requestAnimationFrame(draw);
   try { localStorage.setItem(TAB_STORE, t); } catch {}
@@ -561,6 +565,9 @@ async function openMonitor() {
   try { await globalThis.Capacitor.Plugins.PrinterNet.openMonitor(); }
   catch (e) { log(`Surveillance indisponible : ${e.message}`, 'err'); }
 }
+let curTab = 'print';
+const help = initHelp({ showTab: (t) => showTab(t), currentTab: () => curTab });
+globalThis.__help = help;
 $$('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
 $('#monitorTab').hidden = platform() !== 'android';
 $('#toVectorBtn').addEventListener('click', () => showTab('vector'));
@@ -593,4 +600,4 @@ fillForm();
 draw();
 let startTab = 'print';
 try { startTab = localStorage.getItem(TAB_STORE) || 'print'; } catch {}
-showTab(['vector', 'model'].includes(startTab) ? startTab : 'print');
+showTab(['vector', 'model', 'help'].includes(startTab) ? startTab : 'print');
