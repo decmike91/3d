@@ -6,6 +6,7 @@ import { sendToPrinter, testPrinter, ccCanvas } from './net/printers.js';
 import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume } from './core/materials.js';
 import { initModel3D } from './model3d/ui3d.js';
 import { initHelp } from './help/help.js';
+import { initMyPrinters } from './core/myprinters.js';
 import { platform } from './net/transport.js';
 
 const $ = (s) => document.querySelector(s);
@@ -42,7 +43,12 @@ try {
   }
 } catch {}
 state.part.reliefHeight = clampRelief(state.part.reliefHeight);
-const save = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {} };
+const save = () => {
+  // Identifiant carte mère mémorisé par adresse (deux Centauri Carbon)
+  const cc = state.net.cc;
+  if (cc.host && cc.mainboardId) { state.mbByIp = state.mbByIp || {}; state.mbByIp[cc.host] = cc.mainboardId; }
+  try { localStorage.setItem(STORE, JSON.stringify(state)); } catch {}
+};
 
 let svgText = null, svgName = 'motif', raw = null, baseSize = null;
 let pattern = [], plate = [];
@@ -544,6 +550,8 @@ function setPrinter(p) {
 }
 m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, setPrinter });
 globalThis.__m3 = m3;
+const myPrinters = initMyPrinters({ state, save, setPrinter, platform });
+globalThis.__myPrinters = myPrinters;
 
 // ---------------- Onglets : Vectoriser / Imprimer / Surveiller ----------------
 const TAB_STORE = 'svg2print.tab';

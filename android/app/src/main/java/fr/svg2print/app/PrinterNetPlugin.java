@@ -32,6 +32,7 @@ import java.util.Map;
  * - request : requête HTTP (sans restriction CORS du WebView)
  * - discover : découverte SDCP des Elegoo Centauri Carbon (UDP "M99999" port 3000)
  * - openMonitor : écran natif de surveillance (PrintMonitor)
+ * - monitorPrinters : imprimantes saisies dans la surveillance (nom, modèle, IP)
  */
 @CapacitorPlugin(name = "PrinterNet")
 public class PrinterNetPlugin extends Plugin {
@@ -102,6 +103,30 @@ public class PrinterNetPlugin extends Plugin {
                 if (conn != null) conn.disconnect();
             }
         }).start();
+    }
+
+    /** Imprimantes saisies dans l'écran Surveiller (nom, modèle, adresse IP). */
+    @PluginMethod
+    public void monitorPrinters(final PluginCall call) {
+        try {
+            fr.printmonitor.data.AppConfig cfg = fr.printmonitor.data.ConfigStore.INSTANCE.load(getContext());
+            JSArray arr = new JSArray();
+            for (fr.printmonitor.data.PrinterId id : fr.printmonitor.data.PrinterId.values()) {
+                fr.printmonitor.data.PrinterConfig pc = cfg.printer(id);
+                if (pc.getIp() == null || pc.getIp().trim().isEmpty()) continue;
+                JSObject o = new JSObject();
+                o.put("key", id.getKey());
+                o.put("name", cfg.displayName(id));
+                o.put("model", id.getType() == fr.printmonitor.data.PrinterType.CREALITY_K1 ? "k1" : "cc");
+                o.put("ip", pc.getIp().trim());
+                arr.put(o);
+            }
+            JSObject ret = new JSObject();
+            ret.put("printers", arr);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject(e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
     }
 
     @PluginMethod

@@ -25,6 +25,21 @@
   <iframe id="vectorFrame" title="Vectorisation d'image en SVG"></iframe>
 </section>
 
+<dialog id="myPrintersDlg" class="mydlg">
+  <form method="dialog">
+    <h3>Mes imprimantes</h3>
+    <p class="hint" id="myDlgHint"></p>
+    <ul class="mylist" id="myList"></ul>
+    <div class="row">
+      <button type="button" class="ghost" id="myAdd">+ Ajouter une imprimante</button>
+      <button type="button" class="ghost" id="myImport" hidden>Reprendre la liste de Surveiller</button>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button class="primary" value="ok">Fermer</button>
+    </div>
+  </form>
+</dialog>
+
 <section class="help-view" id="helpView" hidden>
   <div class="htool">
     <button id="hNav" title="Afficher / masquer le volet">☰<span> Volet</span></button>
@@ -143,16 +158,20 @@
 
     <section class="step">
       <h2><span class="n">3</span>Imprimante et filament</h2>
+      <label class="field mypick">Mes imprimantes
+        <select class="myPrinterSel"></select>
+      </label>
+      <p class="hint mypick-info"></p>
+      <div class="manual-printer">
       <div class="seg wide" id="m3PrinterSeg">
         <button data-printer="cc">Elegoo Centauri Carbon</button>
         <button data-printer="k1">Creality K1 / K1C</button>
       </div>
-      <div class="grid2">
-        <label class="field">Adresse IP
-          <input type="text" inputmode="decimal" placeholder="192.168.1.50" data-g="net" data-k="host" autocomplete="off">
-        </label>
-        <div class="field">&nbsp;<button class="ghost" id="m3Test">Tester la connexion</button></div>
+      <label class="field" style="margin-top:10px">Adresse IP
+        <input type="text" inputmode="decimal" placeholder="192.168.1.50" data-g="net" data-k="host" autocomplete="off">
+      </label>
       </div>
+      <div class="row"><button class="ghost" id="m3Test">Tester la connexion</button></div>
       <span class="conn" id="m3Conn"></span>
       <label class="check" id="m3CanvasRow"><input type="checkbox" id="m3Canvas"> Multifilament CANVAS (4 emplacements)</label>
       <div id="m3Slots" class="slots"></div>
@@ -264,6 +283,11 @@
     <!-- 2. Imprimante -->
     <section class="step">
       <h2><span class="n">2</span>Imprimante</h2>
+      <label class="field mypick">Mes imprimantes
+        <select class="myPrinterSel"></select>
+      </label>
+      <p class="hint mypick-info"></p>
+      <div class="manual-printer">
       <div class="seg wide" id="printerSeg">
         <button data-printer="cc">Elegoo Centauri Carbon</button>
         <button data-printer="k1">Creality K1 / K1C</button>
@@ -278,6 +302,7 @@
         <label class="field" id="mbField">Identifiant carte mère
           <input type="text" placeholder="auto" data-g="net" data-k="mainboardId" autocomplete="off">
         </label>
+      </div>
       </div>
       <div class="row">
         <button class="ghost" id="testBtn">Tester la connexion</button>

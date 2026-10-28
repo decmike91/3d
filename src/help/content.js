@@ -108,7 +108,7 @@ ${see('first-connect', 'svg', 'm3')}`,
   },
   {
     id: 'first-connect', title: 'Connecter une imprimante', parent: 'start',
-    keywords: ['connexion', 'adresse IP', 'tester', 'identifiant carte mère', 'MainboardID', 'rechercher', 'port', 'Moonraker'],
+    keywords: ['connexion', 'adresse IP', 'tester', 'identifiant carte mère', 'MainboardID', 'rechercher', 'port', 'Moonraker', 'mes imprimantes', 'liste des imprimantes', 'gérer la liste'],
     html: `
 <p>Le téléphone ou le PC doit être sur le <b>même réseau</b> que l'imprimante (ou relié par VPN, voir <a href="#net-remote" data-topic="net-remote">@@net-remote@@</a>).</p>
 <table class="htab">
@@ -118,7 +118,15 @@ ${see('first-connect', 'svg', 'm3')}`,
 <tr><td>Port Moonraker</td><td>—</td><td>Laisser vide : 7125, 4408, 4409 et 80 sont essayés.</td></tr>
 <tr><td>Rechercher</td><td>Trouve la Centauri sur le réseau (diffusion « M99999 », port 3000).</td><td>—</td></tr>
 </table>
-<p><b>Tester la connexion</b> affiche l'état de l'imprimante et ses températures. L'adresse saisie est commune aux onglets Relief SVG et Modèle 3D.</p>
+<h4>Mes imprimantes</h4>
+<p>La liste <b>Mes imprimantes</b>, en haut de l'étape Imprimante (onglets Relief SVG et Modèle 3D), évite de ressaisir les adresses :</p>
+<ul>
+<li>sur <b>Android</b>, elle reprend automatiquement les imprimantes de l'écran <b>Surveiller</b> (nom affiché et adresse IP) ; une modification faite dans <i>Surveiller › Réglages</i> est prise en compte au retour dans l'application ;</li>
+<li><b>Gérer la liste…</b> permet d'en ajouter d'autres (nom, modèle, adresse IP), notamment sous Windows ;</li>
+<li>choisir une imprimante règle le modèle et l'adresse dans les deux onglets ; l'identifiant carte mère de chaque Centauri Carbon est mémorisé ;</li>
+<li><b>Autre imprimante (saisie manuelle)</b> affiche les champs habituels.</li>
+</ul>
+<p><b>Tester la connexion</b> affiche l'état de l'imprimante et ses températures.</p>
 ${warn('Ne jamais ouvrir les ports des imprimantes sur Internet (box, DMZ) : ils n’ont ni mot de passe ni chiffrement.')}`,
   },
 
@@ -207,7 +215,7 @@ ${warn('Un dessin plus grand que le plateau est réduit automatiquement ; le jou
     id: 'svg-pattern', title: 'Étapes 2 et 3 – Imprimante et motif', parent: 'svg',
     keywords: ['positif', 'négatif', 'miroir', 'rotation', 'échelle', 'proportions', 'agrandir au plateau', 'épaisseur plaque', 'hauteur motif', 'forme de plaque', 'marge', 'coins'],
     html: `
-<p><b>Imprimante</b> : Centauri Carbon ou K1 (voir <a href="#first-connect" data-topic="first-connect">@@first-connect@@</a>).</p>
+<p><b>Imprimante</b> : choisie dans <i>Mes imprimantes</i>, ou saisie à la main (voir <a href="#first-connect" data-topic="first-connect">@@first-connect@@</a>).</p>
 <p><b>Motif</b> :</p>
 <table class="htab">
 <tr><th>Réglage</th><th>Défaut</th><th>Détail</th></tr>
