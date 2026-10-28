@@ -169,7 +169,30 @@ export async function ccStatus(host, mainboardHint, log) {
   } finally { s.close(); }
 }
 
-export async function ccSend({ host, mainboardId, filename, gcode, start, autoLevel, timelapse, log, onProgress }) {
+// Lecture du CANVAS (multifilament Elegoo) : commande SDCP 324
+export async function ccCanvas(host, mainboardHint, log) {
+  const s = await sdcpSession(host, mainboardHint, log);
+  try {
+    const r = await s.request(324, {}, 8000);
+    const d = r?.Data?.Data || {};
+    const units = Array.isArray(d.canvas_list) ? d.canvas_list : [];
+    const trays = [];
+    for (const u of units) {
+      if (!u || u.connected === 0) continue;
+      for (const t of u.tray_list || []) {
+        trays.push({
+          canvas_id: u.canvas_id ?? 0, tray_id: t.tray_id ?? trays.length,
+          type: t.filament_type || '', name: t.filament_name || '', brand: t.brand || '',
+          color: /^#?[0-9a-f]{6}/i.test(t.filament_color || '') ? '#' + t.filament_color.replace('#', '').slice(0, 6) : '',
+          loaded: (t.status ?? 0) > 0, minTemp: t.min_nozzle_temp, maxTemp: t.max_nozzle_temp,
+        });
+      }
+    }
+    return { mainboard: s.mainboard, trays, active: { canvas: d.active_canvas_id, tray: d.active_tray_id } };
+  } finally { s.close(); }
+}
+
+export async function ccSend({ host, mainboardId, filename, gcode, start, autoLevel, timelapse, slotMap, log, onProgress }) {
   const bytes = enc.encode(gcode);
   log(`Envoi de ${filename} (${(bytes.length / 1024).toFixed(0)} Kio)…`);
   await sdcpUpload(host, filename, bytes, log, onProgress);
@@ -183,7 +206,7 @@ export async function ccSend({ host, mainboardId, filename, gcode, start, autoLe
       Calibration_switch: autoLevel ? 1 : 0,
       PrintPlatformType: 0,
       Tlp_Switch: timelapse ? 1 : 0,
-      slot_map: [],
+      slot_map: Array.isArray(slotMap) ? slotMap : [],
       path_prefix: '/local',
     }, 15000);
     const ack = r?.Data?.Data?.Ack;

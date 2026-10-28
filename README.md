@@ -5,13 +5,32 @@ Application unique qui réunit trois outils, organisés en onglets :
 | Onglet | Rôle | Plateformes |
 |---|---|---|
 | **Vectoriser** | *Trait Fin* : photo, scan ou croquis → SVG (ligne centrale ou contour), puis bouton **Imprimer en 3D** | Android, Windows |
-| **Imprimer** | *SVG2Print* : tranchage du SVG et envoi à l'imprimante (détails ci-dessous) | Android, Windows |
+| **Relief SVG** | *SVG2Print* : tranchage du SVG en plaque/relief et envoi à l'imprimante (détails ci-dessous) | Android, Windows |
+| **Modèle 3D** | Fichiers STL, 3MF, OBJ : orientation « solidité », supports automatiques, PLA/PETG/TPU/nylon, multifilament CANVAS, tranchage et envoi | Android, Windows |
 | **Surveiller** | *PrintMonitor* : état des 2 Centauri Carbon et de la K1, caméras, prises Tapo, alertes de fin d'impression | Android |
 
 La surveillance est un écran Android natif (Kotlin/Compose) qui garde son service en arrière-plan et ses notifications.
 Elle se règle dans son propre écran *Réglages* (IP des imprimantes, prises Tapo) ; le plan d'adresses et la configuration Livebox sont dans [docs/GUIDE-surveillance.md](docs/GUIDE-surveillance.md).
 
-L'onglet Imprimer transforme un dessin **SVG** en pièce imprimée en 3D (FDM) :
+## Onglet Modèle 3D
+
+1. **Fichiers** — un ou plusieurs STL / 3MF / OBJ (glisser-déposer possible). Les projets 3MF de Bambu Studio, OrcaSlicer ou ElegooSlicer gardent leurs objets, pièces, filaments et couleurs. Déplacement des objets au doigt ou à la souris, rotation 90°, échelle.
+2. **Placement et supports** — *Orienter automatiquement* :
+   - **Solidité** : la plus grande dimension est couchée sur le plateau, pour que les couches (point faible d'une pièce FDM) soient dans le sens des efforts, avec une grande face d'appui ;
+   - **Moins de supports** : surplombs minimaux.
+   Supports automatiques arborescents (par défaut) ou classiques, angle de surplomb réglable (50°), surplombs affichés en rouge. *Placer automatiquement* range les objets sur le plateau.
+3. **Imprimante et filament** — PLA HS (eSUN ePLA-HS), PETG HS (eSUN PETG+HS), TPU 95A, nylon PA, avec réglages optimisés par imprimante (températures, ventilation, débit max, vitesses plafonnées pour le TPU et le nylon, bordure automatique pour le nylon).
+   **Multifilament CANVAS** (Elegoo Centauri Carbon) : 4 emplacements, un filament par objet ou par pièce, lecture du CANVAS de l'imprimante (matières et couleurs chargées), tour de purge, purge calculée d'après les couleurs. Le TPU est refusé dans le CANVAS.
+4. **Qualité et solidité** — préréglages Rapide / Standard / Solide (4 parois, 40 % gyroïde) / Résistance max, tout est modifiable.
+5. **Trancher et imprimer** — aperçu couche par couche (par type de trajet ou par filament), durée, poids par filament, enregistrement du G-code, envoi et lancement. Sur la Centauri Carbon, l'emplacement de chaque filament est transmis à l'imprimante (`slot_map`) quand le CANVAS a été lu.
+
+Le tranchage 3D utilise **CuraEngine** compilé en WebAssembly (paquet `cura-wasm`, licence AGPL-3.0), sur l'appareil, sans connexion. Le G-code est ensuite adapté à Klipper (Centauri Carbon et K1) : début/fin de l'imprimante, changements de filament `M6211` du CANVAS (repris d'ElegooSlicer), progression par couche, vignettes.
+
+Dans l'onglet **Relief SVG**, la matière est aussi au choix, et sur la Centauri Carbon le CANVAS permet une plaque et un motif de couleurs différentes (un seul changement de filament, au début du motif).
+
+## Onglet Relief SVG
+
+L'onglet Relief SVG transforme un dessin **SVG** en pièce imprimée en 3D (FDM) :
 une plaque avec le motif **en relief (positif)** ou **en creux (négatif)**, parois pleines,
 tranchée directement dans l'application puis **envoyée et lancée** sur l'imprimante.
 
@@ -63,6 +82,8 @@ un tag `v1.0.0` publie une release avec les deux fichiers.
 
 ## Structure
 
+- `src/model3d/` — onglet Modèle 3D : lecture STL/3MF/OBJ (`mesh.js`), orientation et placement (`orient.js`), réglages CuraEngine (`settings.js`, `job.js`), moteur WASM (`engine.js`, empaqueté à part dans `www/engine3d.js`), post-traitement Klipper/CANVAS (`post.js`), vue 3D three.js (`viewer.js`)
+- `src/core/materials.js` — filaments PLA HS, PETG HS, TPU, nylon et bloc de changement CANVAS
 - `src/vector/vector.html` — vectorisation Trait Fin (page autonome chargée dans un cadre ; elle transmet le SVG à l'onglet Imprimer par `postMessage`).
 - `android/app/src/main/java/fr/printmonitor/` — surveillance PrintMonitor (Kotlin/Compose), ouverte par `PrinterNet.openMonitor()`.
 

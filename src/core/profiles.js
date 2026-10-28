@@ -1,4 +1,5 @@
-// Profils imprimantes + réglages filament eSUN PETG+HS optimisés par défaut.
+// Profils imprimantes + réglages filament optimisés par défaut (voir materials.js).
+import { materialProfile } from './materials.js';
 // Sources : profils machine OrcaSlicer (Elegoo Centauri Carbon 0.4, Creality K1 0.4),
 // fiche eSUN PETG+HS (buse 230–260 °C, plateau 70–90 °C, ventilateur, 40–300 mm/s).
 
@@ -14,7 +15,7 @@ export const PRINTERS = {
     retract: { length: 0.8, speed: 30, zhop: 0.4 },
     startGcode: (s) => `;===== CC_START_GCODE (adapté du profil OrcaSlicer) =====
 ;printer_model:Elegoo Centauri Carbon
-;initial_filament:PETG
+;initial_filament:${s.type || 'PETG'}
 ;bed_level_temp:${s.bedFirst}
 M400 ; vide le tampon
 M220 S100 ; vitesse 100 %
@@ -27,8 +28,9 @@ G28 ; origine
 M729 ; nettoyage buse
 M190 S${s.bedFirst}
 M109 S${s.nozzleFirst}
-M6211 A1 L200 T0 Q${s.nozzleFirst} R${s.nozzleFirst} S${s.nozzleFirst}
-T0
+M6211 A1 L200 T${s.tool || 0} Q${s.nozzleFirst} R${s.nozzleFirst} S${s.nozzleFirst}
+T${s.tool || 0} ; filament initial
+${s.type === 'PLA' ? (s.bedFirst > 50 ? 'M106 P3 S255 ; ventilation chambre (évite le bouchage du PLA)' : 'M106 P3 S180 ; ventilation chambre (évite le bouchage du PLA)') : ''}
 ${s.pressureAdvance > 0 ? `SET_PRESSURE_ADVANCE ADVANCE=${s.pressureAdvance}\nM400` : '; avance de pression : réglage imprimante'}
 M204 S${Math.min(20000, Math.max(1000, s.accelFirst))}
 G1 X128 Y-1.2 F20000
@@ -105,31 +107,9 @@ G1 Z1 F600
   },
 };
 
-// Réglages filament par défaut (eSUN PETG+HS 1,75 mm) — ajustés par imprimante
-export function defaultFilament(printerId) {
-  const base = {
-    name: 'eSUN PETG+HS',
-    diameter: 1.75,
-    density: 1.27,
-    nozzle: 240,
-    nozzleFirst: 245,
-    bed: 75,
-    bedFirst: 75,
-    fan: 40, // % après les premières couches (PETG : ventilation modérée = bonne adhérence entre couches)
-    fanFirstLayers: 2, // couches sans ventilation
-    flow: 0.95,
-    maxVolumetric: 16, // mm³/s
-    pressureAdvance: 0.04,
-    retractLength: PRINTERS[printerId].retract.length,
-    retractSpeed: PRINTERS[printerId].retract.speed,
-    zHop: PRINTERS[printerId].retract.zhop,
-  };
-  if (printerId === 'k1') {
-    // K1 : enceinte plus fermée, hotend céramique -> un peu moins chaud, débit max un peu plus bas
-    return { ...base, nozzle: 240, nozzleFirst: 245, maxVolumetric: 15, pressureAdvance: 0.04 };
-  }
-  // Centauri Carbon
-  return { ...base, nozzle: 240, nozzleFirst: 245, maxVolumetric: 16, pressureAdvance: 0.04 };
+// Réglages filament par défaut : eSUN PETG+HS, ou la matière demandée (pla_hs, petg_hs, tpu, nylon)
+export function defaultFilament(printerId, matId = 'petg_hs') {
+  return materialProfile(matId, printerId, PRINTERS[printerId].retract);
 }
 
 export function defaultPrint(printerId) {

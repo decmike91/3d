@@ -1,6 +1,7 @@
 // Génération du G-code (Klipper, extrusion relative) pour K1 et Centauri Carbon.
 import { PRINTERS } from './profiles.js';
 import { buildLayers, layerToolpaths } from './slicer.js';
+import { canvasChangeBlock } from './materials.js';
 
 const f3 = (v) => (Math.round(v * 1000) / 1000).toString();
 const f5 = (v) => (Math.round(v * 100000) / 100000).toString();
@@ -17,9 +18,17 @@ export function fmtTime(sec) {
  * print, fil : réglages (voir profiles.js)
  * opts : { thumbnails: [{w,h,base64}], name, onProgress(fraction) }
  */
-export function slice(pattern, printerId, print, fil, opts = {}) {
+export function slice(pattern, printerId, print, fil0, opts = {}) {
   const P = PRINTERS[printerId];
   const { layers } = buildLayers(pattern, print);
+  // CANVAS (Centauri Carbon) : plaque et motif dans deux filaments différents
+  const cv = opts.canvas && printerId === 'cc' && opts.canvas.reliefFil ? opts.canvas : null;
+  const firstKind = layers.length ? layers[0].kind : 'plate';
+  const startsWithRelief = firstKind === 'relief';
+  const toolPlate = cv ? cv.plateTool : 0, toolRelief = cv ? cv.reliefTool : 0;
+  const multi = !!cv && toolPlate !== toolRelief && !startsWithRelief && layers.some((l) => l.kind === 'relief');
+  let fil = cv && startsWithRelief ? cv.reliefFil : fil0;
+  const usedE = {};
   const filArea = Math.PI * (fil.diameter / 2) ** 2;
   const body = [];
   const preview = [];
@@ -28,6 +37,7 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
   let lostIslands = 0;
   const travelF = print.travel * 60;
 
+  let curTool = cv ? (startsWithRelief ? toolRelief : toolPlate) : 0;
   const emit = (s) => body.push(s);
   const travel = (x, y, retract) => {
     const d = Math.hypot(x - pos[0], y - pos[1]);
@@ -52,13 +62,14 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
     const de = (d * area * fil.flow) / filArea;
     emit(`G1 X${f3(x)} Y${f3(y)} E${f5(de)}`);
     totalE += de;
+    usedE[curTool] = (usedE[curTool] || 0) + de;
     time += d / speed;
     pos = [x, y];
   };
 
   const speedFor = (type, layer) => {
     const area = (print.lineWidth - layer.height) * layer.height + (Math.PI * layer.height ** 2) / 4;
-    const cap = fil.maxVolumetric / area;
+    const cap = Math.min(fil.maxVolumetric / area, fil.speedCap || Infinity);
     let v = layer.index === 0 ? print.firstLayer : type === 'outer' ? print.outerWall : type === 'inner' ? print.innerWall : print.infill;
     return Math.max(5, Math.min(v, cap));
   };
@@ -66,6 +77,13 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
 
   let fanOn = null;
   for (const layer of layers) {
+    if (multi && layer.kind === 'relief' && curTool !== toolRelief) {
+      // Changement de filament CANVAS au début du motif
+      emit(canvasChangeBlock({ next: toolRelief, flushVol: cv.flushVol, oldFil: fil, newFil: cv.reliefFil, z, maxZ: P.bed.z }));
+      time += 70 + cv.flushVol / 8;
+      fil = cv.reliefFil; curTool = toolRelief; fanOn = null;
+      pos = [NaN, NaN];
+    }
     z = layer.z;
     emit(`;LAYER_CHANGE`);
     emit(`;Z:${f3(z)}`);
@@ -81,7 +99,7 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
     }
     const fanWanted = layer.index >= fil.fanFirstLayers ? Math.round((fil.fan / 100) * 255) : 0;
     if (fanWanted !== fanOn) { emit(`M106 S${fanWanted}`); fanOn = fanWanted; }
-    emit(`M204 S${layer.index === 0 ? print.accelFirst : print.accel}`);
+    emit(`M204 S${Math.min(layer.index === 0 ? print.accelFirst : print.accel, fil.accelCap || Infinity)}`);
     emit(`G1 Z${f3(z)} F1200`);
     time += 0.3;
 
@@ -110,12 +128,15 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
 
   const maxZ = layers.length ? layers[layers.length - 1].z : 0;
   const lenMM = totalE;
-  const grams = (lenMM * filArea * fil.density) / 1000;
+  const filOf = (t) => (cv && t === toolRelief && multi ? cv.reliefFil : cv && startsWithRelief ? cv.reliefFil : fil0);
+  const grams = Object.entries(usedE).reduce((g, [t, e]) => g + (e * filArea * filOf(+t).density) / 1000, 0);
   time = time * 1.08 + 120; // accélérations + chauffe approximative
+  const fs = cv && startsWithRelief ? cv.reliefFil : fil0; // filament de la 1re couche
   const s = {
-    nozzleFirst: fil.nozzleFirst, bedFirst: fil.bedFirst, totalLayers: layers.length,
-    pressureAdvance: fil.pressureAdvance, accelFirst: print.accelFirst, maxZ,
-    purgeF: Math.round(Math.min(6000, Math.max(900, (fil.maxVolumetric / 0.5 / 0.3) * 60))),
+    tool: cv ? (startsWithRelief ? toolRelief : toolPlate) : 0, type: fs.type,
+    nozzleFirst: fs.nozzleFirst, bedFirst: fs.bedFirst, totalLayers: layers.length,
+    pressureAdvance: fs.pressureAdvance, accelFirst: Math.min(print.accelFirst, fs.accelCap || Infinity), maxZ,
+    purgeF: Math.round(Math.min(6000, Math.max(900, (fs.maxVolumetric / 0.5 / 0.3) * 60))),
   };
 
   const head = [];
@@ -160,12 +181,15 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
   tail.push(`; estimated printing time (normal mode) = ${fmtTime(time)}`);
   tail.push('; CONFIG_BLOCK_START');
   tail.push(`; printer_model = ${P.name}`);
-  tail.push(`; filament_type = PETG`);
-  tail.push(`; filament_settings_id = "${fil.name}"`);
+  const fils = multi ? [[toolPlate, fil0], [toolRelief, cv.reliefFil]] : [[cv ? curTool : 0, fs]];
+  tail.push(`; filament_type = ${fils.map(([, f]) => f.type || 'PETG').join(';')}`);
+  tail.push(`; filament_settings_id = ${fils.map(([, f]) => `"${f.name}"`).join(';')}`);
+  if (cv) tail.push(`; filament_colour = ${fils.map(([t]) => cv.colors?.[t] || '#FFFFFF').join(';')}`);
+  if (cv) tail.push(`; filament_ids = ${fils.map(([t]) => t).join(';')}`);
   tail.push(`; layer_height = ${print.layerHeight}`);
   tail.push(`; nozzle_diameter = 0.4`);
-  tail.push(`; nozzle_temperature = ${fil.nozzle}`);
-  tail.push(`; bed_temperature = ${fil.bed}`);
+  tail.push(`; nozzle_temperature = ${fils.map(([, f]) => f.nozzle).join(',')}`);
+  tail.push(`; bed_temperature = ${fs.bed}`);
   tail.push(`; sparse_infill_density = 100%`);
   tail.push(`; wall_loops = ${print.walls}`);
   tail.push('; CONFIG_BLOCK_END');
@@ -174,6 +198,6 @@ export function slice(pattern, printerId, print, fil, opts = {}) {
   return {
     gcode,
     preview,
-    stats: { layers: layers.length, timeSec: time, filamentMM: lenMM, grams, maxZ, lostIslands },
+    stats: { layers: layers.length, timeSec: time, filamentMM: lenMM, grams, maxZ, lostIslands, tools: fils.map(([t]) => t) },
   };
 }

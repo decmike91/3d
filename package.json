@@ -1,12 +1,12 @@
 {
   "name": "svg2print",
   "version": "1.0.0",
-  "description": "Impression 3D FDM de parcours SVG (positif/négatif) pour Elegoo Centauri Carbon et Creality K1",
+  "description": "Vectorisation, relief SVG et tranchage 3D (STL/3MF/OBJ, CANVAS) pour Elegoo Centauri Carbon et Creality K1",
   "main": "electron/main.cjs",
   "scripts": {
     "build": "node build.mjs",
     "start": "npm run build && electron .",
-    "test": "node test/run.mjs test/sample.svg cc positive && node test/run.mjs test/sample.svg k1 negative && node test/check_gcode.mjs && node test/relief.mjs && node test/mock_printers.mjs",
+    "test": "node test/run.mjs test/sample.svg cc positive && node test/run.mjs test/sample.svg k1 negative && node test/check_gcode.mjs && node test/relief.mjs && node test/mock_printers.mjs && node test/canvas_svg.mjs && node test/slice3d.cjs",
     "dist:win": "npm run build && electron-builder --win nsis portable --x64 --publish never",
     "android:sync": "npm run build && npx cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
@@ -19,10 +19,13 @@
     "@fontsource-variable/archivo": "^5.3.0",
     "@xmldom/xmldom": "^0.9.12",
     "clipper-lib": "^6.4.2",
+    "cura-wasm": "^1.5.2",
     "electron": "^45.0.0",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
     "svgpath": "^2.6.0",
+    "three": "^0.186.1",
     "ws": "^8.22.0"
   },
   "type": "module",

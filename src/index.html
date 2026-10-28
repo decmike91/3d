@@ -13,7 +13,8 @@
   <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18v3H3z" fill="currentColor" opacity=".45"/><path d="M6 14c2-6 5-9 6-9s4 3 6 9h-3c-1-3-2-5-3-5s-2 2-3 5z" fill="currentColor"/></svg>SVG2Print</div>
   <nav class="tabs" role="tablist" aria-label="Outils">
     <button role="tab" data-tab="vector">Vectoriser</button>
-    <button role="tab" data-tab="print" class="on">Imprimer</button>
+    <button role="tab" data-tab="print" class="on">Relief SVG</button>
+    <button role="tab" data-tab="model">Modèle 3D</button>
     <button role="tab" data-tab="monitor" id="monitorTab" hidden>Surveiller</button>
   </nav>
   <div class="printer-pill" id="pill">—</div>
@@ -22,6 +23,157 @@
 <section class="vector-view" id="vectorView" hidden>
   <iframe id="vectorFrame" title="Vectorisation d'image en SVG"></iframe>
 </section>
+
+<main class="layout" id="modelView" hidden>
+  <section class="stage">
+    <div class="stage-tools">
+      <div class="seg" aria-label="Vue">
+        <button data-m3view="model" class="on">Pièces</button>
+        <button data-m3view="paths" id="m3PathsBtn" disabled>Couches</button>
+      </div>
+      <div class="row" style="margin:0">
+        <label class="check" style="margin:0"><input type="checkbox" id="m3Over" checked> Surplombs</label>
+        <button class="ghost small" id="m3Cam">Recentrer</button>
+      </div>
+    </div>
+    <div class="canvas-wrap m3-wrap" id="m3Wrap">
+      <canvas id="m3Canvas"></canvas>
+      <div class="empty" id="m3Empty">
+        <p>Ouvrez un ou plusieurs fichiers STL, 3MF ou OBJ.</p>
+        <button class="primary" id="m3Open2">Ouvrir des fichiers 3D</button>
+      </div>
+      <div class="m3-loading" id="m3Busy" hidden><span></span><b id="m3BusyText">Tranchage…</b></div>
+    </div>
+    <div class="layer-bar" id="m3LayerBar" hidden>
+      <input type="range" id="m3Layer" min="0" max="0" value="0" aria-label="Couche affichée">
+      <span id="m3LayerLabel" class="tab">—</span>
+    </div>
+    <div class="legend" id="m3Legend" hidden></div>
+    <dl class="stats" id="m3Stats" hidden>
+      <div><dt>Dimensions</dt><dd id="m3Dim">—</dd></div>
+      <div><dt>Couches</dt><dd id="m3Layers">—</dd></div>
+      <div><dt>Durée</dt><dd id="m3Time">—</dd></div>
+      <div><dt>Filament</dt><dd id="m3Fil">—</dd></div>
+    </dl>
+  </section>
+
+  <aside class="controls">
+    <section class="step">
+      <h2><span class="n">1</span>Fichiers 3D</h2>
+      <input type="file" id="m3File" multiple hidden>
+      <div class="row">
+        <button class="primary" id="m3Open">Ouvrir des fichiers 3D</button>
+        <span class="file-name">STL, 3MF, OBJ</span>
+      </div>
+      <ul class="objlist" id="m3Objects"></ul>
+      <div class="row tools" id="m3ObjTools" hidden>
+        <button class="ghost" data-rot="x">Pivoter X 90°</button>
+        <button class="ghost" data-rot="y">Pivoter Y 90°</button>
+        <button class="ghost" data-rot="z">Pivoter Z 90°</button>
+      </div>
+      <div class="grid2" id="m3ScaleRow" hidden>
+        <label class="field">Échelle (%)<input type="number" id="m3Scale" min="1" step="1"></label>
+        <label class="field">Dimensions (mm)<input type="text" id="m3Size" readonly></label>
+      </div>
+      <ul class="warn" id="m3Warn"></ul>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">2</span>Placement et supports</h2>
+      <div class="seg wide" id="m3OrientSeg">
+        <button data-orient="strength"><b>Solidité</b><small>couches dans le sens des efforts</small></button>
+        <button data-orient="supports"><b>Moins de supports</b><small>surplombs minimaux</small></button>
+      </div>
+      <div class="row tools">
+        <button class="ghost" id="m3Orient">Orienter automatiquement</button>
+        <button class="ghost" id="m3Arrange">Placer automatiquement</button>
+      </div>
+      <p class="hint" id="m3OrientInfo"></p>
+      <div class="grid2">
+        <label class="field">Supports
+          <select data-j="support">
+            <option value="tree">Auto · arborescents</option>
+            <option value="normal">Auto · classiques</option>
+            <option value="none">Aucun</option>
+          </select>
+        </label>
+        <label class="field">Angle de surplomb (°)<input type="number" min="20" max="80" step="5" data-j="supportAngle"><small>Au-delà : support</small></label>
+        <label class="check"><input type="checkbox" data-j="supportBuildplateOnly"> Depuis le plateau uniquement</label>
+        <label class="field">Adhérence
+          <select data-j="adhesion">
+            <option value="auto">Automatique</option>
+            <option value="skirt">Jupe</option>
+            <option value="brim">Bordure (brim)</option>
+            <option value="none">Aucune</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">3</span>Imprimante et filament</h2>
+      <div class="seg wide" id="m3PrinterSeg">
+        <button data-printer="cc">Elegoo Centauri Carbon</button>
+        <button data-printer="k1">Creality K1 / K1C</button>
+      </div>
+      <div class="grid2">
+        <label class="field">Adresse IP
+          <input type="text" inputmode="decimal" placeholder="192.168.1.50" data-g="net" data-k="host" autocomplete="off">
+        </label>
+        <div class="field">&nbsp;<button class="ghost" id="m3Test">Tester la connexion</button></div>
+      </div>
+      <span class="conn" id="m3Conn"></span>
+      <label class="check" id="m3CanvasRow"><input type="checkbox" id="m3Canvas"> Multifilament CANVAS (4 emplacements)</label>
+      <div id="m3Slots" class="slots"></div>
+      <div class="row" id="m3CanvasTools" hidden>
+        <button class="ghost" id="m3ReadCanvas">Lire le CANVAS de l’imprimante</button>
+        <label class="check" style="margin:0"><input type="checkbox" data-j="primeTower"> Tour de purge</label>
+      </div>
+      <label class="field" id="m3FlushRow" hidden>Volume de purge (×)<input type="number" min="0.5" max="2" step="0.1" data-j="flushMultiplier"><small>Multiplie la purge calculée d’après les couleurs</small></label>
+      <ul class="warn" id="m3MatWarn"></ul>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">4</span>Qualité et solidité</h2>
+      <div class="chips" id="m3Quality" role="group" aria-label="Préréglage">
+        <button type="button" data-q="fast">Rapide</button>
+        <button type="button" data-q="standard">Standard</button>
+        <button type="button" data-q="strong">Solide</button>
+        <button type="button" data-q="max">Résistance max</button>
+      </div>
+      <div class="grid2">
+        <label class="field">Hauteur de couche (mm)<input type="number" step="0.04" min="0.08" max="0.32" data-j="layerHeight"></label>
+        <label class="field">Parois<input type="number" min="1" max="10" data-j="walls"></label>
+        <label class="field">Remplissage (%)<input type="number" min="0" max="100" step="5" data-j="infill"></label>
+        <label class="field">Motif
+          <select data-j="pattern">
+            <option value="gyroid">Gyroïde (conseillé)</option>
+            <option value="cubic">Cubique</option>
+            <option value="grid">Grille</option>
+            <option value="triangles">Triangles</option>
+            <option value="lines">Lignes</option>
+          </select>
+        </label>
+        <label class="field">Couches pleines dessus<input type="number" min="0" max="20" data-j="topLayers"></label>
+        <label class="field">Couches pleines dessous<input type="number" min="0" max="20" data-j="bottomLayers"></label>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="n">5</span>Trancher et imprimer</h2>
+      <div class="row">
+        <button class="primary" id="m3Slice" disabled>Trancher</button>
+        <button class="ghost" id="m3Save" disabled>Enregistrer le G-code</button>
+      </div>
+      <div class="progress" id="m3Progress" hidden><span></span></div>
+      <label class="check"><input type="checkbox" id="m3Start" checked> Lancer l’impression après l’envoi</label>
+      <label class="check" id="m3LevelRow"><input type="checkbox" id="m3Level" checked> Nivellement automatique avant impression</label>
+      <button class="send" id="m3Send" disabled>Envoyer à l’imprimante</button>
+      <ol class="log" id="m3Log"></ol>
+      <p class="hint" style="margin-top:12px">Tranchage par CuraEngine (WebAssembly, AGPL-3.0), entièrement sur l’appareil.</p>
+    </section>
+  </aside>
+</main>
 
 <main class="layout" id="printView">
   <section class="stage">
@@ -151,7 +303,36 @@
     <!-- 4. Filament -->
     <section class="step">
       <h2><span class="n">4</span>Filament</h2>
-      <p class="hint" id="filHint"></p>
+      <label class="field">Matière
+        <select id="matSel">
+          <option value="pla_hs">PLA HS (eSUN ePLA-HS)</option>
+          <option value="petg_hs">PETG HS (eSUN PETG+HS)</option>
+          <option value="tpu">TPU 95A (eSUN eTPU-95A)</option>
+          <option value="nylon">Nylon PA (eSUN ePA)</option>
+        </select>
+      </label>
+      <p class="hint" id="filHint" style="margin-top:8px"></p>
+      <label class="check" id="svgCanvasRow"><input type="checkbox" id="svgCanvasOn"> Plaque et motif de couleurs différentes (CANVAS)</label>
+      <div id="svgCanvasBox" hidden>
+        <div class="grid2">
+          <label class="field">Plaque : emplacement
+            <select id="svgPlateSlot"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select>
+          </label>
+          <label class="field">Couleur plaque<input type="color" id="svgPlateColor"></label>
+          <label class="field">Motif : emplacement
+            <select id="svgReliefSlot"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select>
+          </label>
+          <label class="field">Couleur motif<input type="color" id="svgReliefColor"></label>
+          <label class="field" style="grid-column:1/-1">Matière du motif
+            <select id="svgReliefMat">
+              <option value="pla_hs">PLA HS (eSUN ePLA-HS)</option>
+              <option value="petg_hs">PETG HS (eSUN PETG+HS)</option>
+              <option value="nylon">Nylon PA (eSUN ePA)</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">Un seul changement de filament, au début du motif. La plaque garde la matière choisie ci-dessus.</p>
+      </div>
       <details>
         <summary>Modifier les réglages filament</summary>
         <div class="grid2">
@@ -203,7 +384,7 @@
       <button class="send" id="sendBtn" disabled>Envoyer à l'imprimante</button>
       <ol class="log" id="log"></ol>
     </section>
-    <p class="version">SVG2Print version __VERSION__ · vectorisation Trait Fin · surveillance PrintMonitor (Android)</p>
+    <p class="version">SVG2Print version __VERSION__ · vectorisation Trait Fin · tranchage 3D CuraEngine · surveillance PrintMonitor (Android)</p>
   </aside>
 </main>
 <script src="app.js"></script>

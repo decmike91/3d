@@ -3,6 +3,8 @@
 const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
 const path = require('path');
+app.commandLine.appendSwitch('use-angle', 'swiftshader');
+app.commandLine.appendSwitch('enable-unsafe-swiftshader');
 require('../electron/main.cjs');
 const outDir = process.argv.find((a) => a.startsWith('--shots='))?.slice(8);
 

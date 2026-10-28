@@ -2,7 +2,9 @@ import { parseSVG, bounds, SCALE } from './core/svg.js';
 import { transformPattern, makePlate, clampRelief } from './core/slicer.js';
 import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
-import { sendToPrinter, testPrinter } from './net/printers.js';
+import { sendToPrinter, testPrinter, ccCanvas } from './net/printers.js';
+import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume } from './core/materials.js';
+import { initModel3D } from './model3d/ui3d.js';
 import { platform } from './net/transport.js';
 
 const $ = (s) => document.querySelector(s);
@@ -21,6 +23,7 @@ function freshState() {
     fil: { cc: defaultFilament('cc'), k1: defaultFilament('k1') },
     print: { cc: stripPart(defaultPrint('cc')), k1: stripPart(defaultPrint('k1')) },
     autoLevel: true, startAfter: true,
+    canvasSvg: { on: false, plateSlot: 0, reliefSlot: 1, reliefMat: 'pla_hs', plateColor: '#F2F2F2', reliefColor: '#202020' },
   };
 }
 function stripPart(p) { const o = { ...p }; PART_KEYS.concat('polarity').forEach((k) => delete o[k]); return o; }
@@ -32,7 +35,9 @@ try {
     state = { ...f, ...saved, xf: { ...f.xf, ...saved.xf, scale: 1, rotation: 0, mirrorX: false, mirrorY: false }, part: { ...f.part, ...saved.part },
       net: { cc: { ...f.net.cc, ...saved.net?.cc }, k1: { ...f.net.k1, ...saved.net?.k1 } },
       fil: { cc: { ...f.fil.cc, ...saved.fil?.cc }, k1: { ...f.fil.k1, ...saved.fil?.k1 } },
-      print: { cc: { ...f.print.cc, ...saved.print?.cc }, k1: { ...f.print.k1, ...saved.print?.k1 } } };
+      print: { cc: { ...f.print.cc, ...saved.print?.cc }, k1: { ...f.print.k1, ...saved.print?.k1 } },
+      canvasSvg: { ...f.canvasSvg, ...saved.canvasSvg } };
+    for (const k of ['cc', 'k1']) if (!state.fil[k].material) state.fil[k] = { ...defaultFilament(k), ...state.fil[k], material: 'petg_hs', type: 'PETG' };
   }
 } catch {}
 state.part.reliefHeight = clampRelief(state.part.reliefHeight);
@@ -78,6 +83,13 @@ function fillForm() {
   $('#discoverBtn').hidden = !(state.printer === 'cc' && platform() !== 'web');
   $('#startChk').checked = state.startAfter;
   $('#levelChk').checked = state.autoLevel;
+  $('#matSel').value = state.fil[state.printer].material || 'petg_hs';
+  const cs = state.canvasSvg;
+  $('#svgCanvasRow').hidden = state.printer !== 'cc';
+  $('#svgCanvasOn').checked = cs.on && state.printer === 'cc';
+  $('#svgCanvasBox').hidden = !(cs.on && state.printer === 'cc');
+  $('#svgPlateSlot').value = String(cs.plateSlot); $('#svgReliefSlot').value = String(cs.reliefSlot);
+  $('#svgReliefMat').value = cs.reliefMat; $('#svgPlateColor').value = cs.plateColor; $('#svgReliefColor').value = cs.reliefColor;
   const f = state.fil[state.printer];
   $('#filHint').textContent = `${f.name} — buse ${f.nozzle} °C, plateau ${f.bed} °C, ventilateur ${f.fan} %, parois pleines. Réglage optimisé pour la ${P.name}.`;
   updateSizeInputs();
@@ -238,7 +250,7 @@ $('#origBtn').addEventListener('click', () => { state.xf.scale = 1; reparse(); }
 // ---------------- Imprimante / polarité ----------------
 $('#printerSeg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  state.printer = b.dataset.printer; save(); fillForm(); rebuild(); $('#connState').textContent = '';
+  setPrinter(b.dataset.printer); $('#connState').textContent = '';
 });
 $('#reliefChips').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
@@ -248,8 +260,28 @@ $('#polaritySeg').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b) return;
   state.part.polarity = b.dataset.pol; save(); fillForm(); rebuild();
 });
-$('#resetFil').addEventListener('click', () => { state.fil[state.printer] = defaultFilament(state.printer); save(); fillForm(); invalidate(); log('Réglage filament optimisé rétabli.'); });
+$('#resetFil').addEventListener('click', () => { state.fil[state.printer] = defaultFilament(state.printer, state.fil[state.printer].material); save(); fillForm(); invalidate(); log('Réglage filament optimisé rétabli.'); });
 $('#resetPrint').addEventListener('click', () => { state.print[state.printer] = stripPart(defaultPrint(state.printer)); save(); fillForm(); invalidate(); });
+$('#matSel').addEventListener('change', (e) => {
+  state.fil[state.printer] = defaultFilament(state.printer, e.target.value);
+  save(); fillForm(); invalidate();
+  for (const n of MATERIALS[e.target.value].notes) log(n);
+});
+$('#svgCanvasOn').addEventListener('change', (e) => { state.canvasSvg.on = e.target.checked; save(); fillForm(); invalidate(); });
+for (const [id, key, num] of [['#svgPlateSlot', 'plateSlot', true], ['#svgReliefSlot', 'reliefSlot', true], ['#svgReliefMat', 'reliefMat', false], ['#svgPlateColor', 'plateColor', false], ['#svgReliefColor', 'reliefColor', false]]) {
+  $(id).addEventListener('change', (e) => { state.canvasSvg[key] = num ? +e.target.value : e.target.value; save(); invalidate(); });
+}
+function svgCanvas() {
+  const cs = state.canvasSvg;
+  if (!cs.on || state.printer !== 'cc') return null;
+  const reliefFil = materialProfile(cs.reliefMat, 'cc');
+  if (reliefFil.type === 'TPU' || state.fil.cc.type === 'TPU') throw new Error('Le TPU ne passe pas dans le CANVAS.');
+  return {
+    plateTool: cs.plateSlot, reliefTool: cs.reliefSlot, reliefFil,
+    flushVol: flushVolume(cs.plateColor, cs.reliefColor),
+    colors: { [cs.plateSlot]: cs.plateColor, [cs.reliefSlot]: cs.reliefColor },
+  };
+}
 $('#startChk').addEventListener('change', (e) => { state.startAfter = e.target.checked; save(); });
 $('#levelChk').addEventListener('change', (e) => { state.autoLevel = e.target.checked; save(); });
 
@@ -290,7 +322,7 @@ try { worker = new Worker('worker.js'); } catch { worker = null; }
 function runSlice(payload) {
   return new Promise((resolve, reject) => {
     if (!worker) {
-      try { resolve(sliceSync(payload.pattern, payload.printerId, payload.print, payload.fil, { thumbnails: payload.thumbnails })); } catch (e) { reject(e); }
+      try { resolve(sliceSync(payload.pattern, payload.printerId, payload.print, payload.fil, { thumbnails: payload.thumbnails, canvas: payload.canvas })); } catch (e) { reject(e); }
       return;
     }
     worker.onmessage = (e) => {
@@ -311,7 +343,8 @@ async function doSlice() {
   const t0 = performance.now();
   try {
     const thumbs = PRINTERS[state.printer].thumbnails.map(([w, h]) => ({ w, h, base64: thumbnail(w, h) }));
-    sliced = await runSlice({ pattern, printerId: state.printer, print: printParams(), fil: state.fil[state.printer], thumbnails: thumbs });
+    sliced = await runSlice({ pattern, printerId: state.printer, print: printParams(), fil: state.fil[state.printer], thumbnails: thumbs, canvas: svgCanvas() });
+    if (sliced.stats.tools && sliced.stats.tools.length > 1) log(`Changement de filament CANVAS au début du motif : emplacement ${sliced.stats.tools[0] + 1} → ${sliced.stats.tools[1] + 1}.`);
     const s = sliced.stats;
     $('#stLayers').textContent = `${s.layers} · ${s.maxZ.toFixed(1)} mm`;
     $('#stTime').textContent = fmtTime(s.timeSec);
@@ -502,6 +535,15 @@ function thumbnail(w, h) {
   return c.toDataURL('image/png').split(',')[1];
 }
 
+// ---------------- Onglet Modèle 3D ----------------
+let m3 = null;
+function setPrinter(p) {
+  state.printer = p; save(); fillForm(); rebuild();
+  if (m3) m3.onPrinterChange();
+}
+m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, setPrinter });
+globalThis.__m3 = m3;
+
 // ---------------- Onglets : Vectoriser / Imprimer / Surveiller ----------------
 const TAB_STORE = 'svg2print.tab';
 function showTab(t) {
@@ -509,6 +551,8 @@ function showTab(t) {
   $$('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
   $('#vectorView').hidden = t !== 'vector';
   $('#printView').hidden = t !== 'print';
+  $('#modelView').hidden = t !== 'model';
+  if (t === 'model') m3.show();
   if (t === 'vector' && !$('#vectorFrame').src) $('#vectorFrame').src = 'vector.html';
   if (t === 'print') requestAnimationFrame(draw);
   try { localStorage.setItem(TAB_STORE, t); } catch {}
@@ -549,4 +593,4 @@ fillForm();
 draw();
 let startTab = 'print';
 try { startTab = localStorage.getItem(TAB_STORE) || 'print'; } catch {}
-showTab(startTab === 'vector' ? 'vector' : 'print');
+showTab(['vector', 'model'].includes(startTab) ? startTab : 'print');
