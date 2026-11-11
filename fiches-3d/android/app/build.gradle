@@ -1,0 +1,45 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace = 'fr.fiches3d.app'
+    compileSdk = 36
+    defaultConfig {
+        applicationId 'fr.fiches3d.app'
+        minSdk = 24
+        targetSdk = 36
+        // Numéro de version augmenté à chaque compilation GitHub : Android accepte la mise à jour
+        def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
+        versionCode 1 + runNumber
+        versionName '1.0.' + runNumber
+    }
+    // Clé de signature FIXE : chaque nouvelle version s'installe par-dessus l'ancienne.
+    // (Variables FICHES_KEYSTORE_* pour utiliser une autre clé.)
+    signingConfigs {
+        fiches3d {
+            storeFile file(System.getenv('FICHES_KEYSTORE_FILE') ?: '../fiches3d.keystore')
+            storePassword System.getenv('FICHES_KEYSTORE_PASSWORD') ?: 'fiches3d'
+            keyAlias System.getenv('FICHES_KEY_ALIAS') ?: 'fiches3d'
+            keyPassword System.getenv('FICHES_KEY_PASSWORD') ?: 'fiches3d'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.fiches3d }
+        release { signingConfig signingConfigs.fiches3d; minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Le site construit par « node build.mjs » (dossier ../web) est embarqué tel quel dans l'APK.
+def webDir = file('../../web')
+tasks.register('copyWeb', Copy) {
+    doFirst {
+        if (!new File(webDir, 'index.html').exists())
+            throw new GradleException("Lancer d'abord « node build.mjs » dans fiches-3d/ (web/index.html manquant)")
+    }
+    from webDir
+    into 'src/main/assets/www'
+}
+tasks.named('preBuild') { dependsOn 'copyWeb' }

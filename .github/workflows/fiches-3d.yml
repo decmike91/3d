@@ -1,0 +1,55 @@
+name: Fiches 3D — site HTML et appli Android
+
+on:
+  push:
+    branches: [main]
+    paths: ['fiches-3d/**', '.github/workflows/fiches-3d.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    defaults: { run: { working-directory: fiches-3d } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: fiches-3d/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - name: Construire le site HTML (web/)
+        run: node build.mjs
+      - name: Compiler l'APK
+        working-directory: fiches-3d/android
+        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Préparer les fichiers
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk Fiches3D-android.apk
+          cp web/index.html Fiches3D.html
+          (cd web && zip -qr ../Fiches3D-site.zip .)
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs Fiches3D-android.apk | head -3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fiches3D
+          path: |
+            fiches-3d/Fiches3D-android.apk
+            fiches-3d/Fiches3D.html
+            fiches-3d/Fiches3D-site.zip
+      # Page « Releases » : téléchargement direct depuis le téléphone
+      - name: Publier (release fiches-3d)
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: fiches-3d
+          name: Fiches impression 3D — dernière version
+          prerelease: true
+          make_latest: false
+          body: |
+            Compilée automatiquement depuis la branche main (${{ github.sha }}).
+            - **Android** : installer `Fiches3D-android.apk` (autoriser l'installation d'applications inconnues). Fonctionne sans connexion.
+            - **HTML** : `Fiches3D.html` s'ouvre directement dans un navigateur (fichier unique). `Fiches3D-site.zip` contient la version installable (PWA) à héberger.
+          files: |
+            fiches-3d/Fiches3D-android.apk
+            fiches-3d/Fiches3D.html
+            fiches-3d/Fiches3D-site.zip

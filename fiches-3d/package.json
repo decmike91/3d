@@ -1,0 +1,15 @@
+{
+  "name": "fiches-3d",
+  "version": "1.0.0",
+  "description": "Fiches impression 3D FDM : site hors connexion et appli Android",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "marked": "^15.0.12"
+  },
+  "private": true,
+  "type": "module"
+}

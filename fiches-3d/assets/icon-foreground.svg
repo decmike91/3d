@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><g transform="translate(256 256) scale(0.62) translate(-256 -246)">
+  
+  <!-- buse -->
+  <path d="M196 92h120v64h-24l-20 44h-32l-20-44h-24z" fill="#e9e4dc"/>
+  <path d="M244 200h24l-12 22z" fill="#ff7a1a"/>
+  <!-- couches imprimées -->
+  <rect x="120" y="262" width="272" height="34" rx="17" fill="#ff7a1a"/>
+  <rect x="104" y="306" width="304" height="34" rx="17" fill="#f2a04d"/>
+  <rect x="120" y="350" width="272" height="34" rx="17" fill="#ff7a1a"/>
+  <rect x="88" y="406" width="336" height="16" rx="8" fill="#5a544d"/>
+</g></svg>

@@ -1,0 +1,2648 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fiches impression 3D</title>
+<meta name="description" content="Fiches pratiques d'impression 3D FDM : Creality Print, ElegooSlicer, problèmes, remplissage, supports, filaments.">
+<meta name="theme-color" content="#1d1b19">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#fffdf9; --surface-2:#efe9e0; --text:#25211d; --muted:#6d655c;
+  --line:#ddd4c7; --accent:#d9620b; --accent-soft:#fde6d3; --head:#1d1b19; --head-text:#f3eee7;
+  --mark:#ffd58a; --code:#f1ebe2; --fs:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151311; --surface:#1d1a17; --surface-2:#26221e; --text:#ece6de; --muted:#a69c90;
+    --line:#38322c; --accent:#ff8c3a; --accent-soft:#3a2615; --head:#0f0d0c; --head-text:#f3eee7;
+    --mark:#7a4d10; --code:#2a2520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151311; --surface:#1d1a17; --surface-2:#26221e; --text:#ece6de; --muted:#a69c90;
+  --line:#38322c; --accent:#ff8c3a; --accent-soft:#3a2615; --head:#0f0d0c; --head-text:#f3eee7;
+  --mark:#7a4d10; --code:#2a2520;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs);scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;line-height:1.55;
+  -webkit-text-size-adjust:100%}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:30;background:var(--head);color:var(--head-text);
+  display:flex;align-items:center;gap:8px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));
+  box-shadow:0 1px 0 rgba(0,0,0,.25)}
+header.top .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.2px;white-space:nowrap;
+  color:inherit;text-decoration:none}
+header.top .brand img{width:28px;height:28px;border-radius:7px}
+header.top .brand span{display:none}
+@media (min-width:560px){header.top .brand span{display:inline}}
+.iconbtn{background:transparent;border:0;color:inherit;width:40px;height:40px;border-radius:10px;
+  display:inline-grid;place-items:center;cursor:pointer;font-size:18px;flex:none}
+.iconbtn:hover,.iconbtn:focus-visible{background:rgba(255,255,255,.12);outline:none}
+.search{flex:1;min-width:0;position:relative}
+.search input{width:100%;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);color:var(--head-text);padding:0 12px 0 34px;font-size:15px}
+.search input::placeholder{color:rgba(243,238,231,.6)}
+.search svg{position:absolute;left:10px;top:11px;opacity:.7}
+.layout{display:flex;max-width:1280px;margin:0 auto}
+nav.side{width:300px;flex:none;position:sticky;top:56px;align-self:flex-start;height:calc(100vh - 56px);
+  overflow:auto;padding:14px 10px 40px;border-right:1px solid var(--line)}
+nav.side .grp{margin-bottom:6px}
+nav.side a.rub{display:block;padding:8px 10px;border-radius:8px;color:var(--text);text-decoration:none;font-weight:650}
+nav.side a.rub.active{background:var(--accent-soft);color:var(--accent)}
+nav.side .subs{display:none;margin:2px 0 8px 8px;border-left:2px solid var(--line)}
+nav.side .grp.open .subs{display:block}
+nav.side .subs a{display:block;padding:5px 10px;color:var(--muted);text-decoration:none;font-size:.88rem;line-height:1.3}
+nav.side .subs a:hover,nav.side .subs a.cur{color:var(--accent)}
+.scrim{display:none}
+.tools{display:flex}
+.navtools{display:none;align-items:center;gap:4px;padding:0 6px 12px;margin-bottom:10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:.85rem}
+.navtools span{flex:1}
+.navtools .iconbtn:hover{background:var(--surface-2)}
+@media (max-width:640px){
+  .tools.wide{display:none}
+  .navtools{display:flex}
+  .results{position:fixed;left:8px;right:8px;top:58px;max-height:calc(100vh - 80px)}
+}
+@media (max-width:900px){
+  nav.side{position:fixed;left:0;top:0;height:100%;z-index:50;background:var(--surface);
+    transform:translateX(-102%);transition:transform .2s ease;width:min(86vw,330px);
+    padding-top:max(14px,env(safe-area-inset-top));box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  body.menu nav.side{transform:none}
+  body.menu .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}
+}
+@media (min-width:901px){#menuBtn{display:none}}
+main{flex:1;min-width:0;padding:16px 16px 96px}
+@media (min-width:901px){main{padding:24px 36px 96px}}
+section.rubrique{display:none;max-width:860px}
+section.rubrique.show{display:block}
+h1{font-size:1.65rem;line-height:1.2;margin:.2em 0 .6em;letter-spacing:-.2px}
+h2{font-size:1.25rem;margin:2em 0 .6em;padding:10px 14px;background:var(--surface-2);border-left:5px solid var(--accent);border-radius:6px}
+h3{font-size:1.06rem;margin:1.6em 0 .4em;color:var(--accent)}
+p,li{overflow-wrap:anywhere}
+ul,ol{padding-left:1.3em}
+li{margin:.25em 0}
+strong{font-weight:700}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:90px}
+th{background:var(--surface-2);font-weight:700;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.results{position:absolute;left:0;right:0;top:44px;background:var(--surface);color:var(--text);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);max-height:70vh;overflow:auto;display:none}
+.results.show{display:block}
+.results a{display:block;padding:10px 12px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text)}
+.results a:hover,.results a.sel{background:var(--accent-soft)}
+.results .where{font-size:.78rem;color:var(--muted);margin-bottom:2px}
+.results .snip{font-size:.9rem}
+.results .none{padding:14px;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+.pager a{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--text);background:var(--surface)}
+.pager a small{display:block;color:var(--muted)}
+.pager a.next{text-align:right}
+#topBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;
+  border:0;background:var(--accent);color:#fff;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none;cursor:pointer;z-index:20}
+#topBtn.show{display:block}
+.flash{animation:flash 1.6s ease}
+@keyframes flash{0%{background:var(--mark)}100%{background:transparent}}
+footer.ver{color:var(--muted);font-size:.8rem;margin-top:24px}
+@media print{header.top,nav.side,#topBtn,.pager{display:none}section.rubrique{display:block!important}main{padding:0}}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+  <a class="brand" href="#/accueil"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjExMiIgZmlsbD0iIzFkMWIxOSIvPgogIDwhLS0gYnVzZSAtLT4KICA8cGF0aCBkPSJNMTk2IDkyaDEyMHY2NGgtMjRsLTIwIDQ0aC0zMmwtMjAtNDRoLTI0eiIgZmlsbD0iI2U5ZTRkYyIvPgogIDxwYXRoIGQ9Ik0yNDQgMjAwaDI0bC0xMiAyMnoiIGZpbGw9IiNmZjdhMWEiLz4KICA8IS0tIGNvdWNoZXMgaW1wcmltw6llcyAtLT4KICA8cmVjdCB4PSIxMjAiIHk9IjI2MiIgd2lkdGg9IjI3MiIgaGVpZ2h0PSIzNCIgcng9IjE3IiBmaWxsPSIjZmY3YTFhIi8+CiAgPHJlY3QgeD0iMTA0IiB5PSIzMDYiIHdpZHRoPSIzMDQiIGhlaWdodD0iMzQiIHJ4PSIxNyIgZmlsbD0iI2YyYTA0ZCIvPgogIDxyZWN0IHg9IjEyMCIgeT0iMzUwIiB3aWR0aD0iMjcyIiBoZWlnaHQ9IjM0IiByeD0iMTciIGZpbGw9IiNmZjdhMWEiLz4KICA8cmVjdCB4PSI4OCIgeT0iNDA2IiB3aWR0aD0iMzM2IiBoZWlnaHQ9IjE2IiByeD0iOCIgZmlsbD0iIzVhNTQ0ZCIvPgo8L3N2Zz4K" alt=""><span>Fiches 3D</span></a>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Rechercher (ex. stringing, PETG, couture)" autocomplete="off" aria-label="Rechercher">
+    <div class="results" id="results" role="listbox"></div>
+  </div>
+  <span class="tools wide">
+    <button class="iconbtn js-smaller" aria-label="Texte plus petit" title="Texte plus petit">A−</button>
+    <button class="iconbtn js-bigger" aria-label="Texte plus grand" title="Texte plus grand">A+</button>
+    <button class="iconbtn js-theme" aria-label="Thème clair ou sombre" title="Thème"><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+  </span>
+</header>
+<div class="scrim" id="scrim"></div>
+<div class="layout">
+  <nav class="side" id="side" aria-label="Sommaire">
+    <div class="navtools">
+      <span>Affichage</span>
+      <button class="iconbtn js-smaller" aria-label="Texte plus petit">A−</button>
+      <button class="iconbtn js-bigger" aria-label="Texte plus grand">A+</button>
+      <button class="iconbtn js-theme" aria-label="Thème clair ou sombre"><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    </div><div class="grp" data-slug="accueil"><a class="rub" href="#/accueil">Accueil</a><div class="subs"><a href="#/accueil/accueil--mode-d-emploi">Mode d'emploi</a><a href="#/accueil/accueil--vocabulaire-de-base">Vocabulaire de base</a><a href="#/accueil/accueil--sommaire-des-jeux-de-fiches">Sommaire des jeux de fiches</a><a href="#/accueil/accueil--sources-logiciels">Sources logiciels</a></div></div><div class="grp" data-slug="creality-print"><a class="rub" href="#/creality-print">1. Creality Print</a><div class="subs"><a href="#/creality-print/creality-print--fiche-cp-01-qualite-couches-et-lignes">Fiche CP-01 — Qualité : couches et lignes</a><a href="#/creality-print/creality-print--fiche-cp-02-resistance-parois-et-coques">Fiche CP-02 — Résistance : parois et coques</a><a href="#/creality-print/creality-print--fiche-cp-03-remplissage-rappel-rapide">Fiche CP-03 — Remplissage (rappel rapide)</a><a href="#/creality-print/creality-print--fiche-cp-04-vitesse-et-acceleration">Fiche CP-04 — Vitesse et accélération</a><a href="#/creality-print/creality-print--fiche-cp-05-refroidissement-dans-le-prereglage-filament">Fiche CP-05 — Refroidissement (dans le préréglage Filament)</a><a href="#/creality-print/creality-print--fiche-cp-06-filament-temperatures-debit-retraction">Fiche CP-06 — Filament : températures, débit, rétraction</a><a href="#/creality-print/creality-print--fiche-cp-07-adherence-et-autres">Fiche CP-07 — Adhérence et autres</a><a href="#/creality-print/creality-print--fiche-cp-08-prereglage-imprimante-a-toucher-rarement">Fiche CP-08 — Préréglage Imprimante (à toucher rarement)</a><a href="#/creality-print/creality-print--fiche-cp-09-menu-calibration-ordre-conseille">Fiche CP-09 — Menu Calibration (ordre conseillé)</a></div></div><div class="grp" data-slug="elegooslicer"><a class="rub" href="#/elegooslicer">2. ElegooSlicer</a><div class="subs"><a href="#/elegooslicer/elegooslicer--fiche-es-01-onglet-qualite">Fiche ES-01 — Onglet Qualité</a><a href="#/elegooslicer/elegooslicer--fiche-es-02-onglet-resistance">Fiche ES-02 — Onglet Résistance</a><a href="#/elegooslicer/elegooslicer--fiche-es-03-onglet-vitesse">Fiche ES-03 — Onglet Vitesse</a><a href="#/elegooslicer/elegooslicer--fiche-es-04-onglet-support-resume">Fiche ES-04 — Onglet Support (résumé)</a><a href="#/elegooslicer/elegooslicer--fiche-es-05-onglet-multimateriau">Fiche ES-05 — Onglet Multimatériau</a><a href="#/elegooslicer/elegooslicer--fiche-es-06-onglet-autres">Fiche ES-06 — Onglet Autres</a><a href="#/elegooslicer/elegooslicer--fiche-es-07-prereglage-filament">Fiche ES-07 — Préréglage Filament</a><a href="#/elegooslicer/elegooslicer--fiche-es-08-prereglage-imprimante">Fiche ES-08 — Préréglage Imprimante</a><a href="#/elegooslicer/elegooslicer--fiche-es-09-menu-calibration">Fiche ES-09 — Menu Calibration</a><a href="#/elegooslicer/elegooslicer--differences-pratiques-avec-creality-print">Différences pratiques avec Creality Print</a></div></div><div class="grp" data-slug="problemes"><a class="rub" href="#/problemes">3. Problèmes d'impression</a><div class="subs"><a href="#/problemes/problemes--diagnostic-rapide">Diagnostic rapide</a><a href="#/problemes/problemes--p-01-la-premiere-couche-ne-colle-pas">P-01 — La première couche ne colle pas</a><a href="#/problemes/problemes--p-02-warping-les-coins-se-relevent">P-02 — Warping : les coins se relèvent</a><a href="#/problemes/problemes--p-03-patte-d-elephant">P-03 — Patte d'éléphant</a><a href="#/problemes/problemes--p-04-stringing-fils-toiles-d-araignee">P-04 — Stringing (fils, toiles d'araignée)</a><a href="#/problemes/problemes--p-05-sous-extrusion">P-05 — Sous-extrusion</a><a href="#/problemes/problemes--p-06-sur-extrusion">P-06 — Sur-extrusion</a><a href="#/problemes/problemes--p-07-delamination-les-couches-se-separent">P-07 — Délamination : les couches se séparent</a><a href="#/problemes/problemes--p-08-decalage-de-couches-layer-shift">P-08 — Décalage de couches (layer shift)</a><a href="#/problemes/problemes--p-09-ghosting-ringing-echos-et-ondulations">P-09 — Ghosting / ringing (échos et ondulations)</a><a href="#/problemes/problemes--p-10-surplombs-et-ponts-rates">P-10 — Surplombs et ponts ratés</a><a href="#/problemes/problemes--p-11-dessus-troues-ou-bosseles-pillowing">P-11 — Dessus troués ou bosselés (pillowing)</a><a href="#/problemes/problemes--p-12-bouchage-claquement-de-l-extrudeur">P-12 — Bouchage, claquement de l'extrudeur</a><a href="#/problemes/problemes--p-13-bandes-horizontales-z-banding">P-13 — Bandes horizontales (Z-banding)</a><a href="#/problemes/problemes--p-14-bourrelets-points-zits-et-couture-trop-visible">P-14 — Bourrelets, points (zits) et couture trop visible</a><a href="#/problemes/problemes--p-15-coins-gonfles-ou-arrondis">P-15 — Coins gonflés ou arrondis</a><a href="#/problemes/problemes--p-16-cotes-fausses-trous-trop-petits-pieces-qui-ne-s-emboite">P-16 — Cotes fausses, trous trop petits, pièces qui ne s'emboîtent pas</a><a href="#/problemes/problemes--p-17-petites-pieces-ou-pointes-fondues">P-17 — Petites pièces ou pointes fondues</a><a href="#/problemes/problemes--p-18-filament-humide">P-18 — Filament humide</a><a href="#/problemes/problemes--p-19-spaghetti-la-piece-est-arrachee-en-cours">P-19 — « Spaghetti » : la pièce est arrachée en cours</a><a href="#/problemes/problemes--p-20-problemes-typiques-par-materiau">P-20 — Problèmes typiques par matériau</a></div></div><div class="grp" data-slug="remplissage"><a class="rub" href="#/remplissage">4. Remplissage</a><div class="subs"><a href="#/remplissage/remplissage--r-01-choisir-vite-le-bon-remplissage-selon-l-usage">R-01 — Choisir vite : le bon remplissage selon l'usage</a><a href="#/remplissage/remplissage--r-02-tableau-comparatif-des-motifs">R-02 — Tableau comparatif des motifs</a><a href="#/remplissage/remplissage--r-03-fiches-par-motif">R-03 — Fiches par motif</a><a href="#/remplissage/remplissage--r-04-les-parametres-du-remplissage">R-04 — Les paramètres du remplissage</a><a href="#/remplissage/remplissage--r-05-astuces-avancees">R-05 — Astuces avancées</a></div></div><div class="grp" data-slug="supports"><a class="rub" href="#/supports">5. Supports</a><div class="subs"><a href="#/supports/supports--s-01-avant-d-ajouter-des-supports-en-a-t-on-besoin">S-01 — Avant d'ajouter des supports : en a-t-on besoin ?</a><a href="#/supports/supports--s-02-normal-ou-arborescent">S-02 — Normal ou arborescent ?</a><a href="#/supports/supports--s-03-les-parametres-de-base">S-03 — Les paramètres de base</a><a href="#/supports/supports--s-04-les-distances-le-secret-du-retrait-facile">S-04 — Les distances : le secret du retrait facile</a><a href="#/supports/supports--s-05-l-interface-la-zone-de-contact">S-05 — L'interface : la zone de contact</a><a href="#/supports/supports--s-06-corps-du-support">S-06 — Corps du support</a><a href="#/supports/supports--s-07-recettes-pretes-a-l-emploi-buse-0-4-couche-0-2-mm">S-07 — Recettes prêtes à l'emploi (buse 0,4, couche 0,2 mm)</a><a href="#/supports/supports--s-08-retirer-les-supports-sans-abimer-la-piece">S-08 — Retirer les supports sans abîmer la pièce</a><a href="#/supports/supports--s-09-problemes-de-supports">S-09 — Problèmes de supports</a></div></div><div class="grp" data-slug="filaments"><a class="rub" href="#/filaments">6. Filaments</a><div class="subs"><a href="#/filaments/filaments--f-00-comparatif-des-cinq-matieres">F-00 — Comparatif des cinq matières</a><a href="#/filaments/filaments--f-01-pla">F-01 — PLA</a><a href="#/filaments/filaments--f-02-petg">F-02 — PETG</a><a href="#/filaments/filaments--f-03-tpu-flexible">F-03 — TPU (flexible)</a><a href="#/filaments/filaments--f-04-asa">F-04 — ASA</a><a href="#/filaments/filaments--f-05-nylon-pa-polyamide">F-05 — Nylon (PA, polyamide)</a><a href="#/filaments/filaments--f-06-creer-son-propre-profil-filament-methode">F-06 — Créer son propre profil filament (méthode)</a><a href="#/filaments/filaments--sources">Sources</a></div></div></nav>
+  <main id="main">
+<section class="rubrique" id="r-accueil">
+<h1 id="accueil--fiches-impression-3d-fdm">Fiches impression 3D FDM</h1>
+<p>Version du 11 novembre 2026</p>
+<h2 id="accueil--mode-d-emploi">Mode d&#39;emploi</h2>
+<p>Ces fiches couvrent les deux trancheurs (« slicers ») actuels des marques Creality et Elegoo, puis les problèmes d&#39;impression, le remplissage, les supports et les réglages filament. Chaque jeu de fiches est dans sa propre rubrique (menu ☰).</p>
+<p><strong>Versions couvertes (novembre 2026)</strong> : Creality Print 7.x (7.3.0 sortie le 9 octobre 2026) et ElegooSlicer 1.5.x (1.5.3.4, basée sur OrcaSlicer 2.4.2). L&#39;ancien « Creality Slicer » (basé sur Cura) n&#39;est plus développé : si vous l&#39;avez encore, passez à Creality Print, qui le remplace.</p>
+<p><strong>Bon à savoir</strong> : Creality Print et ElegooSlicer descendent tous les deux de la même famille de logiciels (Slic3r → PrusaSlicer → Bambu Studio → OrcaSlicer). La majorité des paramètres portent donc le même nom et ont le même effet. Les fiches signalent quand un réglage n&#39;existe que dans un des deux logiciels.</p>
+<p><strong>Comment lire une fiche</strong> : chaque paramètre suit toujours le même plan.</p>
+<ul>
+<li><strong>C&#39;est quoi</strong> : ce que fait le réglage, en mots simples.</li>
+<li><strong>Effet</strong> : ce qui change sur la pièce quand on monte ou baisse la valeur.</li>
+<li><strong>Valeurs typiques</strong> : un point de départ pour une buse de 0,4 mm.</li>
+<li><strong>Exemple</strong> : un cas concret.</li>
+</ul>
+<p><strong>Règle d&#39;or du débutant</strong> : partez toujours du profil fourni par le logiciel pour votre imprimante et votre filament, ne changez qu&#39;<strong>un seul</strong> paramètre à la fois, et notez ce que vous avez changé.</p>
+<h2 id="accueil--vocabulaire-de-base">Vocabulaire de base</h2>
+<p>Ces mots reviennent dans toutes les fiches. Gardez ce tableau sous la main.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Mot</th>
+<th>Ce que ça veut dire</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>FDM / FFF</td>
+<td>Impression par dépôt de fil fondu : un fil de plastique est fondu dans une buse chaude et déposé couche par couche.</td>
+</tr>
+<tr>
+<td>Trancheur (slicer)</td>
+<td>Logiciel qui découpe le modèle 3D en couches et calcule le trajet de la buse. Il produit un fichier G-code.</td>
+</tr>
+<tr>
+<td>G-code</td>
+<td>Liste d&#39;instructions lue par l&#39;imprimante (déplacements, températures, ventilateur…).</td>
+</tr>
+<tr>
+<td>Buse</td>
+<td>Pièce métallique percée par où sort le plastique fondu. Diamètre courant : 0,4 mm.</td>
+</tr>
+<tr>
+<td>Hotend</td>
+<td>Bloc chauffant qui fond le filament, avec la buse au bout.</td>
+</tr>
+<tr>
+<td>Extrudeur</td>
+<td>Moteur et engrenages qui poussent le filament vers la buse. « Direct drive » = monté sur la tête ; « Bowden » = déporté avec un long tube.</td>
+</tr>
+<tr>
+<td>Plateau</td>
+<td>Surface chauffante sur laquelle la pièce est imprimée (PEI lisse, PEI texturé, verre…).</td>
+</tr>
+<tr>
+<td>Couche</td>
+<td>Une tranche horizontale de la pièce. Son épaisseur = la hauteur de couche.</td>
+</tr>
+<tr>
+<td>Paroi / périmètre</td>
+<td>Contour extérieur et intérieurs de chaque couche. Ce sont eux qui donnent la solidité.</td>
+</tr>
+<tr>
+<td>Coque (dessus/dessous)</td>
+<td>Couches pleines qui ferment la pièce en haut et en bas.</td>
+</tr>
+<tr>
+<td>Remplissage (infill)</td>
+<td>Structure interne alvéolée qui remplit l&#39;intérieur de la pièce.</td>
+</tr>
+<tr>
+<td>Rétraction</td>
+<td>Petit recul du filament avant un déplacement, pour éviter qu&#39;il coule et fasse des fils.</td>
+</tr>
+<tr>
+<td>Surplomb (overhang)</td>
+<td>Partie de la pièce qui « déborde » dans le vide par rapport à la couche du dessous.</td>
+</tr>
+<tr>
+<td>Pont (bridge)</td>
+<td>Filament tendu dans le vide entre deux appuis.</td>
+</tr>
+<tr>
+<td>Support</td>
+<td>Structure temporaire imprimée sous un surplomb, retirée après impression.</td>
+</tr>
+<tr>
+<td>Débit (flow)</td>
+<td>Quantité de plastique extrudée. 100 % = la quantité calculée.</td>
+</tr>
+<tr>
+<td>Pressure Advance (PA)</td>
+<td>Compensation de la pression dans la buse pour éviter les coins gonflés et les débuts de ligne maigres.</td>
+</tr>
+<tr>
+<td>Warping</td>
+<td>Décollement et relèvement des coins de la pièce à cause du retrait du plastique en refroidissant.</td>
+</tr>
+<tr>
+<td>Stringing</td>
+<td>Fils fins comme des toiles d&#39;araignée entre deux parties de la pièce.</td>
+</tr>
+<tr>
+<td>Couture (seam)</td>
+<td>Petite marque verticale à l&#39;endroit où chaque couche commence et finit.</td>
+</tr>
+<tr>
+<td>Hygroscopique</td>
+<td>Se dit d&#39;un filament qui absorbe l&#39;humidité de l&#39;air (PETG, TPU, nylon surtout).</td>
+</tr>
+</tbody></table></div>
+<h2 id="accueil--sommaire-des-jeux-de-fiches">Sommaire des jeux de fiches</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Rubrique</th>
+<th>Contenu</th>
+<th>Fiches</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="#/creality-print">1. Creality Print</a></td>
+<td>Tous les paramètres de Creality Print 7 : qualité, parois, vitesse, refroidissement, filament, adhérence, imprimante, calibration</td>
+<td>CP-01 à CP-09</td>
+</tr>
+<tr>
+<td><a href="#/elegooslicer">2. ElegooSlicer</a></td>
+<td>Tous les paramètres d&#39;ElegooSlicer 1.5 par onglet, calibration, différences avec Creality Print</td>
+<td>ES-01 à ES-09</td>
+</tr>
+<tr>
+<td><a href="#/problemes">3. Problèmes d&#39;impression</a></td>
+<td>Tableau de diagnostic et 20 fiches symptôme → causes → remèdes</td>
+<td>P-01 à P-20</td>
+</tr>
+<tr>
+<td><a href="#/remplissage">4. Remplissage</a></td>
+<td>Choix du remplissage, comparatif de tous les motifs, avantages et inconvénients, paramètres</td>
+<td>R-01 à R-05</td>
+</tr>
+<tr>
+<td><a href="#/supports">5. Supports</a></td>
+<td>Quand en mettre, normal ou arborescent, distances, interface, recettes, retrait sans marque</td>
+<td>S-01 à S-09</td>
+</tr>
+<tr>
+<td><a href="#/filaments">6. Filaments</a></td>
+<td>PLA, PETG, TPU, ASA, nylon : réglages trancheur et valeurs par marque (eSUN, Creality, Elegoo, Amazon/SUNLU, Polyfab3D/Forshape)</td>
+<td>F-00 à F-06</td>
+</tr>
+</tbody></table></div>
+<p><strong>Par où commencer si vous débutez</strong> : lisez CP-01/ES-01 (qualité) et CP-02/ES-02 (parois), puis R-01 (choisir un remplissage), puis la fiche de votre filament. Gardez la rubrique Problèmes pour le jour où une impression rate.</p>
+<h2 id="accueil--sources-logiciels">Sources logiciels</h2>
+<ul>
+<li><a href="https://wiki.creality.com/en/software/6-0/release-notes-7-0-0">Creality Print 7.0.0 — notes de version</a></li>
+<li><a href="https://forum.creality.com/t/creality-print-7-0-0-release-notes/49346">Creality Print 7.0.0 — forum Creality</a></li>
+<li><a href="https://wiki.creality.com/en/software/6-0/release-notes-7-1-0">Creality Print 7.1.0 — notes de version</a></li>
+<li><a href="https://newreleases.io/project/github/CrealityOfficial/CrealityPrint/release/v7.0.1">Creality Print 7.0.1 — notes de version</a></li>
+<li><a href="https://wiki.creality.com/en/software/6-0/Quick-Start/release-notes">Creality Print 6.0 — notes de version</a></li>
+<li><a href="https://wiki.creality.com/en/software/6-0/release-notes-6-2-0">Creality Print 6.2.0 — notes de version</a></li>
+<li><a href="https://www.creality.com/fr/download/creality-k2-plus-cfs-combo">Centre de téléchargement Creality (version 7.3.0)</a></li>
+<li><a href="https://github.com/ELEGOO-3D/ElegooSlicer">ElegooSlicer — dépôt GitHub</a></li>
+<li><a href="https://github.com/elegoo-repo/ElegooSlicer/releases">ElegooSlicer — versions publiées</a></li>
+<li><a href="https://newreleases.io/project/github/elegooofficial/ElegooSlicer/release/v1.5.3.4">ElegooSlicer 1.5.3.4 — fusion OrcaSlicer 2.4.2</a></li>
+<li><a href="https://openelab.io/blogs/learn/what-is-the-newest-version-of-elegoo-slicer-latest-release-features-and-download-guide">ElegooSlicer — historique et versions (OpenELAB)</a></li>
+</ul>
+<p>Les sources des valeurs de filaments sont en bas de la rubrique <a href="#/filaments">6. Filaments</a>.</p>
+<div class="pager"><span></span><a class="next" href="#/creality-print"><small>Suivant →</small>1. Creality Print</a></div>
+</section>
+<section class="rubrique" id="r-creality-print">
+<h1 id="creality-print--fiches-creality-print-7">Fiches Creality Print 7</h1>
+<p>Creality Print est le trancheur gratuit de Creality (Windows, macOS, Linux). La version 7 apporte une analyse IA des supports, de nouveaux motifs de remplissage, l&#39;imbrication parois-remplissage et le lissage des interfaces de support. Les noms ci-dessous sont ceux de l&#39;interface en français ; entre parenthèses, le nom anglais quand il aide à chercher sur Internet.</p>
+<p><strong>Où sont les réglages ?</strong> Trois familles de préréglages en haut à gauche : <strong>Imprimante</strong>, <strong>Filament</strong> et <strong>Processus</strong> (aussi appelé « Traitement » ou « Process »). Les réglages de processus sont rangés en onglets : Qualité, Résistance, Vitesse, Support, Autres. Cliquez sur l&#39;icône <strong>Avancé</strong> (ou « Mode expert ») pour voir tous les paramètres.</p>
+<p><strong>Astuce</strong> : un paramètre modifié apparaît en orange ; la petite flèche à côté le remet à la valeur d&#39;origine du profil.</p>
+<h2 id="creality-print--fiche-cp-01-qualite-couches-et-lignes">Fiche CP-01 — Qualité : couches et lignes</h2>
+<h3 id="creality-print--hauteur-de-couche-layer-height">Hauteur de couche (Layer height)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : l&#39;épaisseur de chaque tranche de plastique déposée.</li>
+<li><strong>Effet</strong> : plus fin = surface plus lisse et détails plus nets, mais impression plus longue. Plus épais = plus rapide, lignes de couche visibles, pièce souvent un peu plus solide entre couches.</li>
+<li><strong>Valeurs typiques (buse 0,4)</strong> : 0,08–0,12 mm (figurine, détails), 0,16 mm (bon compromis), 0,20 mm (standard), 0,24–0,28 mm (pièce rapide). Règle : ne pas dépasser 75 % du diamètre de buse.</li>
+<li><strong>Exemple</strong> : une figurine de 8 cm à 0,12 mm prendra environ deux fois plus de temps qu&#39;à 0,24 mm, mais les courbes du visage seront nettement plus douces.</li>
+</ul>
+<h3 id="creality-print--hauteur-de-la-premiere-couche-initial-layer-height">Hauteur de la première couche (Initial layer height)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : l&#39;épaisseur de la toute première couche, posée sur le plateau.</li>
+<li><strong>Effet</strong> : une première couche un peu plus épaisse « pardonne » un plateau imparfait et colle mieux.</li>
+<li><strong>Valeurs typiques</strong> : 0,20–0,25 mm avec une buse 0,4.</li>
+<li><strong>Exemple</strong> : si la première couche a des trous ou des lignes qui ne se touchent pas, passer de 0,20 à 0,25 mm aide souvent.</li>
+</ul>
+<h3 id="creality-print--largeur-de-ligne-line-width">Largeur de ligne (Line width)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : la largeur du cordon de plastique. Réglable séparément pour : défaut, première couche, paroi extérieure, paroi intérieure, surface supérieure, remplissage plein, remplissage, support.</li>
+<li><strong>Effet</strong> : plus large = pièce plus solide et impression plus rapide (moins de passes), mais détails moins fins. Plus étroit = meilleurs détails.</li>
+<li><strong>Valeurs typiques (buse 0,4)</strong> : 0,42 mm partout ; 0,50 mm pour la première couche (meilleure adhérence) ; 0,45 mm pour le remplissage.</li>
+<li><strong>Exemple</strong> : pour graver un petit texte en relief, réduire la largeur de la paroi extérieure à 0,38 mm rend les lettres plus nettes.</li>
+</ul>
+<h3 id="creality-print--couture-seam-position">Couture (Seam position)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : l&#39;endroit où chaque couche commence et finit sur le contour extérieur. Il y laisse une petite marque verticale.</li>
+<li><strong>Options</strong> : <em>Aligné</em> (une seule ligne verticale), <em>Arrière</em> / <em>Alignement arrière</em> (ajouté en 7.0.1, pousse la couture vers l&#39;arrière de la pièce), <em>Le plus proche</em> (rapide mais marques un peu partout), <em>Aléatoire</em> (pas de ligne, mais petits points dispersés).</li>
+<li><strong>Effet</strong> : purement esthétique, sauf sur pièces à emboîter où une couture saillante peut gêner.</li>
+<li><strong>Exemple</strong> : pour un vase vu de face, choisir <em>Arrière</em> : la cicatrice se retrouve côté mur.</li>
+<li><strong>Réglages associés</strong> : <em>Espace de couture</em> (gap, ~10 % ou 0,1 mm) réduit le bourrelet ; <em>Couture en écharpe</em> (scarf seam) fait se chevaucher le début et la fin en pente douce, ce qui rend la couture presque invisible sur les pièces lisses.</li>
+</ul>
+<h3 id="creality-print--resolution-precision-resolution-arc-fitting">Résolution / Précision (Resolution, Arc fitting)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : la finesse avec laquelle les courbes du modèle sont converties en petits segments. <em>Ajustement d&#39;arc</em> (arc fitting) remplace les suites de segments par de vrais arcs.</li>
+<li><strong>Effet</strong> : résolution trop fine = fichier lourd et saccades possibles sur imprimantes lentes. Arc fitting = cercles plus doux et fichier plus léger (laisser activé sur Klipper/K1/K2).</li>
+<li><strong>Valeurs typiques</strong> : résolution 0,012 mm (défaut).</li>
+</ul>
+<h3 id="creality-print--compensation-xy-x-y-hole-contour-compensation">Compensation XY (X-Y hole / contour compensation)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : agrandit ou rétrécit légèrement les trous et les contours extérieurs.</li>
+<li><strong>Effet</strong> : corrige les trous trop petits (cas très fréquent) et les pièces qui ne s&#39;emboîtent pas.</li>
+<li><strong>Valeurs typiques</strong> : trous +0,05 à +0,15 mm ; contours 0 à −0,05 mm.</li>
+<li><strong>Exemple</strong> : un trou de 5 mm qui sort à 4,8 mm → compensation trou +0,1 mm.</li>
+</ul>
+<h3 id="creality-print--compensation-de-la-patte-d-elephant-elephant-foot-compensati">Compensation de la patte d&#39;éléphant (Elephant foot compensation)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : rétrécit la première couche pour compenser l&#39;écrasement qui la fait déborder.</li>
+<li><strong>Effet</strong> : bords du bas droits au lieu d&#39;évasés.</li>
+<li><strong>Valeurs typiques</strong> : 0,1–0,2 mm.</li>
+</ul>
+<h3 id="creality-print--repassage-ironing">Repassage (Ironing)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : après la dernière couche du dessus, la buse repasse très lentement avec un débit minuscule pour lisser la surface.</li>
+<li><strong>Options</strong> : <em>Surface supérieure</em>, <em>Surface la plus haute seulement</em>, <em>Toutes les surfaces pleines</em>. En 7.1, nouveau <strong>Repassage des interfaces de support</strong> (voir fiche Supports).</li>
+<li><strong>Effet</strong> : dessus brillant et lisse, mais temps plus long.</li>
+<li><strong>Valeurs typiques</strong> : débit 10–15 %, espacement 0,1 mm, vitesse 30–50 mm/s.</li>
+<li><strong>Exemple</strong> : une plaque avec un logo plat devient presque « miroir » avec le repassage.</li>
+</ul>
+<h3 id="creality-print--paroi-floue-fuzzy-skin">Paroi floue (Fuzzy skin)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : fait trembler volontairement la buse sur la paroi extérieure pour donner un aspect texturé, granuleux.</li>
+<li><strong>Nouveau en 7.1</strong> : on peut <strong>peindre</strong> la paroi floue uniquement sur certaines zones de la pièce.</li>
+<li><strong>Valeurs typiques</strong> : épaisseur 0,2–0,3 mm, distance des points 0,3–0,8 mm.</li>
+<li><strong>Exemple</strong> : une poignée d&#39;outil avec texture antidérapante peinte seulement sur la zone de prise.</li>
+</ul>
+<h3 id="creality-print--lissage-de-vitesse-des-parois-le-long-de-z-experimental-7-0">Lissage de vitesse des parois le long de Z (expérimental, 7.0)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : évite les changements brusques de vitesse d&#39;une couche à l&#39;autre sur la paroi extérieure.</li>
+<li><strong>Effet</strong> : réduit les bandes horizontales visibles sur les pièces qui ont des couches de durées très différentes.</li>
+<li><strong>Conseil</strong> : laisser désactivé tant que vous n&#39;avez pas ce défaut précis.</li>
+</ul>
+<h2 id="creality-print--fiche-cp-02-resistance-parois-et-coques">Fiche CP-02 — Résistance : parois et coques</h2>
+<h3 id="creality-print--nombre-de-parois-wall-loops">Nombre de parois (Wall loops)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : combien de contours sont imprimés autour de chaque couche.</li>
+<li><strong>Effet</strong> : c&#39;est le réglage le plus efficace pour la solidité. Ajouter une paroi renforce plus qu&#39;ajouter 10 % de remplissage.</li>
+<li><strong>Valeurs typiques</strong> : 2 (déco), 3 (standard), 4–6 (pièce mécanique, vis, charnière).</li>
+<li><strong>Exemple</strong> : un support d&#39;étagère qui casse avec 2 parois tient très bien avec 4 parois et seulement 15 % de remplissage.</li>
+</ul>
+<h3 id="creality-print--ordre-des-parois-wall-order">Ordre des parois (Wall order)</h3>
+<ul>
+<li><strong>Options</strong> : <em>Intérieur/Extérieur</em> (défaut, meilleure précision des surplombs), <em>Extérieur/Intérieur</em> (meilleure précision dimensionnelle et surface), <em>Intérieur/Extérieur/Intérieur</em> (bon compromis).</li>
+<li><strong>Exemple</strong> : pour une pièce qui doit s&#39;emboîter au dixième de mm, choisir <em>Extérieur/Intérieur</em>.</li>
+</ul>
+<h3 id="creality-print--generateur-de-parois-wall-generator">Générateur de parois (Wall generator)</h3>
+<ul>
+<li><strong>Options</strong> : <em>Classique</em> ou <em>Arachne</em>. Arachne fait varier la largeur des lignes pour remplir les zones fines.</li>
+<li><strong>Effet</strong> : Arachne = textes et zones minces mieux remplies, moins de trous. Classique = un peu plus prévisible.</li>
+<li><strong>Conseil</strong> : Arachne par défaut.</li>
+</ul>
+<h3 id="creality-print--detecter-les-parois-fines-ponts-sur-parois">Détecter les parois fines / ponts sur parois</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : options qui permettent d&#39;imprimer des zones plus fines que deux lignes, et d&#39;appliquer les réglages de pont aux parois au-dessus du vide.</li>
+<li><strong>Conseil</strong> : activer <em>Détecter les parois fines</em> pour les petits textes et pièces fines.</li>
+</ul>
+<h3 id="creality-print--paroi-supplementaire-alternee-alternate-extra-wall">Paroi supplémentaire alternée (Alternate extra wall)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : ajoute une paroi en plus une couche sur deux, ce qui « tisse » les parois avec le remplissage.</li>
+<li><strong>Effet</strong> : pièce plus solide, en particulier contre l&#39;arrachement entre couches.</li>
+</ul>
+<h3 id="creality-print--imbrication-parois-remplissage-nouveau-en-7-1">Imbrication parois-remplissage (nouveau en 7.1)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : crée des « dents » imbriquées entre les parois et le remplissage, décalées d&#39;une couche à l&#39;autre.</li>
+<li><strong>Effet</strong> : meilleure liaison entre l&#39;extérieur et l&#39;intérieur de la pièce ; utile pour les pièces sollicitées.</li>
+<li><strong>Conseil</strong> : à activer sur les pièces mécaniques avec peu de parois.</li>
+</ul>
+<h3 id="creality-print--couches-pleines-du-dessus-et-du-dessous-top-bottom-shell-lay">Couches pleines du dessus et du dessous (Top / Bottom shell layers)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : nombre de couches pleines qui ferment la pièce.</li>
+<li><strong>Effet</strong> : trop peu = trous ou « effet oreiller » (bosses) sur le dessus. Plus de couches = dessus plus propre et plus étanche.</li>
+<li><strong>Valeurs typiques</strong> : dessus 4–5 couches (ou épaisseur ≥ 0,8–1 mm), dessous 3–4 couches.</li>
+<li><strong>Exemple</strong> : à 0,12 mm de couche, 5 couches du dessus ne font que 0,6 mm : montez à 7–8 couches.</li>
+</ul>
+<h3 id="creality-print--motif-des-surfaces-superieure-et-inferieure">Motif des surfaces supérieure et inférieure</h3>
+<ul>
+<li><strong>Options</strong> : <em>Monotone</em> (lignes toutes dans le même sens, rendu uniforme), <em>Monotone en ligne</em>, <em>Rectiligne</em>, <em>Concentrique</em>, <em>Hilbert</em>, <em>Spirale d&#39;Archimède</em>, <em>Octogramme</em>.</li>
+<li><strong>Conseil</strong> : <em>Monotone</em> pour le dessus (le plus beau), <em>Rectiligne</em> pour le dessous. <em>Concentrique</em> pour les pièces rondes.</li>
+</ul>
+<h3 id="creality-print--seuil-de-remplissage-plein-interne">Seuil de remplissage plein interne</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : transforme en remplissage plein les petites zones internes où un remplissage alvéolé n&#39;aurait pas de sens.</li>
+<li><strong>Effet</strong> : évite les zones creuses fragiles dans les parties fines.</li>
+</ul>
+<h2 id="creality-print--fiche-cp-03-remplissage-rappel-rapide">Fiche CP-03 — Remplissage (rappel rapide)</h2>
+<p>Tous les motifs et leurs réglages sont détaillés dans la rubrique <a href="#/remplissage">Remplissage</a>. Dans Creality Print, ils sont dans l&#39;onglet <strong>Résistance</strong> : <em>Densité du remplissage</em>, <em>Motif</em>, <em>Longueur d&#39;ancrage</em>, <em>Remplissage combiné tous les N couches</em>, <em>Chevauchement remplissage/parois</em>.</p>
+<p><strong>Spécifique à Creality Print 7</strong> : nouveaux motifs <strong>Lateral Lattice</strong> (vitesse proche du Zig-zag, solidité proche du Lattice), <strong>Lateral Honeycomb</strong> (nid d&#39;abeille « ingénierie »), <strong>Locked Zag</strong> (on règle séparément la peau et le cœur du remplissage), <strong>TPMS-D</strong> (apparu en 6.0) et le paramètre <strong>Fill Multiline</strong> (plusieurs lignes parallèles par trait de remplissage).</p>
+<h2 id="creality-print--fiche-cp-04-vitesse-et-acceleration">Fiche CP-04 — Vitesse et accélération</h2>
+<h3 id="creality-print--vitesses-par-type-de-ligne">Vitesses par type de ligne</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : une vitesse en mm/s pour chaque type de trajet : première couche, paroi extérieure, paroi intérieure, remplissage, remplissage plein, surface supérieure, pont, support, petits périmètres, déplacement.</li>
+<li><strong>Effet</strong> : la paroi extérieure est celle qu&#39;on voit : la ralentir améliore l&#39;aspect. Le remplissage est caché : on peut l&#39;accélérer. Trop vite = sous-extrusion, mauvaise adhésion entre couches.</li>
+<li><strong>Valeurs typiques (imprimante rapide type K1/K2, PLA rapide)</strong> : première couche 50 mm/s, paroi extérieure 200 mm/s, parois intérieures 300 mm/s, remplissage 270–300 mm/s, surface supérieure 200 mm/s, pont 50 mm/s, déplacement 500 mm/s.</li>
+<li><strong>Valeurs typiques (Ender 3 classique, Bowden)</strong> : première couche 20–25 mm/s, paroi extérieure 40 mm/s, intérieure 60 mm/s, remplissage 80 mm/s.</li>
+<li><strong>Exemple</strong> : si la surface extérieure montre des vagues après chaque coin, baisser la paroi extérieure de 200 à 120 mm/s.</li>
+</ul>
+<h3 id="creality-print--debit-volumetrique-maximal-max-volumetric-speed-reglage-fila">Débit volumétrique maximal (Max volumetric speed) — réglage filament</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : la quantité maximale de plastique (mm³/s) que la buse peut fondre. Le logiciel ralentit automatiquement si une vitesse demandée dépasse cette limite.</li>
+<li><strong>Effet</strong> : c&#39;est souvent la <em>vraie</em> limite de vitesse. Trop haut = sous-extrusion ; trop bas = impression inutilement lente.</li>
+<li><strong>Valeurs typiques</strong> : PLA standard 12–15 mm³/s, PLA « Hyper/Rapid » 20–25 mm³/s, PETG 9–15 mm³/s, TPU 3–6 mm³/s, ASA 14–20 mm³/s.</li>
+<li><strong>Calcul</strong> : vitesse max (mm/s) = débit max ÷ (hauteur de couche × largeur de ligne). Ex. 20 ÷ (0,2 × 0,42) ≈ 238 mm/s.</li>
+</ul>
+<h3 id="creality-print--ralentissement-en-surplomb-slow-down-for-overhangs">Ralentissement en surplomb (Slow down for overhangs)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : réduit la vitesse selon le pourcentage de la ligne qui est dans le vide (0–25 %, 25–50 %, 50–75 %, 75–100 %).</li>
+<li><strong>Effet</strong> : surplombs plus propres, moins d&#39;enroulement vers le haut. Amélioré en 6.2 (surplombs de 20°) et en 7.1 (moins de sous-extrusion juste après un surplomb).</li>
+<li><strong>Conseil</strong> : toujours activé.</li>
+</ul>
+<h3 id="creality-print--acceleration">Accélération</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : la rapidité avec laquelle la tête atteint sa vitesse (mm/s²). Réglable par type de ligne.</li>
+<li><strong>Effet</strong> : trop haute = vibrations, « ghosting » (échos des formes sur la surface), décalage de couches. Plus basse = surface plus propre, impression plus longue.</li>
+<li><strong>Valeurs typiques (K1/K2)</strong> : 10 000–20 000 mm/s² en général, 5 000 mm/s² pour la paroi extérieure, 500–1 000 mm/s² pour la première couche.</li>
+<li><strong>Nouveau 7.0</strong> : <em>Accélération des courts déplacements</em> et <em>Seuil de court déplacement</em> : les petits sauts de la tête se font avec une accélération réduite (défaut 200 mm/s²) pour limiter les vibrations.</li>
+</ul>
+<h3 id="creality-print--jerk-vitesse-de-virage-carre-square-corner-velocity">Jerk / Vitesse de virage carré (Square corner velocity)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : vitesse à laquelle la tête peut prendre un angle sans ralentir.</li>
+<li><strong>Effet</strong> : trop haut = coins arrondis et vibrations ; trop bas = coins gonflés.</li>
+<li><strong>Conseil</strong> : garder la valeur du profil d&#39;imprimante.</li>
+</ul>
+<h2 id="creality-print--fiche-cp-05-refroidissement-dans-le-prereglage-filament">Fiche CP-05 — Refroidissement (dans le préréglage Filament)</h2>
+<h3 id="creality-print--ventilateur-de-piece-part-cooling-fan">Ventilateur de pièce (Part cooling fan)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : le ventilateur qui souffle sur le plastique qui vient d&#39;être déposé. On règle une vitesse mini et maxi, et le nombre de couches sans ventilation au début.</li>
+<li><strong>Effet</strong> : plus de ventilation = surplombs, ponts et petits détails plus propres. Moins = meilleure adhésion entre couches, moins de warping.</li>
+<li><strong>Valeurs typiques</strong> : PLA 100 % ; PETG 30–60 % ; TPU 50–100 % ; ASA 0–30 % ; nylon 0–30 %. Ventilateur coupé sur les 1 à 3 premières couches.</li>
+<li><strong>Exemple</strong> : un PETG imprimé avec 100 % de ventilation casse facilement entre les couches : redescendre à 40 %.</li>
+</ul>
+<h3 id="creality-print--ventilateur-auxiliaire-et-ventilateur-de-caisson">Ventilateur auxiliaire et ventilateur de caisson</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : sur K1/K2, un ventilateur latéral puissant (auxiliaire) et un ventilateur d&#39;extraction du caisson.</li>
+<li><strong>Conseil</strong> : auxiliaire 50–100 % pour le PLA, 0 % pour ASA/ABS/nylon. Caisson fermé et chauffé pour ASA et nylon ; ouvrir le capot pour le PLA si le caisson dépasse ~35 °C (sinon bouchage).</li>
+</ul>
+<h3 id="creality-print--temps-de-couche-minimum-slow-printing-down-for-better-layer-">Temps de couche minimum (Slow printing down for better layer cooling)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : si une couche est imprimée trop vite, l&#39;imprimante ralentit pour que le plastique ait le temps de refroidir.</li>
+<li><strong>Effet</strong> : indispensable pour les petites pièces et les pointes (sinon elles fondent et se déforment).</li>
+<li><strong>Valeurs typiques</strong> : 4–8 s pour le PLA ; vitesse minimale 10–20 mm/s.</li>
+<li><strong>Nouveau 7.0 — Logique de ralentissement</strong> : <em>Surface homogène</em> (Consistent Surface) ralentit en douceur avec une distance de transition réglable pour éviter une bande visible ; <em>Refroidissement uniforme</em> (Uniform Cooling) privilégie un refroidissement égal de toute la couche.</li>
+</ul>
+<h3 id="creality-print--ventilation-des-ponts-et-surplombs">Ventilation des ponts et surplombs</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : force le ventilateur à une vitesse donnée sur les ponts et surplombs.</li>
+<li><strong>Valeurs typiques</strong> : 100 % (PLA), 60–80 % (PETG), 40–60 % (ASA).</li>
+</ul>
+<h2 id="creality-print--fiche-cp-06-filament-temperatures-debit-retraction">Fiche CP-06 — Filament : températures, débit, rétraction</h2>
+<h3 id="creality-print--temperature-de-buse">Température de buse</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : la température de fusion. On règle une valeur pour la première couche et une pour les suivantes.</li>
+<li><strong>Effet</strong> : trop chaud = fils (stringing), surplombs moches, gouttes. Trop froid = sous-extrusion, couches qui se séparent, claquements de l&#39;extrudeur.</li>
+<li><strong>Valeurs</strong> : voir la rubrique <a href="#/filaments">Filaments</a>. Faites toujours une <strong>tour de température</strong> (menu <em>Calibration</em>).</li>
+</ul>
+<h3 id="creality-print--temperature-du-plateau-par-type-de-plaque">Température du plateau (par type de plaque)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : une température pour chaque type de surface (plaque lisse PEI, texturée PEI, époxy…). Le logiciel choisit selon la plaque déclarée.</li>
+<li><strong>Effet</strong> : trop froid = décollement ; trop chaud = patte d&#39;éléphant, pièce qui se déforme en bas (PLA).</li>
+</ul>
+<h3 id="creality-print--temperature-de-caisson-chamber-temperature">Température de caisson (Chamber temperature)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : sur K2 Plus/K2 Pro, température du caisson chauffé. Les profils ABS/ASA/PC/PA l&#39;activent à 50–60 °C.</li>
+<li><strong>Conseil</strong> : 0 (désactivé) pour PLA, PETG, TPU.</li>
+</ul>
+<h3 id="creality-print--ratio-de-debit-flow-ratio">Ratio de débit (Flow ratio)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : multiplicateur de la quantité de plastique extrudée.</li>
+<li><strong>Effet</strong> : trop haut = surface boursouflée, bords qui débordent, dessus rugueux ; trop bas = trous entre lignes, pièce fragile.</li>
+<li><strong>Valeurs typiques</strong> : 0,95–1,00 (PLA), 0,95–1,02 (PETG), 1,00–1,05 (TPU).</li>
+<li><strong>Comment le régler</strong> : menu <em>Calibration</em> → <em>Débit</em> (flow rate), choisir le carré dont le dessus est le plus lisse.</li>
+</ul>
+<h3 id="creality-print--pressure-advance-avance-de-pression">Pressure Advance / Avance de pression</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : compense le retard entre la poussée de l&#39;extrudeur et la sortie du plastique.</li>
+<li><strong>Effet</strong> : coins nets, débuts et fins de lignes réguliers.</li>
+<li><strong>Valeurs typiques</strong> : 0,02–0,06 (direct drive), 0,3–0,6 (Bowden). Les K1/K2 peuvent le calibrer automatiquement.</li>
+<li><strong>Comment le régler</strong> : <em>Calibration</em> → <em>Pressure Advance</em> (motif de lignes ou tour).</li>
+</ul>
+<h3 id="creality-print--retraction-longueur-et-vitesse">Rétraction (longueur et vitesse)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : recul du filament avant un déplacement.</li>
+<li><strong>Effet</strong> : pas assez = fils et gouttes ; trop = bouchage, trous au début des lignes, filament abîmé.</li>
+<li><strong>Valeurs typiques</strong> : direct drive 0,5–1 mm à 30–40 mm/s ; Bowden 4–6 mm à 40–45 mm/s. TPU : 0–1 mm, lentement.</li>
+<li><strong>Réglages associés</strong> : <em>Levée en Z</em> (z-hop, 0,2–0,4 mm, évite que la buse accroche la pièce, mais peut augmenter les fils), <em>Essuyage</em> (wipe : la buse frotte la paroi en rétractant), <em>Rétracter lors du changement de couche</em>, <em>Pas de rétraction sur le remplissage</em> (évite des rétractions inutiles cachées).</li>
+</ul>
+<h3 id="creality-print--longue-retraction-a-la-coupe-multicouleur-7-0-experimental">Longue rétraction à la coupe (multicouleur, 7.0, expérimental)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : avec le boîtier multi-filament CFS, le filament recule plus avant d&#39;être coupé lors d&#39;un changement de couleur.</li>
+<li><strong>Effet</strong> : moins de purge gaspillée. Option expérimentale, à tester.</li>
+</ul>
+<h3 id="creality-print--retrait-retractation-du-materiau-shrinkage">Retrait / Rétractation du matériau (Shrinkage)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : compense le fait que certains plastiques rétrécissent en refroidissant.</li>
+<li><strong>Valeurs typiques</strong> : PLA 100 %, ASA ~99,5 %, nylon ~99–99,5 %. À mesurer sur un cube de 20 mm.</li>
+</ul>
+<h2 id="creality-print--fiche-cp-07-adherence-et-autres">Fiche CP-07 — Adhérence et autres</h2>
+<h3 id="creality-print--jupe-skirt-bordure-brim-radeau-raft">Jupe (Skirt), Bordure (Brim), Radeau (Raft)</h3>
+<ul>
+<li><strong>Jupe</strong> : une ligne autour de la pièce, sans la toucher. Sert à amorcer la buse. 1–2 tours, distance 3–5 mm.</li>
+<li><strong>Bordure</strong> : collerette collée à la pièce à la première couche. Empêche le décollement des coins. Largeur 3–8 mm ; type <em>Oreilles de souris</em> (brim ears) = seulement aux coins, plus facile à retirer. <em>Espace bordure-objet</em> 0,1 mm facilite le retrait.</li>
+<li><strong>Radeau</strong> : plateforme épaisse sous la pièce. Rarement utile avec un plateau PEI ; garde pour les pièces très petites à la base ou un plateau abîmé.</li>
+<li><strong>Exemple</strong> : une pièce ASA de 15 cm de long → bordure de 8 mm, sinon les coins se relèvent.</li>
+</ul>
+<h3 id="creality-print--mode-vase-spirale-spiral-vase">Mode vase / spirale (Spiral vase)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : imprime une seule paroi en montée continue, sans couture ni remplissage ni dessus.</li>
+<li><strong>Effet</strong> : vases et abat-jours ultra rapides et sans couture, mais fragiles et sans couvercle.</li>
+<li><strong>Conseil</strong> : augmenter la largeur de ligne (0,6–0,8 mm) pour une paroi plus solide.</li>
+</ul>
+<h3 id="creality-print--sequence-d-impression-par-couche-ou-par-objet">Séquence d&#39;impression : par couche ou par objet</h3>
+<ul>
+<li><strong>Par couche</strong> (défaut) : toutes les pièces avancent ensemble.</li>
+<li><strong>Par objet</strong> : chaque pièce est finie avant la suivante. Si une rate, les autres sont sauvées. Attention à la hauteur de la tête (risque de collision) : le logiciel limite la hauteur.</li>
+</ul>
+<h3 id="creality-print--tour-de-purge-prime-tower-multicouleur">Tour de purge (Prime tower) — multicouleur</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : petite tour à côté de la pièce où la buse se vide lors des changements de couleur.</li>
+<li><strong>Nouveautés 7.0</strong> : parois extérieures pour la tour (plus stable), placement à 2 mm du bord, impression de la tour sur un côté, <em>catégorie d&#39;adhésion</em> pour gérer les filaments qui ne collent pas entre eux (PLA + PETG), <em>Purger dans les supports</em> ou <em>dans un objet</em> pour réduire le gaspillage.</li>
+</ul>
+<h3 id="creality-print--hauteur-variable-de-couche-adaptive-layer-height">Hauteur variable de couche (Adaptive layer height)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : couches plus fines sur les courbes, plus épaisses sur les zones droites.</li>
+<li><strong>Effet</strong> : bon compromis temps/qualité sur les pièces arrondies. Activable par objet (clic droit → <em>Hauteur variable</em>).</li>
+</ul>
+<h3 id="creality-print--outils-d-objet-utiles">Outils d&#39;objet utiles</h3>
+<ul>
+<li><strong>Modificateur</strong> (clic droit → <em>Ajouter un modificateur</em>) : boîte où l&#39;on change localement un réglage, par exemple 50 % de remplissage seulement autour d&#39;un trou de vis.</li>
+<li><strong>Peinture de supports / couture / paroi floue</strong> : pinceaux dans la barre d&#39;outils.</li>
+<li><strong>Analyse IA</strong> (7.0) : avec le service cloud activé, le logiciel indique si un modèle a besoin de supports et propose normal ou arborescent ; <em>Appliquer</em> modifie les réglages de support de l&#39;objet.</li>
+</ul>
+<h2 id="creality-print--fiche-cp-08-prereglage-imprimante-a-toucher-rarement">Fiche CP-08 — Préréglage Imprimante (à toucher rarement)</h2>
+<ul>
+<li><strong>Taille du plateau, hauteur max, forme</strong> : déjà corrects si vous avez choisi votre modèle.</li>
+<li><strong>Diamètre de buse</strong> : à changer si vous montez une buse 0,2 / 0,6 / 0,8 ; choisissez plutôt le préréglage dédié à cette buse.</li>
+<li><strong>G-code de début et de fin</strong> : instructions de chauffe, de nivellement et de purge. Ne modifiez que si vous savez ce que vous faites.</li>
+<li><strong>Limites machine</strong> : vitesses et accélérations maximales autorisées ; le trancheur ne dépassera jamais ces valeurs.</li>
+<li><strong>Type de firmware / Klipper</strong> : détermine les commandes envoyées (Pressure Advance, etc.).</li>
+</ul>
+<h2 id="creality-print--fiche-cp-09-menu-calibration-ordre-conseille">Fiche CP-09 — Menu Calibration (ordre conseillé)</h2>
+<ol>
+<li><strong>Température</strong> (tour) : choisir l&#39;étage le plus propre sans fils.</li>
+<li><strong>Débit</strong> (flow) : choisir le carré le plus lisse.</li>
+<li><strong>Pressure Advance</strong> : choisir la ligne la plus régulière.</li>
+<li><strong>Rétraction</strong> (tour) : choisir la hauteur où les fils disparaissent.</li>
+<li><strong>Débit volumétrique max</strong> : repérer la hauteur où la paroi commence à se dégrader et prendre 80 % de la valeur.</li>
+<li><strong>Tolérances / VFA</strong> : pour les pièces d&#39;assemblage et les vibrations.</li>
+</ol>
+<p>Refaire 1 à 4 à chaque nouvelle marque de filament.</p>
+<div class="pager"><a class="prev" href="#/accueil"><small>← Précédent</small>Accueil</a><a class="next" href="#/elegooslicer"><small>Suivant →</small>2. ElegooSlicer</a></div>
+</section>
+<section class="rubrique" id="r-elegooslicer">
+<h1 id="elegooslicer--fiches-elegooslicer">Fiches ElegooSlicer</h1>
+<p>ElegooSlicer est le trancheur officiel d&#39;Elegoo, gratuit et open source. C&#39;est une version d&#39;OrcaSlicer adaptée aux imprimantes Elegoo (Centauri Carbon, Centauri Carbon 2, Centauri 2, Neptune 4, OrangeStorm Giga…), avec gestion des imprimantes en réseau. La version 1.5.3.4 intègre l&#39;essentiel d&#39;OrcaSlicer 2.4.2. Elle remplace l&#39;ancien « Elegoo Cura » : les tutoriels Cura ne s&#39;appliquent pas tels quels.</p>
+<p><strong>Où sont les réglages ?</strong> Trois préréglages : <strong>Imprimante</strong>, <strong>Filament</strong>, <strong>Processus</strong>. Le processus est en onglets : <strong>Qualité</strong>, <strong>Résistance</strong>, <strong>Vitesse</strong>, <strong>Support</strong>, <strong>Multimatériau</strong>, <strong>Autres</strong>. Activez le bouton <strong>Avancé</strong> pour tout afficher. Les réglages modifiés s&#39;affichent en orange ; le cadenas/flèche les remet par défaut.</p>
+<p><strong>Mise à jour des profils</strong> : depuis 1.4, ElegooSlicer met à jour les préréglages Elegoo en ligne sans réinstaller. Acceptez ces mises à jour : elles corrigent souvent des valeurs de filament.</p>
+<h2 id="elegooslicer--fiche-es-01-onglet-qualite">Fiche ES-01 — Onglet Qualité</h2>
+<h3 id="elegooslicer--hauteur-de-couche">Hauteur de couche</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : épaisseur d&#39;une tranche. La première couche a sa propre valeur.</li>
+<li><strong>Effet</strong> : fine = joli mais lent ; épaisse = rapide mais lignes visibles.</li>
+<li><strong>Valeurs (buse 0,4)</strong> : 0,08 (détail extrême), 0,12 (fin), 0,16 (optimal), 0,20 (standard), 0,24–0,28 (brouillon). Première couche 0,20–0,25 mm.</li>
+<li><strong>Exemple</strong> : sur une Centauri Carbon, un porte-clés de 4 cm passe de 12 min à 0,28 mm à 25 min à 0,12 mm.</li>
+</ul>
+<h3 id="elegooslicer--largeur-de-ligne">Largeur de ligne</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : largeur du cordon, réglable par type (défaut, première couche, paroi extérieure, intérieure, dessus, remplissage plein, remplissage, support). Peut être en mm ou en % du diamètre de buse.</li>
+<li><strong>Effet</strong> : large = solide et rapide ; étroit = précis.</li>
+<li><strong>Valeurs</strong> : 0,42 mm partout, 0,50 mm première couche, 0,45 mm remplissage.</li>
+</ul>
+<h3 id="elegooslicer--couture">Couture</h3>
+<ul>
+<li><strong>Options</strong> : <em>Alignée</em>, <em>Arrière</em>, <em>La plus proche</em>, <em>Aléatoire</em>. On peut aussi <strong>peindre</strong> la couture à un endroit précis.</li>
+<li><strong>Couture en écharpe (Scarf joint)</strong> : début et fin de boucle se chevauchent en pente douce. Option <em>Contour</em> ou <em>Contour et trou</em>, <em>Seulement sur les surfaces lisses</em>. Très efficace sur les pièces rondes.</li>
+<li><strong>Espace de couture</strong> : petit vide en fin de boucle (10–15 %) qui réduit le bourrelet.</li>
+<li><strong>Rentrer l&#39;essuyage</strong> (role-based wipe) : la buse finit sa boucle vers l&#39;intérieur pour cacher la goutte.</li>
+</ul>
+<h3 id="elegooslicer--precision">Précision</h3>
+<ul>
+<li><strong>Paroi précise (Precise wall)</strong> : ajuste l&#39;espacement entre parois extérieure et intérieure pour des cotes plus justes. À activer pour les pièces fonctionnelles.</li>
+<li><strong>Hauteur Z précise</strong> : ajuste les dernières couches pour que la hauteur totale soit exacte.</li>
+<li><strong>Compensation trous / contours X-Y</strong> : +0,05 à +0,15 mm pour les trous trop petits.</li>
+<li><strong>Convertir les trous en polytrous (Polyholes)</strong> : transforme les trous ronds en polygones, qui sortent plus près de la cote voulue. Utile pour les axes et vis.</li>
+<li><strong>Compensation patte d&#39;éléphant</strong> : 0,1–0,2 mm.</li>
+<li><strong>Ajustement d&#39;arc</strong> : arcs G2/G3 au lieu de petits segments, conseillé sur Klipper.</li>
+</ul>
+<h3 id="elegooslicer--repassage-ironing">Repassage (Ironing)</h3>
+<ul>
+<li><strong>Types</strong> : surface supérieure, surface la plus haute, toutes les surfaces pleines.</li>
+<li><strong>Valeurs</strong> : motif rectiligne ou concentrique, débit 10–15 %, espacement 0,10–0,15 mm, angle 45° par rapport au dessus, vitesse 30–50 mm/s.</li>
+<li><strong>Exemple</strong> : boîtier avec couvercle plat : un dessus lisse sans lignes visibles.</li>
+</ul>
+<h3 id="elegooslicer--generateur-de-parois">Générateur de parois</h3>
+<ul>
+<li><em>Arachne</em> (largeur variable, recommandé) ou <em>Classique</em>. Réglages Arachne : longueur de transition, angle de transition, largeur min. de paroi.</li>
+</ul>
+<h3 id="elegooslicer--rendre-les-surplombs-imprimables-paroi-supplementaire-sur-su">Rendre les surplombs imprimables / Paroi supplémentaire sur surplombs</h3>
+<ul>
+<li><strong>Rendre les surplombs imprimables</strong> : modifie la géométrie (en cône) pour que les trous et surplombs horizontaux s&#39;impriment sans support. Change l&#39;aspect de la pièce !</li>
+<li><strong>Périmètres supplémentaires sur surplombs</strong> : ajoute des boucles là où la pièce déborde, pour mieux tenir.</li>
+<li><strong>Inverser sur les couches impaires</strong> : alterne le sens des parois en surplomb ; les surplombs se relèvent moins.</li>
+</ul>
+<h3 id="elegooslicer--paroi-floue-fuzzy-skin">Paroi floue (Fuzzy skin)</h3>
+<ul>
+<li>Texture granuleuse sur la paroi extérieure. Options : <em>Contour seulement</em>, <em>Partout</em>, et peinture par zone. Épaisseur 0,2–0,3 mm, distance des points 0,3–0,8 mm.</li>
+</ul>
+<h3 id="elegooslicer--remplissage-des-espaces-gap-fill">Remplissage des espaces (Gap fill)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : remplit les petits vides entre parois.</li>
+<li><strong>Conseil</strong> : <em>Partout</em> pour les pièces techniques ; <em>Nulle part</em> si les petites lignes abîment l&#39;aspect des dessus.</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-02-onglet-resistance">Fiche ES-02 — Onglet Résistance</h2>
+<h3 id="elegooslicer--parois">Parois</h3>
+<ul>
+<li><strong>Nombre de parois</strong> : 2 (déco), 3 (standard), 4–6 (mécanique). C&#39;est le premier levier de solidité.</li>
+<li><strong>Ordre des parois</strong> : <em>Intérieur/Extérieur</em> (défaut), <em>Extérieur/Intérieur</em> (meilleure surface et cotes), <em>Int./Ext./Int.</em> (compromis).</li>
+<li><strong>Paroi supplémentaire alternée</strong> : une paroi en plus une couche sur deux, meilleure accroche avec le remplissage.</li>
+<li><strong>Une seule paroi sur le dessus</strong> : pour les dessus, utilise une seule paroi pour laisser plus de place au remplissage plein (plus joli sur les petites surfaces).</li>
+<li><strong>Détecter les parois fines</strong> : imprime les zones plus fines que deux lignes.</li>
+</ul>
+<h3 id="elegooslicer--coques-dessus-et-dessous">Coques dessus et dessous</h3>
+<ul>
+<li><strong>Couches du dessus</strong> : 4–6 (ou épaisseur min. 0,8–1 mm). <strong>Dessous</strong> : 3–4.</li>
+<li><strong>Motifs</strong> : <em>Monotone</em> (le plus beau sur le dessus), <em>Monotone en ligne</em>, <em>Rectiligne</em>, <em>Concentrique</em>, <em>Hilbert</em>, <em>Archimède</em>, <em>Octogramme</em>.</li>
+<li><strong>Garantir l&#39;épaisseur verticale de coque</strong> : ajoute du remplissage plein sous les pentes douces pour éviter les trous. <em>Modéré</em> ou <em>Tout</em> sur les pièces arrondies.</li>
+<li><strong>Débit de la surface supérieure / inférieure</strong> : multiplicateur spécifique ; 0,95–0,98 si le dessus est boursouflé.</li>
+<li><strong>Seuil de surface supérieure</strong> et <strong>ponts internes</strong> : règlent comment les couches pleines s&#39;appuient sur le remplissage. <em>Ne pas filtrer les ponts internes</em> = dessus mieux soutenus.</li>
+</ul>
+<h3 id="elegooslicer--remplissage-rappel">Remplissage (rappel)</h3>
+<ul>
+<li>Réglages : <em>Densité</em>, <em>Motif</em>, <em>Direction</em>, <em>Longueur d&#39;ancrage</em> (et max), <em>Remplissage combiné toutes les N couches</em>, <em>Chevauchement remplissage/paroi</em> (15–25 %), <em>Remplissage plein interne</em> (motif et seuil), <em>Compensation de débit des petites zones</em>.</li>
+<li><strong>Motifs disponibles (OrcaSlicer 2.4)</strong> : Grille, Lignes, Rectiligne, Rectiligne aligné, Zig-zag, Zig-zag croisé, Triangles, Étoile, Cubique, Quart cubique, Support cubique, Cubique adaptatif, Nid d&#39;abeille, Nid d&#39;abeille 3D, Gyroïde, TPMS-D, Lightning, Concentrique, Hilbert, Archimède, Octogramme. Détails dans la rubrique <a href="#/remplissage">Remplissage</a>.</li>
+<li><strong>Densité de remplissage graduelle / Remplissage creux autour des trous</strong> : selon version.</li>
+</ul>
+<h3 id="elegooslicer--pont-bridges">Pont (Bridges)</h3>
+<ul>
+<li><strong>Débit des ponts</strong> : 0,85–1,0. Moins de débit = ponts moins affaissés.</li>
+<li><strong>Densité des ponts</strong> : 100 % ; jusqu&#39;à 110 % pour des ponts plus jointifs.</li>
+<li><strong>Ponts épais</strong> : imprime les ponts avec une ligne de la hauteur de la buse : plus solides mais plus visibles. Désactiver pour un dessous de pont plus beau.</li>
+<li><strong>Angle de pont</strong> : 0 = automatique.</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-03-onglet-vitesse">Fiche ES-03 — Onglet Vitesse</h2>
+<h3 id="elegooslicer--vitesses">Vitesses</h3>
+<ul>
+<li><strong>Première couche</strong> : 30–50 mm/s (Centauri Carbon), 20–30 mm/s (Neptune Bowden ancienne génération).</li>
+<li><strong>Paroi extérieure</strong> : 150–200 mm/s ; baisser à 80–120 si vous voyez des ondulations.</li>
+<li><strong>Paroi intérieure</strong> : 250–300 mm/s.</li>
+<li><strong>Remplissage / remplissage plein</strong> : 250–300 mm/s.</li>
+<li><strong>Surface supérieure</strong> : 150–200 mm/s.</li>
+<li><strong>Ponts</strong> : 25–50 mm/s. <strong>Déplacements</strong> : 400–500 mm/s.</li>
+<li><strong>Petits périmètres</strong> : 50 % de la paroi extérieure, sous un seuil de ~6,5 mm (les petits trous sortent plus ronds).</li>
+</ul>
+<h3 id="elegooslicer--ralentissement-en-surplomb">Ralentissement en surplomb</h3>
+<ul>
+<li>Vitesses par tranche de surplomb (10–25 %, 25–50 %, 50–75 %, 75–100 %). Activer <strong>Ralentir pour les périmètres courbés</strong> pour les surplombs arrondis.</li>
+</ul>
+<h3 id="elegooslicer--acceleration-et-jerk">Accélération et jerk</h3>
+<ul>
+<li><strong>Accélération normale</strong> : 10 000 mm/s² (Centauri Carbon), 5 000 mm/s² (Neptune 4).</li>
+<li><strong>Paroi extérieure</strong> : 3 000–5 000. <strong>Première couche</strong> : 500–1 000. <strong>Surface supérieure</strong> : 2 000–3 000.</li>
+<li><strong>Accélération vers décélération (Klipper)</strong> : 50 % ; lisse les mouvements.</li>
+<li><strong>Vitesse de virage carré / jerk</strong> : laisser le profil.</li>
+<li><strong>Effet</strong> : trop haut = échos (ghosting), décalages de couches ; trop bas = lent.</li>
+</ul>
+<h3 id="elegooslicer--debit-volumetrique-maximal-dans-le-filament">Débit volumétrique maximal (dans le filament)</h3>
+<ul>
+<li>Limite de fusion de la buse. PLA standard 12–15 mm³/s ; Rapid PLA+ 20–25 ; PETG 10–15 ; TPU 3–6 ; ASA 15–20.</li>
+<li>Formule : vitesse max = débit ÷ (couche × largeur).</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-04-onglet-support-resume">Fiche ES-04 — Onglet Support (résumé)</h2>
+<p>Les supports ont leur propre jeu de fiches (rubrique <a href="#/supports">Supports</a>). Dans ElegooSlicer, les réglages clés sont :</p>
+<ul>
+<li><strong>Activer les supports</strong> + <strong>Type</strong> : <em>Normal (auto)</em>, <em>Arborescent (auto)</em>, <em>Normal (manuel)</em>, <em>Arborescent (manuel)</em>. « Manuel » = seulement là où vous avez peint.</li>
+<li><strong>Style</strong> : <em>Grille</em>, <em>Ajusté</em> (snug) pour le normal ; <em>Fin</em>, <em>Épais</em>, <em>Organique</em>, <em>Hybride</em> pour l&#39;arborescent.</li>
+<li><strong>Angle de seuil</strong> : 30–45° (en dessous, pas de support).</li>
+<li><strong>Sur le plateau uniquement</strong> : évite les supports posés sur la pièce.</li>
+<li><strong>Distance Z supérieure / inférieure</strong> : 0,2 mm (égale à la hauteur de couche) pour un retrait facile.</li>
+<li><strong>Couches d&#39;interface</strong>, <strong>motif d&#39;interface</strong>, <strong>espacement d&#39;interface</strong> : c&#39;est là que se joue la qualité du dessous.</li>
+<li><strong>Distance X/Y</strong> : 0,35–0,8 mm.</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-05-onglet-multimateriau">Fiche ES-05 — Onglet Multimatériau</h2>
+<p>Utile avec un système multicouleur (par exemple le module multi-filament Elegoo) ou une seule buse avec changements manuels.</p>
+<ul>
+<li><strong>Tour de purge (Prime tower)</strong> : largeur, volume de purge, bordure. La tour stabilise le débit après chaque changement.</li>
+<li><strong>Volumes de purge</strong> : tableau couleur → couleur. Passer du noir au blanc demande plus de purge que l&#39;inverse. Le bouton <em>Calcul automatique</em> donne une base.</li>
+<li><strong>Purger dans le remplissage / dans les supports / dans l&#39;objet</strong> : recycle la purge à l&#39;intérieur de la pièce pour gaspiller moins.</li>
+<li><strong>Poutres d&#39;imbrication (Interlocking beams)</strong> : quand deux matériaux qui ne collent pas se touchent (PLA + TPU, PLA + PETG), le logiciel crée un engrenage mécanique de petites poutres entre eux. Largeur 0,8 mm, profondeur 2 couches.</li>
+<li><strong>Pause / changement de filament manuel</strong> : clic droit sur le curseur des couches dans l&#39;aperçu → <em>Ajouter une pause</em> ou <em>Changer de filament</em>. Idéal pour un texte de couleur différente sans système multicouleur.</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-06-onglet-autres">Fiche ES-06 — Onglet Autres</h2>
+<h3 id="elegooslicer--jupe-bordure-radeau">Jupe, bordure, radeau</h3>
+<ul>
+<li><strong>Jupe</strong> : 1–2 boucles à 3–5 mm, pour amorcer la buse. <em>Hauteur de jupe</em> &gt; 1 = rempart contre les courants d&#39;air (ASA).</li>
+<li><strong>Bordure</strong> : <em>Auto</em>, <em>Extérieur seulement</em>, <em>Intérieur seulement</em>, <em>Oreilles de souris</em>, <em>Peinte</em>. Largeur 3–8 mm, espace bordure-objet 0,1 mm.</li>
+<li><strong>Radeau</strong> : couches de radeau 2–3, distance Z de contact 0,1–0,2 mm. Rarement nécessaire.</li>
+</ul>
+<h3 id="elegooslicer--mode-spirale-vase">Mode spirale (vase)</h3>
+<ul>
+<li>Une seule paroi qui monte en continu. Rapide et sans couture, mais pas de dessus ni de solidité. <em>Spirale lisse</em> réduit les marques de transition.</li>
+</ul>
+<h3 id="elegooslicer--sequence-d-impression">Séquence d&#39;impression</h3>
+<ul>
+<li><em>Par couche</em> ou <em>Par objet</em> (chaque objet fini avant le suivant ; vérifier les distances de sécurité autour de la tête).</li>
+</ul>
+<h3 id="elegooslicer--post-traitement-g-code-personnalise">Post-traitement, G-code personnalisé</h3>
+<ul>
+<li>Scripts exécutés après le tranchage et G-code inséré à certaines hauteurs. Réservé aux utilisateurs avancés.</li>
+</ul>
+<h3 id="elegooslicer--notes-et-etiquettes">Notes et étiquettes</h3>
+<ul>
+<li><strong>Étiqueter les objets</strong> : nécessaire pour annuler un objet en cours d&#39;impression (Exclude objects sous Klipper).</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-07-prereglage-filament">Fiche ES-07 — Préréglage Filament</h2>
+<h3 id="elegooslicer--temperatures">Températures</h3>
+<ul>
+<li><strong>Buse</strong> (première couche / autres) : voir la rubrique <a href="#/filaments">Filaments</a>.</li>
+<li><strong>Plateau</strong> : une température par type de plaque (PEI lisse, PEI texturé, plaque froide…). Vérifiez que le <em>type de plaque</em> choisi en haut correspond à celle installée.</li>
+<li><strong>Caisson</strong> : Centauri Carbon a un caisson fermé non chauffé activement ; pour le PLA, ouvrir le couvercle si l&#39;intérieur dépasse ~35 °C.</li>
+</ul>
+<h3 id="elegooslicer--ratio-de-debit">Ratio de débit</h3>
+<ul>
+<li>Multiplicateur d&#39;extrusion : PLA 0,98, PETG 0,95–1,0, TPU 1,0–1,05. À calibrer.</li>
+</ul>
+<h3 id="elegooslicer--pressure-advance">Pressure Advance</h3>
+<ul>
+<li>Activer <em>Pressure Advance</em> dans le filament et saisir la valeur calibrée (0,02–0,06 en direct drive).</li>
+<li><strong>Pressure Advance adaptatif</strong> (hérité d&#39;Orca 2.3+) : la valeur change selon la vitesse et l&#39;accélération. Avancé ; laisser désactivé au début.</li>
+</ul>
+<h3 id="elegooslicer--refroidissement">Refroidissement</h3>
+<ul>
+<li><strong>Ventilateur min/max</strong>, <strong>couches sans ventilateur</strong> (1–3), <strong>seuil de temps de couche</strong> pour monter au max, <strong>ralentir si la couche est trop rapide</strong> (temps min 4–8 s pour le PLA).</li>
+<li><strong>Ventilateur forcé pour surplombs et ponts</strong>.</li>
+<li><strong>Ventilateur auxiliaire</strong> (Centauri Carbon) : 50–70 % pour PLA, 0 % pour ASA.</li>
+<li>Valeurs de ventilation par matériau : PLA 100 %, PETG 30–60 %, TPU 50–100 %, ASA 0–30 %, nylon 0–30 %.</li>
+</ul>
+<h3 id="elegooslicer--retraction-surcharge-filament">Rétraction (surcharge filament)</h3>
+<ul>
+<li>Le filament peut remplacer la rétraction de l&#39;imprimante : longueur, vitesse, levée Z, essuyage. Centauri Carbon : 0,8 mm à 40 mm/s pour le PLA ; TPU 0,5–1 mm à 20 mm/s.</li>
+</ul>
+<h3 id="elegooslicer--debit-volumetrique-maximal-retrait-densite-prix">Débit volumétrique maximal, retrait, densité, prix</h3>
+<ul>
+<li><strong>Débit max</strong> : la limite de vitesse réelle (voir ES-03).</li>
+<li><strong>Retrait</strong> (shrinkage) : 100 % PLA, ~99,5 % ASA/nylon.</li>
+<li><strong>Densité et prix au kg</strong> : servent à calculer le poids et le coût de la pièce.</li>
+</ul>
+<h3 id="elegooslicer--temperature-de-ramollissement">Température de ramollissement</h3>
+<ul>
+<li>Sert à avertir si le plateau est trop chaud par rapport au matériau (PLA ~55 °C).</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-08-prereglage-imprimante">Fiche ES-08 — Préréglage Imprimante</h2>
+<ul>
+<li><strong>Géométrie</strong> : zone d&#39;impression, hauteur, forme du plateau — déjà juste pour une imprimante Elegoo.</li>
+<li><strong>Extrudeur</strong> : diamètre de buse, décalages, limites de hauteur de couche (min 0,08 / max 0,28 pour 0,4).</li>
+<li><strong>Rétraction machine</strong> : valeurs par défaut si le filament n&#39;en impose pas.</li>
+<li><strong>Limites de mouvement</strong> : vitesses et accélérations max.</li>
+<li><strong>G-code machine</strong> : début, fin, changement de couche, pause. Le début contient le nivellement et la ligne de purge.</li>
+<li><strong>Imprimantes non Elegoo</strong> : ElegooSlicer inclut des profils tiers ; sinon, créez une imprimante « générique » en recopiant les dimensions et la buse.</li>
+</ul>
+<h2 id="elegooslicer--fiche-es-09-menu-calibration">Fiche ES-09 — Menu Calibration</h2>
+<p>ElegooSlicer reprend tous les tests d&#39;OrcaSlicer (menu <strong>Calibration</strong> en haut) :</p>
+<ol>
+<li><strong>Température</strong> : tour par paliers de 5 °C.</li>
+<li><strong>Débit (Flow rate)</strong> : passe 1 grossière, passe 2 fine, ou méthode YOLO.</li>
+<li><strong>Pressure Advance</strong> : tour, motif de lignes ou motif en chevrons.</li>
+<li><strong>Rétraction</strong> : tour avec longueur croissante.</li>
+<li><strong>Débit volumétrique max</strong> : spirale qui accélère jusqu&#39;à la limite.</li>
+<li><strong>Test VFA</strong> : vitesses provoquant des vibrations sur les surfaces.</li>
+<li><strong>Tolérance</strong> : pièces à emboîter pour régler la compensation XY.</li>
+<li><strong>Input shaping</strong> (selon version) : réglage anti-vibrations côté Klipper.</li>
+</ol>
+<p>Après chaque test, enregistrez la valeur dans <strong>votre</strong> copie du profil filament (icône disquette → nouveau nom, par exemple « eSUN PLA+ noir — CC »).</p>
+<h2 id="elegooslicer--differences-pratiques-avec-creality-print">Différences pratiques avec Creality Print</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Point</th>
+<th>Creality Print 7</th>
+<th>ElegooSlicer 1.5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Base</td>
+<td>Fork Orca/Bambu remanié par Creality</td>
+<td>Fork d&#39;OrcaSlicer (fusion Orca 2.4.2)</td>
+</tr>
+<tr>
+<td>Remplissages exclusifs</td>
+<td>Lateral Lattice, Lateral Honeycomb, Locked Zag, Fill Multiline</td>
+<td>Motifs standards d&#39;Orca</td>
+</tr>
+<tr>
+<td>Supports</td>
+<td>Analyse IA des supports, repassage des interfaces de support (7.1)</td>
+<td>Supports Orca (arborescents organiques, hybrides)</td>
+</tr>
+<tr>
+<td>Multicouleur</td>
+<td>CFS, catégorie d&#39;adhésion, longue rétraction à la coupe</td>
+<td>Tour de purge Orca, poutres d&#39;imbrication</td>
+</tr>
+<tr>
+<td>Calibration</td>
+<td>Menu Calibration (tests Orca) + auto sur K1/K2</td>
+<td>Tous les tests Orca</td>
+</tr>
+<tr>
+<td>Imprimantes connectées</td>
+<td>Creality Cloud, LAN, Fluidd (7.0.1)</td>
+<td>Imprimantes Elegoo en réseau, Nexprint</td>
+</tr>
+</tbody></table></div>
+<div class="pager"><a class="prev" href="#/creality-print"><small>← Précédent</small>1. Creality Print</a><a class="next" href="#/problemes"><small>Suivant →</small>3. Problèmes d'impression</a></div>
+</section>
+<section class="rubrique" id="r-problemes">
+<h1 id="problemes--fiches-problemes-d-impression">Fiches problèmes d&#39;impression</h1>
+<p>Chaque fiche donne le symptôme, les causes de la plus fréquente à la plus rare, puis les remèdes. Les noms de réglages sont valables dans Creality Print et ElegooSlicer. Testez les remèdes <strong>dans l&#39;ordre</strong> et un seul à la fois.</p>
+<h2 id="problemes--diagnostic-rapide">Diagnostic rapide</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Ce que je vois</th>
+<th>Fiche</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>La pièce ne colle pas ou se décolle en cours</td>
+<td>P-01</td>
+</tr>
+<tr>
+<td>Les coins se relèvent</td>
+<td>P-02</td>
+</tr>
+<tr>
+<td>Le bas de la pièce déborde</td>
+<td>P-03</td>
+</tr>
+<tr>
+<td>Fils d&#39;araignée entre les parties</td>
+<td>P-04</td>
+</tr>
+<tr>
+<td>Trous, lignes maigres, pièce fragile</td>
+<td>P-05</td>
+</tr>
+<tr>
+<td>Surface boursouflée, pièce trop grosse</td>
+<td>P-06</td>
+</tr>
+<tr>
+<td>Les couches se séparent ou fissurent</td>
+<td>P-07</td>
+</tr>
+<tr>
+<td>Couches décalées en escalier</td>
+<td>P-08</td>
+</tr>
+<tr>
+<td>Échos / ondulations après les coins</td>
+<td>P-09</td>
+</tr>
+<tr>
+<td>Surplombs enroulés, ponts qui pendent</td>
+<td>P-10</td>
+</tr>
+<tr>
+<td>Trous ou bosses sur le dessus</td>
+<td>P-11</td>
+</tr>
+<tr>
+<td>L&#39;extrudeur claque, rien ne sort</td>
+<td>P-12</td>
+</tr>
+<tr>
+<td>Bandes horizontales régulières</td>
+<td>P-13</td>
+</tr>
+<tr>
+<td>Bourrelets, points, couture très visible</td>
+<td>P-14</td>
+</tr>
+<tr>
+<td>Coins gonflés ou arrondis</td>
+<td>P-15</td>
+</tr>
+<tr>
+<td>Cotes fausses, trous trop petits</td>
+<td>P-16</td>
+</tr>
+<tr>
+<td>Petites pièces fondues</td>
+<td>P-17</td>
+</tr>
+<tr>
+<td>Craquements, bulles, surface rugueuse</td>
+<td>P-18</td>
+</tr>
+<tr>
+<td>Pièce arrachée, « spaghetti »</td>
+<td>P-19</td>
+</tr>
+<tr>
+<td>Problèmes propres à un matériau</td>
+<td>P-20</td>
+</tr>
+</tbody></table></div>
+<h2 id="problemes--p-01-la-premiere-couche-ne-colle-pas">P-01 — La première couche ne colle pas</h2>
+<p><strong>Symptôme</strong> : le filament se traîne, fait des boules, ou la pièce se détache en cours.</p>
+<p><strong>Causes</strong> : plateau gras (traces de doigts) ; buse trop haute (Z-offset) ; plateau trop froid ; première couche trop rapide ; ventilateur actif dès la première couche ; mauvais type de plaque déclaré ; plaque usée.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Laver la plaque PEI à l&#39;eau chaude et au liquide vaisselle, rincer, sécher. Ensuite ne plus toucher la surface. L&#39;alcool isopropylique entre deux lavages.</li>
+<li>Relancer le nivellement automatique, puis ajuster le Z-offset : la ligne doit être légèrement écrasée, plate, sans transparence ni bourrelets.</li>
+<li>Plateau : +5 °C (PLA 60–65 °C, PETG 75–85 °C).</li>
+<li>Vitesse de première couche : 20–30 mm/s ; largeur de ligne première couche 0,50 mm.</li>
+<li><em>Couches sans ventilateur</em> : 1 à 3.</li>
+<li>Vérifier que le <em>type de plaque</em> dans le logiciel correspond à la plaque installée.</li>
+<li>Ajouter une bordure de 5 mm, ou un bâton de colle (PETG sur PEI lisse, nylon, TPU).</li>
+</ol>
+<h2 id="problemes--p-02-warping-les-coins-se-relevent">P-02 — Warping : les coins se relèvent</h2>
+<p><strong>Symptôme</strong> : les angles du bas se soulèvent ; parfois fissure horizontale sur les grandes pièces.</p>
+<p><strong>Causes</strong> : le plastique rétrécit en refroidissant. Très fréquent sur ASA, ABS, nylon ; possible sur PLA et PETG pour les grandes pièces. Courants d&#39;air, ventilation trop forte, plateau trop froid.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Fermer le caisson (ASA, nylon) et préchauffer 10 min avant de lancer.</li>
+<li>Bordure de 5–10 mm ou « oreilles de souris » aux coins.</li>
+<li>Plateau : ASA 90–100 °C, nylon 80–100 °C.</li>
+<li>Ventilateur : ASA 0–20 %, nylon 0–30 % ; ventilateur auxiliaire à 0.</li>
+<li>Coller : colle en bâton ou laque spéciale (type Dimafix, Magigoo).</li>
+<li>Modèle : arrondir les angles vifs du bas (congé de 2–3 mm) si vous dessinez la pièce.</li>
+<li>Remplissage moins dense (15 %) : moins de matière qui tire.</li>
+</ol>
+<h2 id="problemes--p-03-patte-d-elephant">P-03 — Patte d&#39;éléphant</h2>
+<p><strong>Symptôme</strong> : les premières couches débordent vers l&#39;extérieur.</p>
+<p><strong>Causes</strong> : buse trop basse, plateau trop chaud, poids de la pièce sur un plastique encore mou.</p>
+<p><strong>Remèdes</strong> : remonter un peu le Z-offset (+0,02 à +0,05 mm) ; baisser le plateau de 5 °C ; <em>Compensation de la patte d&#39;éléphant</em> 0,1–0,2 mm ; chanfrein de 0,5 mm au bas du modèle.</p>
+<h2 id="problemes--p-04-stringing-fils-toiles-d-araignee">P-04 — Stringing (fils, toiles d&#39;araignée)</h2>
+<p><strong>Causes</strong> : filament humide (PETG, TPU surtout) ; température trop haute ; rétraction insuffisante ; déplacements qui traversent le vide.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li><strong>Sécher le filament</strong> (voir P-18) : règle la moitié des cas.</li>
+<li>Baisser la buse de 5 °C, puis encore 5 °C (tour de température).</li>
+<li>Calibrer la rétraction : direct drive 0,5 → 1,5 mm ; Bowden 4 → 6 mm.</li>
+<li>Activer <em>Éviter de traverser les parois</em> et <em>Essuyage</em>.</li>
+<li>Réduire ou désactiver la <em>Levée en Z</em> : elle crée souvent des fils.</li>
+<li>PETG : un peu de fils est normal ; un coup de décapeur thermique rapide les fait disparaître.</li>
+</ol>
+<h2 id="problemes--p-05-sous-extrusion">P-05 — Sous-extrusion</h2>
+<p><strong>Symptôme</strong> : lignes trop fines, trous dans les parois et le dessus, remplissage qui ne touche pas les parois, pièce cassante.</p>
+<p><strong>Causes</strong> : vitesse supérieure au débit volumétrique possible ; température trop basse ; buse partiellement bouchée ; filament humide ou de diamètre irrégulier ; ratio de débit trop bas ; tension de l&#39;extrudeur mal réglée ; bobine qui accroche.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Vérifier que la bobine tourne librement et que le filament n&#39;est pas emmêlé.</li>
+<li>Baisser le <em>Débit volumétrique max</em> du filament (ex. 20 → 15 mm³/s) ou les vitesses.</li>
+<li>Monter la buse de 5–10 °C.</li>
+<li>Faire un « cold pull » (pousser le filament à chaud, laisser refroidir à ~90 °C pour le PLA, tirer d&#39;un coup) ou changer la buse.</li>
+<li>Calibrer le <em>Ratio de débit</em>.</li>
+<li>Augmenter le <em>Chevauchement remplissage/paroi</em> à 20–25 %.</li>
+</ol>
+<h2 id="problemes--p-06-sur-extrusion">P-06 — Sur-extrusion</h2>
+<p><strong>Symptôme</strong> : surface bosselée, bords qui débordent, dessus rugueux, pièces qui ne s&#39;emboîtent plus.</p>
+<p><strong>Remèdes</strong> : calibrer le ratio de débit (souvent 0,95–0,98) ; vérifier le diamètre de filament déclaré (1,75 mm) ; baisser le <em>Débit de surface supérieure</em> à 0,95 ; vérifier que la largeur de ligne correspond à la buse installée.</p>
+<h2 id="problemes--p-07-delamination-les-couches-se-separent">P-07 — Délamination : les couches se séparent</h2>
+<p><strong>Causes</strong> : température trop basse ; trop de ventilation ; vitesse trop haute ; couches trop épaisses ; courants d&#39;air (ASA) ; filament humide.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Buse +5 à +10 °C.</li>
+<li>Ventilation réduite (PETG 30–40 %, ASA 0–15 %, nylon 0–20 %).</li>
+<li>Vitesse paroi réduite de 20–30 %.</li>
+<li>Hauteur de couche ≤ 0,2 mm, largeur de ligne 0,45 mm.</li>
+<li>Caisson fermé pour ASA et nylon.</li>
+<li>Orienter la pièce pour que l&#39;effort ne tire pas dans le sens Z (les couches sont le point faible).</li>
+</ol>
+<h2 id="problemes--p-08-decalage-de-couches-layer-shift">P-08 — Décalage de couches (layer shift)</h2>
+<p><strong>Symptôme</strong> : la pièce « glisse » d&#39;un coup, en escalier.</p>
+<p><strong>Causes</strong> : buse qui accroche la pièce (surplombs enroulés) ; courroies détendues ; accélération trop haute ; moteur qui chauffe ; obstacle mécanique.</p>
+<p><strong>Remèdes</strong> : activer la <em>Levée en Z</em> (0,2–0,4 mm) uniquement sur les surfaces supérieures ; vérifier la tension des courroies ; réduire l&#39;accélération de 20–30 % ; nettoyer et lubrifier les axes ; vérifier qu&#39;aucun câble ne frotte.</p>
+<h2 id="problemes--p-09-ghosting-ringing-echos-et-ondulations">P-09 — Ghosting / ringing (échos et ondulations)</h2>
+<p><strong>Symptôme</strong> : une ombre répétée des détails, juste après les coins ou les lettres.</p>
+<p><strong>Causes</strong> : vibrations de la machine à haute accélération.</p>
+<p><strong>Remèdes</strong> : refaire la calibration <em>Input shaping</em> de l&#39;imprimante (automatique sur K1/K2/Centauri Carbon) ; réduire l&#39;accélération de la paroi extérieure (3 000–5 000 mm/s²) ; poser l&#39;imprimante sur un support lourd et stable ; vérifier les courroies et les vis.</p>
+<h2 id="problemes--p-10-surplombs-et-ponts-rates">P-10 — Surplombs et ponts ratés</h2>
+<p><strong>Symptôme</strong> : les bords en surplomb se recourbent vers le haut ; les ponts pendent ou cassent.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Ventilation à 100 % sur surplombs et ponts (PLA) ; 60–80 % (PETG).</li>
+<li><em>Ralentir en surplomb</em> activé.</li>
+<li>Baisser la buse de 5 °C.</li>
+<li>Ponts : <em>Débit des ponts</em> 0,85–0,9, vitesse 25–40 mm/s, désactiver <em>Ponts épais</em> si la face du dessous doit être belle.</li>
+<li>Au-delà de 50–55° de surplomb : supports, ou réorienter la pièce, ou <em>Rendre les surplombs imprimables</em> (ElegooSlicer/Orca).</li>
+</ol>
+<h2 id="problemes--p-11-dessus-troues-ou-bosseles-pillowing">P-11 — Dessus troués ou bosselés (pillowing)</h2>
+<p><strong>Causes</strong> : pas assez de couches pleines du dessus ; remplissage trop peu dense ; ventilation faible ; sous-extrusion.</p>
+<p><strong>Remèdes</strong> : 5–7 couches du dessus (épaisseur ≥ 1 mm) ; remplissage ≥ 15 % ou motif qui soutient bien (Grille, Gyroïde) ; ventilation 100 % (PLA) ; <em>Ne pas filtrer les ponts internes</em> ; repassage pour finir.</p>
+<h2 id="problemes--p-12-bouchage-claquement-de-l-extrudeur">P-12 — Bouchage, claquement de l&#39;extrudeur</h2>
+<p><strong>Symptôme</strong> : clic régulier de l&#39;extrudeur, filament grignoté, plus rien ne sort.</p>
+<p><strong>Causes</strong> : température trop basse pour la vitesse ; buse bouchée (poussière, carbonisation) ; rétraction excessive ; caisson trop chaud avec du PLA (le filament ramollit trop tôt) ; buse trop proche du plateau à la première couche.</p>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Monter de 10 °C et extruder à la main pour voir si ça coule.</li>
+<li>Cold pull, ou aiguille de nettoyage 0,4 mm, ou remplacer la buse (pas cher).</li>
+<li>Rétraction direct drive ≤ 1,5 mm.</li>
+<li>PLA dans une imprimante fermée : ouvrir le capot ou la porte.</li>
+<li>Après un matériau chaud (ASA, nylon), purger à haute température avant de remettre du PLA.</li>
+</ol>
+<h2 id="problemes--p-13-bandes-horizontales-z-banding">P-13 — Bandes horizontales (Z-banding)</h2>
+<p><strong>Causes</strong> : tige filetée Z voilée ou mal alignée ; variations de température du plateau ; changements brusques de vitesse entre couches ; diamètre de filament irrégulier.</p>
+<p><strong>Remèdes</strong> : vérifier et graisser la ou les vis Z ; <em>Temps de couche minimum</em> cohérent ; Creality Print 7 : <em>Lissage de vitesse des parois le long de Z</em> ; filament de meilleure qualité ; hauteur de couche multiple du pas moteur (0,04 mm : 0,12 / 0,16 / 0,20 / 0,24 / 0,28).</p>
+<h2 id="problemes--p-14-bourrelets-points-zits-et-couture-trop-visible">P-14 — Bourrelets, points (zits) et couture trop visible</h2>
+<p><strong>Remèdes</strong> : couture <em>Arrière</em> ou <em>Alignée</em> ; <em>Couture en écharpe</em> ; <em>Espace de couture</em> 10–15 % ; calibrer le Pressure Advance ; activer l&#39;<em>Essuyage</em> ; peindre la couture dans un angle de la pièce où elle se cache.</p>
+<h2 id="problemes--p-15-coins-gonfles-ou-arrondis">P-15 — Coins gonflés ou arrondis</h2>
+<p><strong>Causes</strong> : Pressure Advance mal réglé ; vitesse de virage trop haute ; sur-extrusion.</p>
+<p><strong>Remèdes</strong> : calibrer le Pressure Advance (P-A trop bas = coins gonflés ; trop haut = coins creusés) ; ordre des parois <em>Extérieur/Intérieur</em> ; réduire légèrement le ratio de débit.</p>
+<h2 id="problemes--p-16-cotes-fausses-trous-trop-petits-pieces-qui-ne-s-emboite">P-16 — Cotes fausses, trous trop petits, pièces qui ne s&#39;emboîtent pas</h2>
+<p><strong>Remèdes</strong> :</p>
+<ol>
+<li>Calibrer le débit d&#39;abord : la sur-extrusion réduit tous les trous.</li>
+<li><em>Compensation de trou XY</em> +0,05 à +0,15 mm ; <em>Polytrous</em> (ElegooSlicer).</li>
+<li>Prévoir 0,2–0,3 mm de jeu entre deux pièces à emboîter (0,1 mm pour un serrage).</li>
+<li>Ordre des parois <em>Extérieur/Intérieur</em>, <em>Paroi précise</em>.</li>
+<li>Matériaux qui rétrécissent (ASA, nylon) : régler le <em>Retrait</em> du filament.</li>
+</ol>
+<h2 id="problemes--p-17-petites-pieces-ou-pointes-fondues">P-17 — Petites pièces ou pointes fondues</h2>
+<p><strong>Cause</strong> : la couche est imprimée si vite que la précédente est encore molle.</p>
+<p><strong>Remèdes</strong> : <em>Temps de couche minimum</em> 6–10 s ; ventilation 100 % (PLA) ; imprimer plusieurs exemplaires en même temps (chaque couche dure plus longtemps) ; baisser la buse de 5 °C.</p>
+<h2 id="problemes--p-18-filament-humide">P-18 — Filament humide</h2>
+<p><strong>Symptôme</strong> : petits craquements ou « pops » pendant l&#39;impression, vapeur, bulles, surface rugueuse, beaucoup de fils, pièce cassante.</p>
+<p><strong>Remèdes</strong> : sécher dans un déshydrateur à filament ou un four à chaleur tournante bien réglé :</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Matériau</th>
+<th>Température de séchage</th>
+<th>Durée</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PLA</td>
+<td>45–50 °C</td>
+<td>4–6 h</td>
+</tr>
+<tr>
+<td>PETG</td>
+<td>55–65 °C</td>
+<td>4–6 h</td>
+</tr>
+<tr>
+<td>TPU</td>
+<td>50–60 °C</td>
+<td>6–8 h</td>
+</tr>
+<tr>
+<td>ASA</td>
+<td>70–80 °C</td>
+<td>4–6 h</td>
+</tr>
+<tr>
+<td>Nylon (PA)</td>
+<td>70–90 °C</td>
+<td>8–12 h</td>
+</tr>
+</tbody></table></div>
+<p>Stockage ensuite en boîte ou sac étanche avec dessiccant. Le nylon doit idéalement être imprimé depuis un séchoir en fonctionnement.</p>
+<h2 id="problemes--p-19-spaghetti-la-piece-est-arrachee-en-cours">P-19 — « Spaghetti » : la pièce est arrachée en cours</h2>
+<p><strong>Causes</strong> : adhérence insuffisante (P-01), warping (P-02), buse qui accroche un surplomb enroulé (P-10), pièce haute et fine qui oscille.</p>
+<p><strong>Remèdes</strong> : traiter la cause ; bordure ; pour les pièces hautes et fines, ralentir les déplacements et ajouter des supports-témoins ou imprimer couché. Activer la détection IA de la caméra si l&#39;imprimante en a une (K1/K2, Centauri Carbon).</p>
+<h2 id="problemes--p-20-problemes-typiques-par-materiau">P-20 — Problèmes typiques par matériau</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Matériau</th>
+<th>Problème fréquent</th>
+<th>Remède rapide</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PLA</td>
+<td>Bouchage dans imprimante fermée</td>
+<td>Ouvrir capot/porte, ventilateur caisson</td>
+</tr>
+<tr>
+<td>PLA</td>
+<td>Pointes fondues</td>
+<td>Temps de couche min. 8 s, ventilation 100 %</td>
+</tr>
+<tr>
+<td>PETG</td>
+<td>Colle trop sur PEI lisse (arrache la couche PEI)</td>
+<td>Colle en bâton comme séparateur, ou PEI texturé</td>
+</tr>
+<tr>
+<td>PETG</td>
+<td>Bourrelet qui s&#39;accumule sur la buse</td>
+<td>Baisser de 5 °C, débit 0,95, nettoyer la buse à chaud</td>
+</tr>
+<tr>
+<td>TPU</td>
+<td>Filament qui s&#39;enroule dans l&#39;extrudeur</td>
+<td>Vitesse 20–40 mm/s, rétraction 0–1 mm, pas de système multicouleur (CFS/AMS)</td>
+</tr>
+<tr>
+<td>ASA</td>
+<td>Fissures entre couches, odeur</td>
+<td>Caisson fermé et chaud, ventilation 0–15 %, aérer la pièce où se trouve l&#39;imprimante</td>
+</tr>
+<tr>
+<td>Nylon</td>
+<td>Pièce molle, bulles, décollement</td>
+<td>Sécher 8–12 h, colle sur plateau, caisson chaud</td>
+</tr>
+<tr>
+<td>Fibre de carbone (-CF)</td>
+<td>Buse laiton usée en quelques bobines</td>
+<td>Buse en acier trempé</td>
+</tr>
+</tbody></table></div>
+<div class="pager"><a class="prev" href="#/elegooslicer"><small>← Précédent</small>2. ElegooSlicer</a><a class="next" href="#/remplissage"><small>Suivant →</small>4. Remplissage</a></div>
+</section>
+<section class="rubrique" id="r-remplissage">
+<h1 id="remplissage--fiches-remplissage">Fiches remplissage</h1>
+<p>Le remplissage (infill) est la structure alvéolée à l&#39;intérieur de la pièce. Il soutient les couches du dessus, rigidifie la pièce et fait gagner énormément de matière et de temps par rapport à une pièce pleine. <strong>Mais ce n&#39;est pas le premier levier de solidité</strong> : ajouter des parois est plus efficace qu&#39;augmenter la densité.</p>
+<h2 id="remplissage--r-01-choisir-vite-le-bon-remplissage-selon-l-usage">R-01 — Choisir vite : le bon remplissage selon l&#39;usage</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Usage</th>
+<th>Motif conseillé</th>
+<th>Densité</th>
+<th>Parois</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Figurine, déco, maquette</td>
+<td>Lightning ou Gyroïde</td>
+<td>5–10 %</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Objet du quotidien (boîte, support de téléphone)</td>
+<td>Grille ou Gyroïde</td>
+<td>15 %</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Pièce fonctionnelle (fixation, équerre)</td>
+<td>Gyroïde, Cubique ou Lateral Lattice (Creality)</td>
+<td>20–35 %</td>
+<td>4</td>
+</tr>
+<tr>
+<td>Pièce très sollicitée (engrenage, outil)</td>
+<td>Gyroïde ou Cubique</td>
+<td>40–60 %</td>
+<td>5–6</td>
+</tr>
+<tr>
+<td>Pièce flexible en TPU</td>
+<td>Gyroïde ou Concentrique</td>
+<td>10–20 %</td>
+<td>2–3</td>
+</tr>
+<tr>
+<td>Grande pièce qui doit rester légère</td>
+<td>Cubique adaptatif ou Support cubique</td>
+<td>10–15 %</td>
+<td>3</td>
+</tr>
+<tr>
+<td>Pièce translucide ou en mode déco visible</td>
+<td>Gyroïde, Nid d&#39;abeille, Octogramme</td>
+<td>10–20 %</td>
+<td>1–2</td>
+</tr>
+</tbody></table></div>
+<p><strong>Densité : repères généraux</strong></p>
+<ul>
+<li><strong>0–10 %</strong> : décoratif uniquement. Le dessus peut s&#39;affaisser si le motif ne le soutient pas.</li>
+<li><strong>15–20 %</strong> : la valeur par défaut pour 80 % des pièces.</li>
+<li><strong>25–40 %</strong> : pièces fonctionnelles.</li>
+<li><strong>50–100 %</strong> : rarement utile. Au-delà de ~50 %, chaque % en plus coûte cher en temps et matière pour un gain de solidité faible. Ajoutez plutôt des parois.</li>
+</ul>
+<h2 id="remplissage--r-02-tableau-comparatif-des-motifs">R-02 — Tableau comparatif des motifs</h2>
+<p>Notes relatives de 1 (faible) à 5 (excellent), à densité égale. Les notes sont indicatives ; la vitesse réelle dépend de l&#39;imprimante.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Motif</th>
+<th>Type</th>
+<th>Vitesse</th>
+<th>Résistance</th>
+<th>Soutien du dessus</th>
+<th>Disponible</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Lignes / Rectiligne</td>
+<td>2D</td>
+<td>5</td>
+<td>2</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Rectiligne aligné</td>
+<td>2D</td>
+<td>5</td>
+<td>2</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Zig-zag</td>
+<td>2D</td>
+<td>5</td>
+<td>2</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Zig-zag croisé (Cross-hatch)</td>
+<td>3D</td>
+<td>3</td>
+<td>4</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Grille</td>
+<td>2D</td>
+<td>4</td>
+<td>3</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Triangles</td>
+<td>2D</td>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Étoile (Tri-hexagone)</td>
+<td>2D</td>
+<td>4</td>
+<td>3</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Nid d&#39;abeille</td>
+<td>2D</td>
+<td>2</td>
+<td>4</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Nid d&#39;abeille 3D</td>
+<td>3D</td>
+<td>3</td>
+<td>4</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Cubique</td>
+<td>3D</td>
+<td>4</td>
+<td>4</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Quart cubique</td>
+<td>3D</td>
+<td>4</td>
+<td>4</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Cubique adaptatif</td>
+<td>3D</td>
+<td>4</td>
+<td>3</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Support cubique</td>
+<td>3D</td>
+<td>5</td>
+<td>2</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Gyroïde</td>
+<td>3D</td>
+<td>3</td>
+<td>5</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>TPMS-D</td>
+<td>3D</td>
+<td>3</td>
+<td>5</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Lightning</td>
+<td>3D</td>
+<td>5</td>
+<td>1</td>
+<td>4</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Concentrique</td>
+<td>2D</td>
+<td>4</td>
+<td>2</td>
+<td>2</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Hilbert / Archimède / Octogramme</td>
+<td>2D</td>
+<td>2</td>
+<td>2</td>
+<td>3</td>
+<td>Les deux</td>
+</tr>
+<tr>
+<td>Lateral Lattice</td>
+<td>3D</td>
+<td>4</td>
+<td>4</td>
+<td>4</td>
+<td>Creality Print 7</td>
+</tr>
+<tr>
+<td>Lateral Honeycomb</td>
+<td>3D</td>
+<td>3</td>
+<td>5</td>
+<td>4</td>
+<td>Creality Print 7</td>
+</tr>
+<tr>
+<td>Locked Zag</td>
+<td>2D/3D</td>
+<td>4</td>
+<td>3</td>
+<td>4</td>
+<td>Creality Print 7</td>
+</tr>
+</tbody></table></div>
+<p><strong>2D ou 3D ?</strong> Un motif 2D répète le même dessin à chaque couche : il est solide dans le plan mais faible en hauteur. Un motif 3D change d&#39;une couche à l&#39;autre et forme une structure qui travaille dans toutes les directions.</p>
+<h2 id="remplissage--r-03-fiches-par-motif">R-03 — Fiches par motif</h2>
+<h3 id="remplissage--lignes-rectiligne">Lignes / Rectiligne</h3>
+<p>Une seule série de lignes parallèles, qui tourne de 90° à chaque couche.</p>
+<ul>
+<li><strong>Avantages</strong> : le plus rapide et le plus économe ; aucune ligne ne se croise dans la même couche, donc pas de collision de buse.</li>
+<li><strong>Inconvénients</strong> : faible en torsion et en compression latérale ; liaison moyenne avec les parois.</li>
+<li><strong>Exemple</strong> : prototype de forme qu&#39;on jettera après vérification des dimensions.</li>
+</ul>
+<h3 id="remplissage--rectiligne-aligne">Rectiligne aligné</h3>
+<p>Comme Rectiligne, mais les lignes gardent le même sens sur toutes les couches.</p>
+<ul>
+<li><strong>Avantages</strong> : très rapide, peu de vibrations.</li>
+<li><strong>Inconvénients</strong> : résistance très directionnelle (forte dans un sens, faible dans l&#39;autre).</li>
+</ul>
+<h3 id="remplissage--zig-zag">Zig-zag</h3>
+<p>Lignes reliées en un tracé continu.</p>
+<ul>
+<li><strong>Avantages</strong> : moins de déplacements et de rétractions, donc moins de fils ; rapide.</li>
+<li><strong>Inconvénients</strong> : solidité comparable aux lignes simples.</li>
+</ul>
+<h3 id="remplissage--zig-zag-croise-cross-hatch">Zig-zag croisé (Cross-hatch)</h3>
+<p>Motif qui alterne et se transforme avec la hauteur.</p>
+<ul>
+<li><strong>Avantages</strong> : bonne résistance dans toutes les directions, peu de croisements dans une même couche (moins de bruit, moins de vibrations que la grille).</li>
+<li><strong>Inconvénients</strong> : un peu plus lent que les lignes.</li>
+</ul>
+<h3 id="remplissage--grille-grid">Grille (Grid)</h3>
+<p>Deux séries de lignes croisées à 90° dans chaque couche.</p>
+<ul>
+<li><strong>Avantages</strong> : simple, solide en compression verticale, soutient bien le dessus. Bon motif « par défaut ».</li>
+<li><strong>Inconvénients</strong> : la buse repasse sur les croisements à chaque couche, ce qui peut accrocher et créer du bruit ou des vibrations à haute vitesse ; faible en torsion.</li>
+<li><strong>Exemple</strong> : boîte de rangement à 15 %.</li>
+</ul>
+<h3 id="remplissage--triangles">Triangles</h3>
+<p>Trois séries de lignes dans chaque couche, formant des triangles.</p>
+<ul>
+<li><strong>Avantages</strong> : très rigide dans le plan horizontal (cisaillement).</li>
+<li><strong>Inconvénients</strong> : triple croisement dans chaque couche (collisions possibles), plus lent que la grille.</li>
+</ul>
+<h3 id="remplissage--etoile-tri-hexagone">Étoile (Tri-hexagone)</h3>
+<p>Triangles et hexagones mêlés.</p>
+<ul>
+<li><strong>Avantages</strong> : bonne répartition des efforts dans le plan, soutien correct du dessus.</li>
+<li><strong>Inconvénients</strong> : mêmes croisements que Triangles.</li>
+</ul>
+<h3 id="remplissage--nid-d-abeille-honeycomb">Nid d&#39;abeille (Honeycomb)</h3>
+<p>Hexagones réguliers.</p>
+<ul>
+<li><strong>Avantages</strong> : très solide, bel aspect (pièces translucides), excellente résistance à l&#39;écrasement.</li>
+<li><strong>Inconvénients</strong> : beaucoup de petits changements de direction : un des plus lents, vibrations sur imprimantes rapides.</li>
+</ul>
+<h3 id="remplissage--nid-d-abeille-3d">Nid d&#39;abeille 3D</h3>
+<p>Hexagones qui se transforment en carrés selon la hauteur.</p>
+<ul>
+<li><strong>Avantages</strong> : bonne résistance dans les trois directions, aucun croisement dans une couche.</li>
+<li><strong>Inconvénients</strong> : plus lent que Cubique.</li>
+</ul>
+<h3 id="remplissage--cubique">Cubique</h3>
+<p>Cubes empilés penchés sur leur pointe.</p>
+<ul>
+<li><strong>Avantages</strong> : résistance 3D équilibrée, rapide, bonne valeur sûre pour pièces fonctionnelles.</li>
+<li><strong>Inconvénients</strong> : croisements dans la couche (moins que Grille).</li>
+</ul>
+<h3 id="remplissage--quart-cubique">Quart cubique</h3>
+<p>Variante du cubique avec des cellules plus petites.</p>
+<ul>
+<li><strong>Avantages</strong> : mêmes qualités, structure plus fine et plus homogène.</li>
+</ul>
+<h3 id="remplissage--cubique-adaptatif">Cubique adaptatif</h3>
+<p>Cubes grands au centre, de plus en plus petits près des parois.</p>
+<ul>
+<li><strong>Avantages</strong> : économise beaucoup de matière sur les grosses pièces tout en gardant des parois bien soutenues.</li>
+<li><strong>Inconvénients</strong> : solidité du cœur plus faible.</li>
+<li><strong>Exemple</strong> : bac de 20 cm de côté : 30 à 40 % de filament en moins qu&#39;un Cubique de même densité (ordre de grandeur, dépend de la forme).</li>
+</ul>
+<h3 id="remplissage--support-cubique">Support cubique</h3>
+<p>Remplissage très léger, qui ne se densifie que sous les surfaces du dessus.</p>
+<ul>
+<li><strong>Avantages</strong> : rapide et économe ; dessus bien soutenus.</li>
+<li><strong>Inconvénients</strong> : faible ; réservé aux pièces non sollicitées.</li>
+</ul>
+<h3 id="remplissage--gyroide">Gyroïde</h3>
+<p>Surface ondulée continue, comme une éponge mathématique.</p>
+<ul>
+<li><strong>Avantages</strong> : excellente résistance dans toutes les directions, aucune ligne ne se croise, peu de vibrations ; très bon pour TPU (reste souple et régulier) ; laisse circuler un liquide (pièces à remplir de résine).</li>
+<li><strong>Inconvénients</strong> : calcul plus long, trajets courbes donc impression un peu plus lente que Grille sur les imprimantes à faible accélération.</li>
+<li><strong>Exemple</strong> : support de vélo en PETG, 25 % gyroïde + 4 parois.</li>
+</ul>
+<h3 id="remplissage--tpms-d">TPMS-D</h3>
+<p>Autre surface minimale triple périodique (famille du gyroïde).</p>
+<ul>
+<li><strong>Avantages</strong> : très bon rapport résistance/poids, isotrope (pareil dans toutes les directions). Introduit dans Creality Print 6.0 pour concilier solidité, temps et matière.</li>
+<li><strong>Inconvénients</strong> : récent, moins de recul que le gyroïde ; calcul plus lourd.</li>
+</ul>
+<h3 id="remplissage--lightning-eclair">Lightning (Éclair)</h3>
+<p>Arbre de branches qui ne pousse que sous les surfaces du dessus.</p>
+<ul>
+<li><strong>Avantages</strong> : le plus rapide et le plus économe ; parfait pour les figurines.</li>
+<li><strong>Inconvénients</strong> : n&#39;apporte quasiment aucune résistance à la pièce.</li>
+<li><strong>Exemple</strong> : buste de 15 cm : généralement 30 à 50 % de temps en moins qu&#39;en Grille 15 % (ordre de grandeur).</li>
+</ul>
+<h3 id="remplissage--concentrique">Concentrique</h3>
+<p>Copies successives du contour vers l&#39;intérieur.</p>
+<ul>
+<li><strong>Avantages</strong> : suit la forme ; bon pour pièces rondes, flexibles (TPU) ou fines.</li>
+<li><strong>Inconvénients</strong> : faible soutien du dessus, faible liaison entre couches.</li>
+</ul>
+<h3 id="remplissage--hilbert-archimede-spirale-octogramme">Hilbert, Archimède (spirale), Octogramme</h3>
+<p>Motifs décoratifs.</p>
+<ul>
+<li><strong>Avantages</strong> : jolis en surface (utilisés souvent pour le dessus ou le dessous) ou à travers un plastique translucide.</li>
+<li><strong>Inconvénients</strong> : lents, peu résistants.</li>
+</ul>
+<h3 id="remplissage--lateral-lattice-creality-print-7">Lateral Lattice (Creality Print 7)</h3>
+<ul>
+<li><strong>Avantages</strong> : selon Creality, vitesse proche du Zig-zag et résistance proche d&#39;un treillis (lattice). Bon choix « rapide mais costaud ».</li>
+<li><strong>Inconvénients</strong> : exclusif à Creality Print ; peu de tests indépendants.</li>
+</ul>
+<h3 id="remplissage--lateral-honeycomb-creality-print-7">Lateral Honeycomb (Creality Print 7)</h3>
+<ul>
+<li><strong>Avantages</strong> : présenté comme un remplissage « ingénierie » équilibrant résistance, vitesse et stabilité.</li>
+<li><strong>Inconvénients</strong> : exclusif ; plus lent que Lateral Lattice.</li>
+</ul>
+<h3 id="remplissage--locked-zag-creality-print-7">Locked Zag (Creality Print 7)</h3>
+<ul>
+<li><strong>Avantages</strong> : on règle séparément une « peau » de remplissage près des parois et un « cœur » (type et densité). Permet un extérieur dense et un centre léger.</li>
+<li><strong>Inconvénients</strong> : plus de paramètres à comprendre.</li>
+</ul>
+<h2 id="remplissage--r-04-les-parametres-du-remplissage">R-04 — Les paramètres du remplissage</h2>
+<h3 id="remplissage--densite-du-remplissage">Densité du remplissage</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : pourcentage du volume intérieur occupé par le motif.</li>
+<li><strong>Effet</strong> : plus de densité = plus rigide et lourd, plus long ; peu d&#39;effet au-delà de 50 %.</li>
+</ul>
+<h3 id="remplissage--motif">Motif</h3>
+<ul>
+<li>Voir R-02 et R-03. On peut choisir un motif différent pour le remplissage plein interne.</li>
+</ul>
+<h3 id="remplissage--direction-angle-du-remplissage">Direction / angle du remplissage</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : l&#39;angle des lignes (45° par défaut).</li>
+<li><strong>Exemple</strong> : pour une poutre longue, orienter à 0° (dans la longueur) augmente sa rigidité en flexion avec un motif Lignes.</li>
+</ul>
+<h3 id="remplissage--chevauchement-remplissage-paroi-infill-wall-overlap">Chevauchement remplissage/paroi (Infill/wall overlap)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : de combien le remplissage mord sur la paroi intérieure.</li>
+<li><strong>Effet</strong> : trop faible = remplissage décollé des parois (fragile) ; trop fort = bourrelets visibles à travers la paroi.</li>
+<li><strong>Valeurs</strong> : 15–25 %.</li>
+</ul>
+<h3 id="remplissage--longueur-d-ancrage-anchor-length">Longueur d&#39;ancrage (Anchor length)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : longueur de ligne qui longe la paroi pour relier deux lignes de remplissage.</li>
+<li><strong>Effet</strong> : meilleure accroche ; 0 = lignes indépendantes. Valeurs : 400 % de la largeur de ligne, max 20 mm.</li>
+</ul>
+<h3 id="remplissage--combiner-le-remplissage-toutes-les-n-couches">Combiner le remplissage toutes les N couches</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : imprime le remplissage en couches 2 ou 3 fois plus épaisses que les parois.</li>
+<li><strong>Effet</strong> : gain de temps important sans changer l&#39;aspect. Attention au débit volumétrique max : la vitesse est réduite automatiquement.</li>
+<li><strong>Exemple</strong> : couches à 0,12 mm et remplissage combiné x2 → remplissage à 0,24 mm.</li>
+</ul>
+<h3 id="remplissage--remplissage-plein-interne-motif-seuil-de-surface">Remplissage plein interne (motif, seuil de surface)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : couches pleines internes et petites zones remplies à 100 % (sous les dessus, dans les zones étroites).</li>
+<li><strong>Conseil</strong> : <em>Monotone</em> ou <em>Rectiligne</em> ; seuil de petite zone 15 mm².</li>
+</ul>
+<h3 id="remplissage--remplissage-multi-lignes-fill-multiline-creality-print-7">Remplissage multi-lignes (Fill Multiline — Creality Print 7)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : chaque trait du motif est imprimé avec 2 ou 3 lignes côte à côte.</li>
+<li><strong>Effet</strong> : murs internes plus épais et plus solides pour une même densité « perçue » ; moins de déplacements.</li>
+</ul>
+<h3 id="remplissage--compensation-de-debit-des-petites-zones-elegooslicer">Compensation de débit des petites zones (ElegooSlicer)</h3>
+<ul>
+<li>Réduit le débit dans les tout petits remplissages pour éviter les surextrusions. Laisser activé.</li>
+</ul>
+<h3 id="remplissage--vitesse-et-largeur-de-ligne-du-remplissage">Vitesse et largeur de ligne du remplissage</h3>
+<ul>
+<li>Le remplissage est caché : vitesse la plus haute possible (dans la limite du débit), largeur 0,45–0,50 mm pour plus de solidité.</li>
+</ul>
+<h3 id="remplissage--remplissage-avant-les-parois">Remplissage avant les parois</h3>
+<ul>
+<li>Option qui imprime le remplissage en premier : parois plus solides, mais motif parfois visible à travers les parois fines. Laisser désactivé pour un bel aspect.</li>
+</ul>
+<h2 id="remplissage--r-05-astuces-avancees">R-05 — Astuces avancées</h2>
+<ul>
+<li><strong>Densité locale avec un modificateur</strong> : ajoutez un cube ou cylindre modificateur autour d&#39;un trou de vis et mettez-y 50–100 % de remplissage. Le reste de la pièce reste à 15 %.</li>
+<li><strong>Parois plutôt que remplissage</strong> : pour une pièce qui doit tenir une vis, 4–5 parois autour du trou valent mieux que 80 % de remplissage.</li>
+<li><strong>Pièce étanche</strong> : 4+ parois et 6+ couches de dessus/dessous ; le remplissage n&#39;apporte pas d&#39;étanchéité.</li>
+<li><strong>Pièce à poncer ou percer</strong> : densité plus élevée ou parois plus nombreuses sur la zone travaillée.</li>
+<li><strong>TPU</strong> : la densité règle la souplesse. 10 % gyroïde = très souple ; 40 % = ferme.</li>
+</ul>
+<div class="pager"><a class="prev" href="#/problemes"><small>← Précédent</small>3. Problèmes d'impression</a><a class="next" href="#/supports"><small>Suivant →</small>5. Supports</a></div>
+</section>
+<section class="rubrique" id="r-supports">
+<h1 id="supports--fiches-supports">Fiches supports</h1>
+<p>Un bon support tient la pièce pendant l&#39;impression <strong>et</strong> se retire sans laisser de marque. Ces deux objectifs s&#39;opposent : plus le support est collé, mieux il soutient, mais plus il est dur à enlever. Tout l&#39;art est dans les <strong>distances</strong> et l&#39;<strong>interface</strong>.</p>
+<h2 id="supports--s-01-avant-d-ajouter-des-supports-en-a-t-on-besoin">S-01 — Avant d&#39;ajouter des supports : en a-t-on besoin ?</h2>
+<ol>
+<li><strong>Règle des 45°</strong> : un surplomb de moins de 45° par rapport à la verticale s&#39;imprime en général sans support (jusqu&#39;à 55–60° en PLA bien ventilé).</li>
+<li><strong>Ponts</strong> : un pont horizontal de moins de 20–30 mm passe souvent sans support.</li>
+<li><strong>Réorienter la pièce</strong> : c&#39;est la meilleure façon de supprimer des supports. Outil <em>Poser sur une face</em> (touche F) et <em>Orientation automatique</em>.</li>
+<li><strong>Couper la pièce</strong> en deux (outil Couper) et la recoller après, avec des tenons.</li>
+<li><strong>Modifier le modèle</strong> : chanfreins à 45° au lieu de bords plats, trous en goutte d&#39;eau ou en losange au lieu de trous ronds horizontaux.</li>
+<li>Creality Print 7 : l&#39;<strong>Analyse IA</strong> indique si des supports sont nécessaires et propose un type.</li>
+</ol>
+<h2 id="supports--s-02-normal-ou-arborescent">S-02 — Normal ou arborescent ?</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Critère</th>
+<th>Normal (grille / ajusté)</th>
+<th>Arborescent (tree / organique)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Forme</td>
+<td>Colonnes verticales sous toute la zone</td>
+<td>Branches qui partent d&#39;un tronc et ne touchent que les zones utiles</td>
+</tr>
+<tr>
+<td>Matière et temps</td>
+<td>Plus</td>
+<td>Moins (souvent nettement)</td>
+</tr>
+<tr>
+<td>Grandes surfaces planes en surplomb</td>
+<td>Excellent</td>
+<td>Moyen</td>
+</tr>
+<tr>
+<td>Figurines, formes organiques</td>
+<td>Moyen</td>
+<td>Excellent</td>
+</tr>
+<tr>
+<td>Contact avec la pièce</td>
+<td>Large</td>
+<td>Ponctuel, moins de marques</td>
+</tr>
+<tr>
+<td>Retrait</td>
+<td>Bloc par bloc, peut être dur dans les creux</td>
+<td>Souvent en une pièce</td>
+</tr>
+<tr>
+<td>Calcul</td>
+<td>Rapide</td>
+<td>Plus long</td>
+</tr>
+<tr>
+<td>Stabilité très haute</td>
+<td>Bonne</td>
+<td>Les troncs fins peuvent osciller</td>
+</tr>
+</tbody></table></div>
+<p><strong>Règle simple</strong> : pièce mécanique avec surplombs plats = <strong>Normal (Ajusté)</strong>. Figurine, personnage, forme courbe = <strong>Arborescent (Organique ou Hybride)</strong>.</p>
+<h2 id="supports--s-03-les-parametres-de-base">S-03 — Les paramètres de base</h2>
+<h3 id="supports--activer-type">Activer / Type</h3>
+<ul>
+<li><em>Normal (auto)</em>, <em>Arborescent (auto)</em> : le logiciel décide où.</li>
+<li><em>Normal (manuel)</em>, <em>Arborescent (manuel)</em> : uniquement là où vous avez <strong>peint</strong> les supports (pinceau <em>Peindre les supports</em>), et le pinceau <em>Bloquer</em> interdit des zones.</li>
+<li><strong>Conseil</strong> : en auto avec <em>Sur le plateau uniquement</em>, puis peindre pour ajouter ou bloquer.</li>
+</ul>
+<h3 id="supports--style">Style</h3>
+<ul>
+<li><strong>Normal</strong> : <em>Grille</em> (bloc qui suit l&#39;emprise) ou <em>Ajusté / Snug</em> (colle à la forme de la pièce, moins de matière, plus facile à sortir des recoins).</li>
+<li><strong>Arborescent</strong> : <em>Fin</em>, <em>Épais</em>, <em>Organique</em> (branches lisses, très robustes), <em>Hybride</em> (arbre + morceaux de normal sous les grandes surfaces plates).</li>
+</ul>
+<h3 id="supports--angle-de-seuil">Angle de seuil</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : en dessous de cet angle (mesuré depuis l&#39;horizontale), les surplombs reçoivent un support.</li>
+<li><strong>Valeurs</strong> : 30° (moins de supports, pour PLA bien ventilé) à 45° (plus sûr). PETG/ASA : 40–50°.</li>
+<li><strong>Exemple</strong> : si le logiciel met des supports sous des pentes qui s&#39;impriment très bien seules, baissez le seuil de 40° à 30°.</li>
+</ul>
+<h3 id="supports--sur-le-plateau-uniquement">Sur le plateau uniquement</h3>
+<ul>
+<li>Interdit les supports qui partiraient de la pièce elle-même. Supprime les marques sur les faces supérieures. À activer dès que possible.</li>
+</ul>
+<h3 id="supports--supprimer-les-petits-surplombs-seuil-de-surface">Supprimer les petits surplombs / Seuil de surface</h3>
+<ul>
+<li>Évite les supports sous de minuscules zones (bords de 1–2 mm) qui s&#39;impriment très bien seules.</li>
+</ul>
+<h2 id="supports--s-04-les-distances-le-secret-du-retrait-facile">S-04 — Les distances : le secret du retrait facile</h2>
+<h3 id="supports--distance-z-superieure-top-z-distance">Distance Z supérieure (Top Z distance)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : l&#39;espace vertical entre le haut du support et le dessous de la pièce.</li>
+<li><strong>Effet</strong> : trop petit = support soudé, impossible à retirer sans arracher. Trop grand = dessous qui pend et moche.</li>
+<li><strong>Valeurs</strong> : <strong>égal à la hauteur de couche</strong> pour commencer (0,2 mm en couche 0,2). PLA : 0,18–0,20 mm. PETG : 0,22–0,25 mm (il colle beaucoup plus). TPU : 0,25–0,3 mm.</li>
+<li><strong>Astuce</strong> : le logiciel arrondit cette distance à un nombre entier de couches, sauf si l&#39;option de hauteur indépendante est activée.</li>
+</ul>
+<h3 id="supports--distance-z-inferieure">Distance Z inférieure</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : espace entre le support et la pièce quand le support repose dessus.</li>
+<li><strong>Valeur</strong> : identique à la distance supérieure, ou 0 avec une interface du bas.</li>
+</ul>
+<h3 id="supports--distance-x-y">Distance X/Y</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : espace horizontal entre le support et les parois de la pièce.</li>
+<li><strong>Effet</strong> : trop petit = support collé aux parois verticales (marques) ; trop grand = bords des surplombs mal soutenus.</li>
+<li><strong>Valeurs</strong> : 0,35–0,8 mm. Préférer 0,5–0,8 mm pour les figurines.</li>
+<li><strong>Option</strong> <em>Priorité X/Y ou Z</em> : <em>Z prioritaire</em> garde la distance Z sous les surplombs légers.</li>
+</ul>
+<h2 id="supports--s-05-l-interface-la-zone-de-contact">S-05 — L&#39;interface : la zone de contact</h2>
+<p>L&#39;interface est la « peau » du support : quelques couches plus denses tout en haut, sur lesquelles se pose la pièce.</p>
+<h3 id="supports--couches-d-interface-superieures-et-inferieures">Couches d&#39;interface supérieures et inférieures</h3>
+<ul>
+<li><strong>Valeurs</strong> : supérieures 2–3 couches ; inférieures 0–2.</li>
+<li><strong>Effet</strong> : plus de couches = dessous plus lisse, support un peu plus collé.</li>
+</ul>
+<h3 id="supports--motif-d-interface">Motif d&#39;interface</h3>
+<ul>
+<li><em>Rectiligne</em>, <em>Rectiligne entrelacé</em>, <em>Concentrique</em>, <em>Grille</em>.</li>
+<li><strong>Conseil</strong> : <em>Rectiligne entrelacé</em> pour un dessous propre ; <em>Concentrique</em> se retire facilement en pelant.</li>
+</ul>
+<h3 id="supports--espacement-de-l-interface">Espacement de l&#39;interface</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : distance entre les lignes de l&#39;interface.</li>
+<li><strong>Valeurs</strong> : 0,2–0,5 mm. 0 = interface pleine (beau dessous, mais très collée). 0,3–0,5 = compromis.</li>
+</ul>
+<h3 id="supports--repassage-des-interfaces-de-support-creality-print-7-1">Repassage des interfaces de support (Creality Print 7.1)</h3>
+<ul>
+<li><strong>C&#39;est quoi</strong> : après l&#39;interface, une passe rapide à faible débit (10 % par défaut) lisse le dessus du support.</li>
+<li><strong>Effet</strong> : la face de la pièce posée dessus est nettement plus lisse.</li>
+</ul>
+<h3 id="supports--interface-dans-un-autre-materiau-multi-filament">Interface dans un autre matériau (multi-filament)</h3>
+<ul>
+<li><strong>Principe</strong> : imprimer seulement les 1–2 couches d&#39;interface dans un matériau qui ne colle pas à la pièce.</li>
+<li><strong>Combinaisons</strong> : pièce PLA + interface PETG ; pièce PETG + interface PLA. On peut alors mettre une <strong>distance Z de 0</strong> : le dessous est quasi parfait et le support se détache seul.</li>
+<li><strong>Réglages</strong> : <em>Filament pour l&#39;interface du support</em> ; distance Z supérieure 0 ; espacement d&#39;interface 0 ; Creality Print 7 : tirer parti de la <em>catégorie d&#39;adhésion</em> pour éviter que les matériaux soient mélangés ailleurs.</li>
+<li>Il existe aussi des filaments « support » dédiés : PVA ou BVOH (solubles à l&#39;eau), « breakaway ».</li>
+</ul>
+<h2 id="supports--s-06-corps-du-support">S-06 — Corps du support</h2>
+<h3 id="supports--motif-de-base-et-espacement">Motif de base et espacement</h3>
+<ul>
+<li><strong>Motif</strong> : <em>Rectiligne</em> (rapide), <em>Rectiligne grille</em> (plus rigide), <em>Lightning</em> (très léger), <em>Creux</em> (seulement la peau).</li>
+<li><strong>Espacement</strong> : 2–3 mm. Plus large = moins de matière et retrait plus facile, mais moins stable.</li>
+</ul>
+<h3 id="supports--parametres-arborescents">Paramètres arborescents</h3>
+<ul>
+<li><strong>Angle max des branches</strong> : 40–45° ; plus grand = branches plus couchées, plus fragiles.</li>
+<li><strong>Diamètre / angle de diamètre des branches</strong> : 2–5 mm, grossit vers le bas pour la stabilité.</li>
+<li><strong>Distance des branches</strong> : 1–5 mm ; plus petite = plus de points de contact.</li>
+<li><strong>Densité des branches</strong> et <strong>nombre de parois</strong> : 1–2 parois.</li>
+<li><strong>Diamètre de la pointe</strong> : 0,8–1,0 mm. Petite pointe = petite marque.</li>
+<li><strong>Bordure de tronc</strong> : petite collerette au pied pour les supports hauts.</li>
+</ul>
+<h3 id="supports--vitesse-et-debit-des-supports">Vitesse et débit des supports</h3>
+<ul>
+<li>Vitesse proche du remplissage ; débit de l&#39;interface 1,0. Sur PETG, ventiler davantage le support (si le réglage existe) aide au décollement.</li>
+</ul>
+<h2 id="supports--s-07-recettes-pretes-a-l-emploi-buse-0-4-couche-0-2-mm">S-07 — Recettes prêtes à l&#39;emploi (buse 0,4, couche 0,2 mm)</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Cas</th>
+<th>Type / style</th>
+<th>Distance Z haut</th>
+<th>Distance X/Y</th>
+<th>Interface haut</th>
+<th>Espacement interface</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pièce mécanique PLA, surplomb plat</td>
+<td>Normal, Ajusté</td>
+<td>0,20 mm</td>
+<td>0,5 mm</td>
+<td>3 couches</td>
+<td>0,3 mm</td>
+</tr>
+<tr>
+<td>Figurine PLA</td>
+<td>Arborescent, Organique</td>
+<td>0,20 mm</td>
+<td>0,6 mm</td>
+<td>2 couches</td>
+<td>0,4 mm</td>
+</tr>
+<tr>
+<td>Pièce PETG</td>
+<td>Normal, Ajusté</td>
+<td>0,25 mm</td>
+<td>0,6 mm</td>
+<td>2 couches</td>
+<td>0,4 mm</td>
+</tr>
+<tr>
+<td>ASA</td>
+<td>Arborescent, Hybride</td>
+<td>0,20 mm</td>
+<td>0,5 mm</td>
+<td>2 couches</td>
+<td>0,3 mm</td>
+</tr>
+<tr>
+<td>TPU (si indispensable)</td>
+<td>Arborescent, Épais</td>
+<td>0,30 mm</td>
+<td>0,8 mm</td>
+<td>1–2 couches</td>
+<td>0,5 mm</td>
+</tr>
+<tr>
+<td>PLA + interface PETG</td>
+<td>Normal ou arbre</td>
+<td>0 mm</td>
+<td>0,4 mm</td>
+<td>2 couches (PETG)</td>
+<td>0 mm</td>
+</tr>
+</tbody></table></div>
+<h2 id="supports--s-08-retirer-les-supports-sans-abimer-la-piece">S-08 — Retirer les supports sans abîmer la pièce</h2>
+<ol>
+<li><strong>Laisser refroidir</strong> complètement la pièce (le plastique tiède se déforme).</li>
+<li><strong>Commencer par le support le plus accessible</strong> et faire levier doucement avec une spatule fine ou une pince plate.</li>
+<li><strong>Arborescent</strong> : saisir le tronc et tourner légèrement : l&#39;arbre vient souvent d&#39;un bloc.</li>
+<li><strong>Normal</strong> : décoller d&#39;abord le bord de l&#39;interface, puis tirer parallèlement à la surface, pas perpendiculairement.</li>
+<li><strong>Petits restes</strong> : pince coupante à ras (flush cutter), puis ébarbeur ou cutter en tirant vers soi, puis papier abrasif 240 → 400 → 800 à l&#39;eau.</li>
+<li><strong>Marques blanches sur PLA de couleur</strong> : un passage très rapide au décapeur thermique ravive la couleur.</li>
+<li><strong>PETG très collé</strong> : ne pas forcer ; repartir sur une distance Z plus grande ou une interface PLA.</li>
+<li><strong>PVA/BVOH</strong> : tremper dans l&#39;eau tiède, quelques heures.</li>
+</ol>
+<h2 id="supports--s-09-problemes-de-supports">S-09 — Problèmes de supports</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Problème</th>
+<th>Cause</th>
+<th>Remède</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Support soudé à la pièce</td>
+<td>Distance Z trop petite, interface trop dense</td>
+<td>Distance Z = 1 couche, espacement interface 0,3–0,5 mm</td>
+</tr>
+<tr>
+<td>Dessous qui pend, rugueux</td>
+<td>Distance Z trop grande, pas d&#39;interface</td>
+<td>2–3 couches d&#39;interface, Z à 0,2 mm, repassage d&#39;interface (CP 7.1)</td>
+</tr>
+<tr>
+<td>Support qui se couche ou tombe</td>
+<td>Trop fin, trop haut, mauvaise adhérence</td>
+<td>Bordure de support, arborescent épais, plus de parois</td>
+</tr>
+<tr>
+<td>Supports partout, même inutiles</td>
+<td>Angle de seuil trop haut</td>
+<td>Seuil 30–35°, <em>Sur le plateau uniquement</em>, peinture manuelle</td>
+</tr>
+<tr>
+<td>Marques sur les parois verticales</td>
+<td>Distance X/Y trop petite</td>
+<td>0,6–0,8 mm</td>
+</tr>
+<tr>
+<td>Impossible d&#39;enlever le support d&#39;un trou</td>
+<td>Support dans une cavité</td>
+<td>Bloquer avec le pinceau, ou trou en goutte d&#39;eau dans le modèle</td>
+</tr>
+</tbody></table></div>
+<div class="pager"><a class="prev" href="#/remplissage"><small>← Précédent</small>4. Remplissage</a><a class="next" href="#/filaments"><small>Suivant →</small>6. Filaments</a></div>
+</section>
+<section class="rubrique" id="r-filaments">
+<h1 id="filaments--fiches-filaments-pla-petg-nylon-tpu-asa">Fiches filaments : PLA, PETG, nylon, TPU, ASA</h1>
+<p>Ces fiches donnent les réglages à entrer dans le préréglage <strong>Filament</strong> de Creality Print ou d&#39;ElegooSlicer, d&#39;abord par matière, puis par marque. <strong>Les valeurs de marque viennent des fiches fabricants ou des profils officiels quand ils ont été trouvés</strong> ; sinon c&#39;est indiqué « générique ». La plage imprimée sur l&#39;étiquette de votre bobine reste la référence, et une tour de température reste le meilleur arbitre.</p>
+<p><strong>À propos des marques</strong> :</p>
+<ul>
+<li><strong>Amazon</strong> est une place de marché, pas une marque. La colonne « Amazon » prend <strong>SUNLU</strong> comme exemple (une des marques les plus vendues), avec des valeurs génériques quand SUNLU ne publie rien de clair. Pour une bobine inconnue, partez du profil « Générique » du logiciel.</li>
+<li><strong>Polyfab3D</strong> est un revendeur français. Sa marque maison est <strong>Forshape</strong> : c&#39;est elle qui est utilisée ici.</li>
+<li><strong>Creality</strong> et <strong>Elegoo</strong> ont des profils intégrés dans leurs trancheurs : choisissez-les en priorité avec leurs filaments.</li>
+</ul>
+<h2 id="filaments--f-00-comparatif-des-cinq-matieres">F-00 — Comparatif des cinq matières</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>PLA</th>
+<th>PETG</th>
+<th>TPU</th>
+<th>ASA</th>
+<th>Nylon (PA)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Facilité</td>
+<td>Très facile</td>
+<td>Facile à moyen</td>
+<td>Moyen à difficile</td>
+<td>Difficile</td>
+<td>Difficile</td>
+</tr>
+<tr>
+<td>Buse (°C)</td>
+<td>190–230</td>
+<td>220–260</td>
+<td>200–240</td>
+<td>240–270</td>
+<td>240–290</td>
+</tr>
+<tr>
+<td>Plateau (°C)</td>
+<td>45–65</td>
+<td>65–90</td>
+<td>30–60</td>
+<td>90–110</td>
+<td>70–110</td>
+</tr>
+<tr>
+<td>Ventilation</td>
+<td>100 %</td>
+<td>30–60 %</td>
+<td>50–100 %</td>
+<td>0–30 %</td>
+<td>0–30 %</td>
+</tr>
+<tr>
+<td>Caisson fermé</td>
+<td>Non (ouvert)</td>
+<td>Facultatif</td>
+<td>Non</td>
+<td>Oui</td>
+<td>Oui</td>
+</tr>
+<tr>
+<td>Tenue à la chaleur</td>
+<td>~55 °C</td>
+<td>~70 °C</td>
+<td>~60–80 °C</td>
+<td>~95–105 °C</td>
+<td>80–180 °C selon type</td>
+</tr>
+<tr>
+<td>Extérieur / UV</td>
+<td>Mauvais</td>
+<td>Moyen</td>
+<td>Moyen</td>
+<td>Excellent</td>
+<td>Moyen</td>
+</tr>
+<tr>
+<td>Absorbe l&#39;humidité</td>
+<td>Peu</td>
+<td>Moyen</td>
+<td>Beaucoup</td>
+<td>Peu</td>
+<td>Énormément</td>
+</tr>
+<tr>
+<td>Usages</td>
+<td>Déco, prototypes, figurines</td>
+<td>Pièces fonctionnelles, boîtiers</td>
+<td>Joints, coques, pneus, amortisseurs</td>
+<td>Pièces d&#39;extérieur, auto</td>
+<td>Engrenages, charnières, pièces techniques</td>
+</tr>
+</tbody></table></div>
+<p>Les températures de tenue sont des ordres de grandeur (début de ramollissement), elles varient selon les formulations.</p>
+<h2 id="filaments--f-01-pla">F-01 — PLA</h2>
+<p><strong>En bref</strong> : le plus simple. Rigide, précis, peu d&#39;odeur. Fragile aux chocs et à la chaleur (une pièce dans une voiture au soleil se déforme). Variantes : PLA+ (plus résistant), Silk (brillant), Mat, haute vitesse (« Hyper », « Rapid », « HS »), chargé bois/carbone.</p>
+<h3 id="filaments--reglages-a-entrer-dans-le-trancheur">Réglages à entrer dans le trancheur</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Réglage</th>
+<th>PLA standard</th>
+<th>PLA haute vitesse</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Buse</td>
+<td>200–215 °C (1re couche +5 °C)</td>
+<td>210–230 °C</td>
+</tr>
+<tr>
+<td>Plateau PEI</td>
+<td>55–60 °C</td>
+<td>50–60 °C</td>
+</tr>
+<tr>
+<td>Ventilateur</td>
+<td>100 % (0 % couche 1)</td>
+<td>100 %</td>
+</tr>
+<tr>
+<td>Débit volumétrique max</td>
+<td>12–15 mm³/s</td>
+<td>20–25 mm³/s</td>
+</tr>
+<tr>
+<td>Ratio de débit</td>
+<td>0,98</td>
+<td>0,98</td>
+</tr>
+<tr>
+<td>Pressure Advance (direct drive)</td>
+<td>0,02–0,04</td>
+<td>0,02–0,04</td>
+</tr>
+<tr>
+<td>Rétraction</td>
+<td>Direct 0,8 mm / Bowden 5 mm</td>
+<td>Direct 0,8 mm</td>
+</tr>
+<tr>
+<td>Temps de couche min.</td>
+<td>6–8 s</td>
+<td>4–6 s</td>
+</tr>
+<tr>
+<td>Séchage</td>
+<td>45–50 °C, 4–6 h</td>
+<td>idem</td>
+</tr>
+</tbody></table></div>
+<p><strong>Piège</strong> : dans une imprimante fermée (K1, K2, Centauri Carbon), ouvrez le capot si le caisson dépasse ~35 °C, sinon risque de bouchage.</p>
+<h3 id="filaments--pla-par-marque">PLA par marque</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Marque / produit</th>
+<th>Buse</th>
+<th>Plateau</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>eSUN PLA+</td>
+<td>205–230 °C</td>
+<td>45–60 °C</td>
+<td>Point de départ ~220 / 50 °C. Plus résistant aux chocs que le PLA simple.</td>
+</tr>
+<tr>
+<td>Creality Hyper PLA</td>
+<td>210–230 °C</td>
+<td>45–60 °C</td>
+<td>Profils Creality à 220 °C / 45 °C (Ender-5 Max) et 210 °C / 60 °C (CR-10 SE) ; rétraction 0,8 mm ; conçu pour la haute vitesse.</td>
+</tr>
+<tr>
+<td>Creality CR-PLA</td>
+<td>190–230 °C</td>
+<td>45–60 °C</td>
+<td>Profil 190 °C / 60 °C sur Ender-3 V3 SE, 230 °C / 45 °C sur K1 (vitesse plus élevée).</td>
+</tr>
+<tr>
+<td>Elegoo Rapid PLA+</td>
+<td>200–230 °C</td>
+<td>40–60 °C</td>
+<td>PLA rapide ; le PLA Elegoo en général va de 180 à 240 °C selon la gamme.</td>
+</tr>
+<tr>
+<td>Amazon — SUNLU PLA</td>
+<td>200–210 °C</td>
+<td>50–60 °C</td>
+<td>Fiche SUNLU : 50–100 mm/s. Pour sa version haute vitesse, monter vers 220–230 °C.</td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape PLA+ Premium</td>
+<td>195–215 °C (190–230 selon couleur)</td>
+<td>0–60 °C</td>
+<td>Plateau chauffant facultatif ; compatible CFS/AMS/ACE (pas AMS Lite). Transition vitreuse 57 °C.</td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape High-Speed PLA+</td>
+<td>200–230 °C</td>
+<td>40–60 °C</td>
+<td>Annoncé jusqu&#39;à 600 mm/s.</td>
+</tr>
+</tbody></table></div>
+<h2 id="filaments--f-02-petg">F-02 — PETG</h2>
+<p><strong>En bref</strong> : plus résistant aux chocs et à la chaleur que le PLA, légèrement souple, résiste à l&#39;eau. Fait facilement des fils et colle très fort au PEI lisse (risque d&#39;arracher le revêtement). Absorbe l&#39;humidité.</p>
+<h3 id="filaments--reglages-a-entrer-dans-le-trancheur-2">Réglages à entrer dans le trancheur</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Réglage</th>
+<th>Valeur</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Buse</td>
+<td>230–250 °C (haute vitesse : 240–260 °C)</td>
+</tr>
+<tr>
+<td>Plateau</td>
+<td>70–85 °C ; PEI texturé conseillé, ou colle en bâton sur PEI lisse</td>
+</tr>
+<tr>
+<td>Ventilateur</td>
+<td>30–60 % ; 0 % sur les 2–3 premières couches ; ponts 60–80 %</td>
+</tr>
+<tr>
+<td>Débit volumétrique max</td>
+<td>10–15 mm³/s (PETG rapide : 18–22)</td>
+</tr>
+<tr>
+<td>Ratio de débit</td>
+<td>0,95–1,00</td>
+</tr>
+<tr>
+<td>Pressure Advance</td>
+<td>0,04–0,07 (direct drive)</td>
+</tr>
+<tr>
+<td>Rétraction</td>
+<td>Direct 0,8–1,2 mm à 30–40 mm/s ; Bowden 5–6 mm</td>
+</tr>
+<tr>
+<td>Première couche</td>
+<td>Z-offset légèrement plus haut qu&#39;en PLA (+0,02 à +0,05 mm)</td>
+</tr>
+<tr>
+<td>Distance Z des supports</td>
+<td>0,22–0,25 mm</td>
+</tr>
+<tr>
+<td>Séchage</td>
+<td>55–65 °C, 4–6 h</td>
+</tr>
+</tbody></table></div>
+<h3 id="filaments--petg-par-marque">PETG par marque</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Marque / produit</th>
+<th>Buse</th>
+<th>Plateau</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>eSUN PETG</td>
+<td>225–250 °C</td>
+<td>70–90 °C</td>
+<td>Les utilisateurs ajustent souvent rétraction et vitesse.</td>
+</tr>
+<tr>
+<td>Creality CR-PETG</td>
+<td>230–250 °C</td>
+<td>50–80 °C</td>
+<td>Profils Creality : 250 / 70 °C (K1, Ender-5 Max, caisson conseillé), 230 / 80 °C (CR-10 SE, rétraction 1,2 mm).</td>
+</tr>
+<tr>
+<td>Creality Hyper PETG</td>
+<td>Voir profil intégré</td>
+<td>Voir profil</td>
+<td>Version haute vitesse ; utiliser le préréglage Creality Print.</td>
+</tr>
+<tr>
+<td>Elegoo PETG</td>
+<td>220–250 °C</td>
+<td>70–90 °C</td>
+<td></td>
+</tr>
+<tr>
+<td>Elegoo Rapid PETG</td>
+<td>220–260 °C</td>
+<td>70–90 °C</td>
+<td>Annoncé pour la haute vitesse ; pas de caisson nécessaire.</td>
+</tr>
+<tr>
+<td>Elegoo PETG PRO</td>
+<td>230–260 °C</td>
+<td>65–75 °C</td>
+<td></td>
+</tr>
+<tr>
+<td>Amazon — SUNLU PETG</td>
+<td>230–250 °C (générique)</td>
+<td>70–85 °C (générique)</td>
+<td>Pas de fiche fabricant claire trouvée : partir du profil « PETG générique ».</td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape PETG Premium</td>
+<td>220–250 °C</td>
+<td>65–90 °C</td>
+<td>Buse 0,4 mm minimum ; compatible AMS/CFS/ACE.</td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape High-Speed PETG</td>
+<td>220–260 °C</td>
+<td>75–90 °C</td>
+<td>Jusqu&#39;à 600 mm/s annoncés.</td>
+</tr>
+</tbody></table></div>
+<h2 id="filaments--f-03-tpu-flexible">F-03 — TPU (flexible)</h2>
+<p><strong>En bref</strong> : caoutchouteux, élastique, quasi incassable. Dureté notée en Shore A : <strong>95A</strong> est le plus courant et le plus facile ; 85A et moins sont très difficiles. Le filament mou se plie dans l&#39;extrudeur : il faut imprimer <strong>lentement</strong>, et de préférence en direct drive.</p>
+<h3 id="filaments--reglages-a-entrer-dans-le-trancheur-3">Réglages à entrer dans le trancheur</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Réglage</th>
+<th>Valeur</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Buse</td>
+<td>210–235 °C</td>
+</tr>
+<tr>
+<td>Plateau</td>
+<td>30–50 °C (colle en bâton sur PEI lisse comme séparateur)</td>
+</tr>
+<tr>
+<td>Ventilateur</td>
+<td>50–100 %</td>
+</tr>
+<tr>
+<td>Vitesse</td>
+<td>20–40 mm/s (TPU « rapide » : jusqu&#39;à ~100 mm/s sur imprimante adaptée)</td>
+</tr>
+<tr>
+<td>Débit volumétrique max</td>
+<td>3–6 mm³/s</td>
+</tr>
+<tr>
+<td>Rétraction</td>
+<td>0–1 mm à 20 mm/s (Bowden : 0–2 mm, très lentement)</td>
+</tr>
+<tr>
+<td>Ratio de débit</td>
+<td>1,00–1,05</td>
+</tr>
+<tr>
+<td>Remplissage</td>
+<td>Gyroïde ou Concentrique 10–30 % (règle la souplesse)</td>
+</tr>
+<tr>
+<td>Séchage</td>
+<td>50–60 °C, 6–8 h</td>
+</tr>
+</tbody></table></div>
+<p><strong>Pièges</strong> : Creality déconseille de charger le TPU via le CFS (il se plie dans les canaux) et déconseille les TPU de 80A et moins sur ses machines. Passer le filament en direct, sans long tube PTFE.</p>
+<h3 id="filaments--tpu-par-marque">TPU par marque</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Marque / produit</th>
+<th>Buse</th>
+<th>Plateau</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>eSUN eTPU-95A</td>
+<td>210–240 °C</td>
+<td>Non chauffé</td>
+<td>Dureté 95A.</td>
+</tr>
+<tr>
+<td>Creality CR-TPU</td>
+<td>215–230 °C</td>
+<td>30 °C</td>
+<td>Profils : 215 °C, rétraction 2 mm, 50 mm/s (CR-10 SE) ; 230 °C, 50 mm/s (K1).</td>
+</tr>
+<tr>
+<td>Creality HP-TPU</td>
+<td>195–215 °C</td>
+<td>30–45 °C</td>
+<td>Profils : 210 °C / 30 °C, rétraction 2 mm, 50 mm/s (Ender-3 V3 SE) ; 195 °C / 45 °C, rétraction 3 mm, 40 mm/s (Ender-5 Max).</td>
+</tr>
+<tr>
+<td>Elegoo TPU 95A</td>
+<td>210–230 °C</td>
+<td>35–60 °C</td>
+<td></td>
+</tr>
+<tr>
+<td>Elegoo Rapid TPU 95A</td>
+<td>200–230 °C</td>
+<td>30–45 °C</td>
+<td>Version plus rapide.</td>
+</tr>
+<tr>
+<td>Amazon — SUNLU TPU</td>
+<td>210–230 °C (générique)</td>
+<td>40–60 °C (générique)</td>
+<td>Pas de fiche claire trouvée.</td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape TPU</td>
+<td>Générique 210–230 °C</td>
+<td>30–50 °C</td>
+<td>Pas de fiche Forshape TPU trouvée : vérifier l&#39;étiquette.</td>
+</tr>
+</tbody></table></div>
+<h2 id="filaments--f-04-asa">F-04 — ASA</h2>
+<p><strong>En bref</strong> : cousin de l&#39;ABS, mais résiste aux UV et aux intempéries. Idéal pour l&#39;extérieur et l&#39;automobile. Fort warping, odeur et émissions : <strong>caisson fermé</strong> et pièce aérée indispensables.</p>
+<h3 id="filaments--reglages-a-entrer-dans-le-trancheur-4">Réglages à entrer dans le trancheur</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Réglage</th>
+<th>Valeur</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Buse</td>
+<td>245–265 °C</td>
+</tr>
+<tr>
+<td>Plateau</td>
+<td>90–105 °C ; colle ou laque d&#39;adhérence conseillée</td>
+</tr>
+<tr>
+<td>Caisson</td>
+<td>Fermé ; 50–60 °C si chauffé (K2 Plus/Pro) ; préchauffer 10 min</td>
+</tr>
+<tr>
+<td>Ventilateur</td>
+<td>0–30 % (profil Creality jusqu&#39;à 70 % sur K1, sans ventilateur auxiliaire) ; ventilateur auxiliaire à 0</td>
+</tr>
+<tr>
+<td>Débit volumétrique max</td>
+<td>15–20 mm³/s</td>
+</tr>
+<tr>
+<td>Rétraction</td>
+<td>Direct 0,8 mm</td>
+</tr>
+<tr>
+<td>Bordure</td>
+<td>5–10 mm, systématique sur les pièces &gt; 5 cm</td>
+</tr>
+<tr>
+<td>Retrait (shrinkage)</td>
+<td>~99,5 %</td>
+</tr>
+<tr>
+<td>Séchage</td>
+<td>70–80 °C, 4–6 h</td>
+</tr>
+</tbody></table></div>
+<h3 id="filaments--asa-par-marque">ASA par marque</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Marque / produit</th>
+<th>Buse</th>
+<th>Plateau</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>eSUN eASA</td>
+<td>240–260 °C</td>
+<td>90–110 °C</td>
+<td>eSUN recommande les mêmes réglages que l&#39;ABS (ABS+ : 230–270 / 80–110 °C).</td>
+</tr>
+<tr>
+<td>Creality HP-ASA</td>
+<td>250–260 °C</td>
+<td>100 °C</td>
+<td>Profils : 250 °C / 100 °C, ventilation 50 % (CR-10 SE) ; 260 °C / 100 °C, 70 % sans auxiliaire (K1). Caisson conseillé.</td>
+</tr>
+<tr>
+<td>Elegoo ASA</td>
+<td>240–270 °C</td>
+<td>90–100 °C</td>
+<td>Avec colle PVP, certains guides descendent à 75–95 °C.</td>
+</tr>
+<tr>
+<td>Amazon — SUNLU ASA</td>
+<td>245–255 °C</td>
+<td>80–120 °C</td>
+<td></td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape ASA</td>
+<td>Générique 240–260 °C</td>
+<td>90–110 °C</td>
+<td>Pas de fiche ASA trouvée : vérifier l&#39;étiquette.</td>
+</tr>
+</tbody></table></div>
+<h2 id="filaments--f-05-nylon-pa-polyamide">F-05 — Nylon (PA, polyamide)</h2>
+<p><strong>En bref</strong> : très résistant à l&#39;usure, aux chocs et à la fatigue ; légèrement souple. Absorbe l&#39;humidité en quelques heures : un nylon humide imprime mal (bulles, fils, pièce molle). Les versions chargées (PA-CF, PAHT-CF) sont plus rigides et warpent moins, mais exigent une <strong>buse en acier trempé</strong>.</p>
+<h3 id="filaments--reglages-a-entrer-dans-le-trancheur-5">Réglages à entrer dans le trancheur</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Réglage</th>
+<th>PA standard</th>
+<th>PA-CF / PAHT-CF</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Buse</td>
+<td>240–270 °C</td>
+<td>260–300 °C</td>
+</tr>
+<tr>
+<td>Plateau</td>
+<td>70–100 °C + colle en bâton</td>
+<td>80–110 °C + colle</td>
+</tr>
+<tr>
+<td>Caisson</td>
+<td>Fermé, chaud</td>
+<td>Fermé, chaud</td>
+</tr>
+<tr>
+<td>Ventilateur</td>
+<td>0–30 %</td>
+<td>0–30 %</td>
+</tr>
+<tr>
+<td>Vitesse</td>
+<td>30–100 mm/s</td>
+<td>50–150 mm/s</td>
+</tr>
+<tr>
+<td>Rétraction</td>
+<td>Direct 1–1,5 mm</td>
+<td>Direct 0,8–1 mm</td>
+</tr>
+<tr>
+<td>Buse</td>
+<td>Laiton possible</td>
+<td><strong>Acier trempé obligatoire</strong></td>
+</tr>
+<tr>
+<td>Bordure</td>
+<td>Oui, 5–10 mm</td>
+<td>Oui</td>
+</tr>
+<tr>
+<td>Séchage</td>
+<td>70–90 °C, 8–12 h, puis imprimer depuis le séchoir</td>
+<td>idem</td>
+</tr>
+</tbody></table></div>
+<h3 id="filaments--nylon-par-marque">Nylon par marque</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Marque / produit</th>
+<th>Buse</th>
+<th>Plateau</th>
+<th>Remarques</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>eSUN ePA</td>
+<td>230–260 °C</td>
+<td>80–110 °C</td>
+<td>Fiche technique eSUN.</td>
+</tr>
+<tr>
+<td>eSUN ePA-CF</td>
+<td>230–260 °C</td>
+<td>80–90 °C</td>
+<td>Buse acier trempé.</td>
+</tr>
+<tr>
+<td>Creality CR-Nylon</td>
+<td>250–260 °C</td>
+<td>45–50 °C</td>
+<td>Profils : 250 °C / 45 °C, rétraction 1,5 mm, 30 mm/s (Ender-5 Max) ; 260 °C / 50 °C, ventilation 30 % (K1).</td>
+</tr>
+<tr>
+<td>Creality Hyper PA6-CF</td>
+<td>280–300 °C</td>
+<td>80 °C</td>
+<td>Buse acier trempé, caisson.</td>
+</tr>
+<tr>
+<td>Elegoo PAHT-CF</td>
+<td>260–290 °C</td>
+<td>90–110 °C</td>
+<td>Elegoo ne propose pas de nylon pur ; buse acier trempé (Centauri Carbon : d&#39;origine).</td>
+</tr>
+<tr>
+<td>Amazon — SUNLU PA / Easy PA</td>
+<td>Générique 240–270 °C</td>
+<td>70–90 °C</td>
+<td>Pas de fiche claire trouvée.</td>
+</tr>
+<tr>
+<td>Polyfab3D — Forshape / nylon</td>
+<td>Générique 240–270 °C</td>
+<td>70–100 °C</td>
+<td>Polyfab3D vend du nylon d&#39;autres marques ; suivre l&#39;étiquette.</td>
+</tr>
+</tbody></table></div>
+<h2 id="filaments--f-06-creer-son-propre-profil-filament-methode">F-06 — Créer son propre profil filament (méthode)</h2>
+<ol>
+<li>Dans le trancheur, choisir le profil le plus proche (ex. « Generic PETG » ou le profil de la marque).</li>
+<li>Saisir la plage de température de l&#39;étiquette, prendre le milieu.</li>
+<li>Imprimer dans l&#39;ordre : tour de température → débit → Pressure Advance → rétraction → débit volumétrique max.</li>
+<li>Enregistrer sous un nom explicite : « Marque Matière Couleur — Imprimante ».</li>
+<li>Noter la date et le lot : deux couleurs d&#39;une même marque peuvent demander 5 °C d&#39;écart.</li>
+</ol>
+<h2 id="filaments--sources">Sources</h2>
+<p>Valeurs fabricants relevées le 11 novembre 2026 :</p>
+<ul>
+<li><a href="https://cdn.shopify.com/s/files/1/1745/6181/files/eSUN_3D_Printing_Filament_Datasheet.pdf">Fiche technique eSUN (PDF)</a></li>
+<li><a href="https://filamentsettings.pages.dev/filament/esun-pla-plus/">eSUN PLA+ — réglages</a></li>
+<li><a href="https://all3dp.com/2/esun-filament-guide/">Guide des filaments eSUN (All3DP)</a></li>
+<li><a href="https://esun3d.com/news/7224">eSUN — série ingénierie (eASA)</a></li>
+<li><a href="https://store.creality.com/blogs/all/creality-cr-10-se-printing-parameter-settings">Creality — réglages CR-10 SE</a></li>
+<li><a href="https://wiki.creality.com/products/diy/ender%E7%B3%BB%E5%88%97/ender-5max/ender-5_max_material_guide.pdf">Creality — guide matériaux Ender-5 Max (PDF)</a></li>
+<li><a href="https://wiki.creality.com/products/diy/ender%E7%B3%BB%E5%88%97/ender-3v3se/ender-3_v3_se_material_guide.pdf">Creality — guide matériaux Ender-3 V3 SE (PDF)</a></li>
+<li><a href="https://centros.edu.xunta.gal/ceipperezviondi/aulavirtual/pluginfile.php/12040/mod_label/intro/k1_series_complete_recommended_filament_parameters.pdf">Creality — paramètres filaments K1 (PDF)</a></li>
+<li><a href="https://wiki.creality.com/zh/k2-flagship-series/k2-plus/filament-parameters">Creality — paramètres filaments K2 Plus</a></li>
+<li><a href="https://simplyprint.io/filaments/creality">Filaments Creality (SimplyPrint)</a></li>
+<li><a href="https://simplyprint.io/filaments/elegoo">Filaments Elegoo (SimplyPrint)</a></li>
+<li><a href="https://printer-hub.ru/en/materials/elegoo-rapid-petg">Elegoo Rapid PETG</a></li>
+<li><a href="https://all3dp.com/2/elegoo-filament-guide/">Guide des filaments Elegoo (All3DP)</a></li>
+<li><a href="https://manuals.plus/m/ce68dce202b6ee1206a941007e3dc37a709e750190d94d06dc4cf29366936c0b">SUNLU — fiche filaments</a></li>
+<li><a href="https://all3dp.com/2/sunlu-filament-guide/">Guide des filaments SUNLU (All3DP)</a></li>
+<li><a href="https://www.polyfab3d.fr/filament-pla/1986-pla-blanc-forshape-premium-175mm-1kg.html">Forshape PLA+ (Polyfab3D)</a></li>
+<li><a href="https://www.polyfab3d.fr/filament-imprimante-3d/2064-petg-transparent-forshape-premium-175mm-1kg.html">Forshape PETG Premium (Polyfab3D)</a></li>
+<li><a href="https://www.polyfab3d.fr/filament-3d-forshape-premium/3398-high-speed-pla-gris-forshape-175-mm-1-kg.html">Forshape High-Speed PLA+ (Polyfab3D)</a></li>
+<li><a href="https://www.polyfab3d.fr/forshape/3405-high-speed-petg-bleu-forshape-175-mm-1-kg.html">Forshape High-Speed PETG (Polyfab3D)</a></li>
+</ul>
+<div class="pager"><a class="prev" href="#/supports"><small>← Précédent</small>5. Supports</a><span></span></div>
+</section>
+    <footer class="ver">Version 1.0.dev · fonctionne hors connexion</footer>
+  </main>
+</div>
+<button id="topBtn" aria-label="Haut de page">↑</button>
+<script>
+(function(){
+  var ORDER = ["accueil","creality-print","elegooslicer","problemes","remplissage","supports","filaments"];
+  var store = {get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},
+               set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  var root = document.documentElement;
+  // Thème et taille de texte mémorisés
+  var th = store.get('theme'); if (th) root.setAttribute('data-theme', th);
+  var fs = parseInt(store.get('fs') || '16', 10); root.style.setProperty('--fs', fs + 'px');
+  function on(cls, fn){ document.querySelectorAll(cls).forEach(function(b){ b.onclick = fn; }); }
+  on('.js-theme', function(){
+    var dark = root.getAttribute('data-theme') ? root.getAttribute('data-theme') === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    var t = dark ? 'light' : 'dark'; root.setAttribute('data-theme', t); store.set('theme', t);
+  });
+  function setFs(v){ fs = Math.max(13, Math.min(22, v)); root.style.setProperty('--fs', fs + 'px'); store.set('fs', fs); }
+  on('.js-smaller', function(){ setFs(fs - 1); });
+  on('.js-bigger', function(){ setFs(fs + 1); });
+  // Menu tiroir (mobile)
+  var body = document.body;
+  document.getElementById('menuBtn').onclick = function(){ body.classList.toggle('menu'); };
+  document.getElementById('scrim').onclick = function(){ body.classList.remove('menu'); };
+  // Navigation par hash : #/rubrique ou #/rubrique/ancre
+  var sections = {}; ORDER.forEach(function(s){ sections[s] = document.getElementById('r-' + s); });
+  function show(){
+    var h = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/');
+    var slug = sections[h[0]] ? h[0] : 'accueil', anchor = h[1];
+    ORDER.forEach(function(s){ sections[s].classList.toggle('show', s === slug); });
+    document.querySelectorAll('nav.side .grp').forEach(function(g){
+      var on = g.getAttribute('data-slug') === slug;
+      g.classList.toggle('open', on); g.querySelector('a.rub').classList.toggle('active', on);
+    });
+    document.querySelectorAll('nav.side .subs a').forEach(function(a){ a.classList.toggle('cur', a.getAttribute('href') === location.hash); });
+    body.classList.remove('menu');
+    var el = anchor && document.getElementById(anchor);
+    if (el) { el.scrollIntoView({block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    else window.scrollTo(0, 0);
+    var t = sections[slug].querySelector('h1'); document.title = (t ? t.textContent + ' — ' : '') + 'Fiches 3D';
+  }
+  addEventListener('hashchange', show); show();
+  // Bouton haut de page
+  var topBtn = document.getElementById('topBtn');
+  addEventListener('scroll', function(){ topBtn.classList.toggle('show', scrollY > 600); }, {passive:true});
+  topBtn.onclick = function(){ scrollTo({top:0, behavior:'smooth'}); };
+  // Recherche plein texte (sans accents, sans casse)
+  function norm(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  var index = [];
+  ORDER.forEach(function(slug){
+    var sec = sections[slug], rub = sec.querySelector('h1').textContent, head = null, h2 = null;
+    sec.querySelectorAll('h1,h2,h3,p,li,tr').forEach(function(el){
+      if (/^H[123]$/.test(el.tagName)) { head = el; if (el.tagName !== 'H3') h2 = el; }
+      if (el.tagName === 'LI' && el.querySelector('li')) return;
+      var txt = el.textContent.replace(/\s+/g, ' ').trim(); if (!txt) return;
+      var where = head ? head.textContent : rub;
+      // le titre de la fiche (h2) et du paramètre (h3) comptent dans la recherche du paragraphe
+      var ctx = (h2 && h2 !== head ? h2.textContent + ' ' : '') + where;
+      index.push({slug:slug, rub:rub, id: head ? head.id : '', where: where,
+        txt: txt, n: norm(txt), ctx: norm(ctx), w: /^H/.test(el.tagName) ? 3 : 1});
+    });
+  });
+  var q = document.getElementById('q'), res = document.getElementById('results'), sel = -1;
+  function esc(s){ return s.replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function snippet(it, terms){
+    var t = it.txt, n = it.n, i = n.indexOf(terms[0]), a = Math.max(0, i - 50), b = Math.min(t.length, a + 170);
+    var s = (a ? '…' : '') + t.slice(a, b) + (b < t.length ? '…' : ''), ns = norm(s), out = '', k = 0;
+    // surligne chaque terme (positions calculées sur le texte sans accents, même longueur)
+    var marks = [];
+    terms.forEach(function(w){ var p = ns.indexOf(w); while (p >= 0) { marks.push([p, p + w.length]); p = ns.indexOf(w, p + w.length); } });
+    marks.sort(function(x, y){ return x[0] - y[0]; });
+    marks.forEach(function(m){ if (m[0] < k) return; out += esc(s.slice(k, m[0])) + '<mark>' + esc(s.slice(m[0], m[1])) + '</mark>'; k = m[1]; });
+    return out + esc(s.slice(k));
+  }
+  function search(){
+    var v = norm(q.value.trim()); sel = -1;
+    if (v.length < 2) { res.classList.remove('show'); res.innerHTML = ''; return; }
+    var terms = v.split(/\s+/).filter(Boolean), hits = [];
+    index.forEach(function(it){
+      // chaque mot doit se trouver dans le paragraphe ou dans le titre de sa fiche
+      var inTxt = 0, ok = terms.every(function(w){
+        if (it.n.indexOf(w) >= 0) { inTxt++; return true; } return it.ctx.indexOf(w) >= 0; });
+      if (!ok || !inTxt) return;
+      hits.push({it:it, score: inTxt * 20 + it.w * 10 - it.txt.length / 400});
+    });
+    hits.sort(function(a, b){ return b.score - a.score; });
+    var seen = {}, html = '', count = 0;
+    hits.forEach(function(h){
+      var it = h.it, key = it.slug + it.id + it.txt.slice(0, 40); if (seen[key] || count >= 60) return; seen[key] = 1; count++;
+      html += '<a role="option" href="#/' + it.slug + (it.id ? '/' + it.id : '') + '"><div class="where">' + esc(it.rub) +
+        (it.where !== it.rub ? ' › ' + esc(it.where) : '') + '</div><div class="snip">' + snippet(it, terms) + '</div></a>';
+    });
+    res.innerHTML = html || '<div class="none">Aucun résultat pour « ' + esc(q.value) + ' »</div>';
+    res.classList.add('show');
+  }
+  q.addEventListener('input', search);
+  q.addEventListener('focus', search);
+  q.addEventListener('keydown', function(e){
+    var items = res.querySelectorAll('a'); if (!items.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault(); sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items.forEach(function(a, i){ a.classList.toggle('sel', i === sel); }); items[sel].scrollIntoView({block:'nearest'});
+    } else if (e.key === 'Enter') { (items[sel] || items[0]).click(); }
+    else if (e.key === 'Escape') { res.classList.remove('show'); q.blur(); }
+  });
+  res.addEventListener('click', function(e){ if (e.target.closest('a')) { res.classList.remove('show'); q.blur(); } });
+  document.addEventListener('click', function(e){ if (!e.target.closest('.search')) res.classList.remove('show'); });
+  // Liens externes : nouvel onglet
+  document.querySelectorAll('main a[href^="http"]').forEach(function(a){ a.target = '_blank'; a.rel = 'noopener'; });
+  // Hors connexion (navigateur) : service worker, seulement en http(s)
+  if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function(){});
+})();
+</script>
+</body>
+</html>

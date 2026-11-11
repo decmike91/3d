@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fiches impression 3D</title>
+<meta name="description" content="Fiches pratiques d'impression 3D FDM : Creality Print, ElegooSlicer, problèmes, remplissage, supports, filaments.">
+<meta name="theme-color" content="#1d1b19">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f6f3ee; --surface:#fffdf9; --surface-2:#efe9e0; --text:#25211d; --muted:#6d655c;
+  --line:#ddd4c7; --accent:#d9620b; --accent-soft:#fde6d3; --head:#1d1b19; --head-text:#f3eee7;
+  --mark:#ffd58a; --code:#f1ebe2; --fs:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151311; --surface:#1d1a17; --surface-2:#26221e; --text:#ece6de; --muted:#a69c90;
+    --line:#38322c; --accent:#ff8c3a; --accent-soft:#3a2615; --head:#0f0d0c; --head-text:#f3eee7;
+    --mark:#7a4d10; --code:#2a2520;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151311; --surface:#1d1a17; --surface-2:#26221e; --text:#ece6de; --muted:#a69c90;
+  --line:#38322c; --accent:#ff8c3a; --accent-soft:#3a2615; --head:#0f0d0c; --head-text:#f3eee7;
+  --mark:#7a4d10; --code:#2a2520;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs);scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;line-height:1.55;
+  -webkit-text-size-adjust:100%}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:30;background:var(--head);color:var(--head-text);
+  display:flex;align-items:center;gap:8px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));
+  box-shadow:0 1px 0 rgba(0,0,0,.25)}
+header.top .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.2px;white-space:nowrap;
+  color:inherit;text-decoration:none}
+header.top .brand img{width:28px;height:28px;border-radius:7px}
+header.top .brand span{display:none}
+@media (min-width:560px){header.top .brand span{display:inline}}
+.iconbtn{background:transparent;border:0;color:inherit;width:40px;height:40px;border-radius:10px;
+  display:inline-grid;place-items:center;cursor:pointer;font-size:18px;flex:none}
+.iconbtn:hover,.iconbtn:focus-visible{background:rgba(255,255,255,.12);outline:none}
+.search{flex:1;min-width:0;position:relative}
+.search input{width:100%;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);color:var(--head-text);padding:0 12px 0 34px;font-size:15px}
+.search input::placeholder{color:rgba(243,238,231,.6)}
+.search svg{position:absolute;left:10px;top:11px;opacity:.7}
+.layout{display:flex;max-width:1280px;margin:0 auto}
+nav.side{width:300px;flex:none;position:sticky;top:56px;align-self:flex-start;height:calc(100vh - 56px);
+  overflow:auto;padding:14px 10px 40px;border-right:1px solid var(--line)}
+nav.side .grp{margin-bottom:6px}
+nav.side a.rub{display:block;padding:8px 10px;border-radius:8px;color:var(--text);text-decoration:none;font-weight:650}
+nav.side a.rub.active{background:var(--accent-soft);color:var(--accent)}
+nav.side .subs{display:none;margin:2px 0 8px 8px;border-left:2px solid var(--line)}
+nav.side .grp.open .subs{display:block}
+nav.side .subs a{display:block;padding:5px 10px;color:var(--muted);text-decoration:none;font-size:.88rem;line-height:1.3}
+nav.side .subs a:hover,nav.side .subs a.cur{color:var(--accent)}
+.scrim{display:none}
+.tools{display:flex}
+.navtools{display:none;align-items:center;gap:4px;padding:0 6px 12px;margin-bottom:10px;border-bottom:1px solid var(--line);color:var(--muted);font-size:.85rem}
+.navtools span{flex:1}
+.navtools .iconbtn:hover{background:var(--surface-2)}
+@media (max-width:640px){
+  .tools.wide{display:none}
+  .navtools{display:flex}
+  .results{position:fixed;left:8px;right:8px;top:58px;max-height:calc(100vh - 80px)}
+}
+@media (max-width:900px){
+  nav.side{position:fixed;left:0;top:0;height:100%;z-index:50;background:var(--surface);
+    transform:translateX(-102%);transition:transform .2s ease;width:min(86vw,330px);
+    padding-top:max(14px,env(safe-area-inset-top));box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  body.menu nav.side{transform:none}
+  body.menu .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40}
+}
+@media (min-width:901px){#menuBtn{display:none}}
+main{flex:1;min-width:0;padding:16px 16px 96px}
+@media (min-width:901px){main{padding:24px 36px 96px}}
+section.rubrique{display:none;max-width:860px}
+section.rubrique.show{display:block}
+h1{font-size:1.65rem;line-height:1.2;margin:.2em 0 .6em;letter-spacing:-.2px}
+h2{font-size:1.25rem;margin:2em 0 .6em;padding:10px 14px;background:var(--surface-2);border-left:5px solid var(--accent);border-radius:6px}
+h3{font-size:1.06rem;margin:1.6em 0 .4em;color:var(--accent)}
+p,li{overflow-wrap:anywhere}
+ul,ol{padding-left:1.3em}
+li{margin:.25em 0}
+strong{font-weight:700}
+.table-wrap{overflow-x:auto;margin:1em 0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:90px}
+th{background:var(--surface-2);font-weight:700;position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.results{position:absolute;left:0;right:0;top:44px;background:var(--surface);color:var(--text);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);max-height:70vh;overflow:auto;display:none}
+.results.show{display:block}
+.results a{display:block;padding:10px 12px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--text)}
+.results a:hover,.results a.sel{background:var(--accent-soft)}
+.results .where{font-size:.78rem;color:var(--muted);margin-bottom:2px}
+.results .snip{font-size:.9rem}
+.results .none{padding:14px;color:var(--muted)}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px}
+.pager a{flex:1;padding:12px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:var(--text);background:var(--surface)}
+.pager a small{display:block;color:var(--muted)}
+.pager a.next{text-align:right}
+#topBtn{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;
+  border:0;background:var(--accent);color:#fff;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none;cursor:pointer;z-index:20}
+#topBtn.show{display:block}
+.flash{animation:flash 1.6s ease}
+@keyframes flash{0%{background:var(--mark)}100%{background:transparent}}
+footer.ver{color:var(--muted);font-size:.8rem;margin-top:24px}
+@media print{header.top,nav.side,#topBtn,.pager{display:none}section.rubrique{display:block!important}main{padding:0}}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+  <a class="brand" href="#/accueil"><img src="icon.svg" alt=""><span>Fiches 3D</span></a>
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Rechercher (ex. stringing, PETG, couture)" autocomplete="off" aria-label="Rechercher">
+    <div class="results" id="results" role="listbox"></div>
+  </div>
+  <span class="tools wide">
+    <button class="iconbtn js-smaller" aria-label="Texte plus petit" title="Texte plus petit">A−</button>
+    <button class="iconbtn js-bigger" aria-label="Texte plus grand" title="Texte plus grand">A+</button>
+    <button class="iconbtn js-theme" aria-label="Thème clair ou sombre" title="Thème"><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+  </span>
+</header>
+<div class="scrim" id="scrim"></div>
+<div class="layout">
+  <nav class="side" id="side" aria-label="Sommaire">
+    <div class="navtools">
+      <span>Affichage</span>
+      <button class="iconbtn js-smaller" aria-label="Texte plus petit">A−</button>
+      <button class="iconbtn js-bigger" aria-label="Texte plus grand">A+</button>
+      <button class="iconbtn js-theme" aria-label="Thème clair ou sombre"><svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg></button>
+    </div>__NAV__</nav>
+  <main id="main">__SECTIONS__
+    <footer class="ver">Version __VERSION__ · fonctionne hors connexion</footer>
+  </main>
+</div>
+<button id="topBtn" aria-label="Haut de page">↑</button>
+<script>
+(function(){
+  var ORDER = __ORDER__;
+  var store = {get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},
+               set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+  var root = document.documentElement;
+  // Thème et taille de texte mémorisés
+  var th = store.get('theme'); if (th) root.setAttribute('data-theme', th);
+  var fs = parseInt(store.get('fs') || '16', 10); root.style.setProperty('--fs', fs + 'px');
+  function on(cls, fn){ document.querySelectorAll(cls).forEach(function(b){ b.onclick = fn; }); }
+  on('.js-theme', function(){
+    var dark = root.getAttribute('data-theme') ? root.getAttribute('data-theme') === 'dark'
+      : matchMedia('(prefers-color-scheme: dark)').matches;
+    var t = dark ? 'light' : 'dark'; root.setAttribute('data-theme', t); store.set('theme', t);
+  });
+  function setFs(v){ fs = Math.max(13, Math.min(22, v)); root.style.setProperty('--fs', fs + 'px'); store.set('fs', fs); }
+  on('.js-smaller', function(){ setFs(fs - 1); });
+  on('.js-bigger', function(){ setFs(fs + 1); });
+  // Menu tiroir (mobile)
+  var body = document.body;
+  document.getElementById('menuBtn').onclick = function(){ body.classList.toggle('menu'); };
+  document.getElementById('scrim').onclick = function(){ body.classList.remove('menu'); };
+  // Navigation par hash : #/rubrique ou #/rubrique/ancre
+  var sections = {}; ORDER.forEach(function(s){ sections[s] = document.getElementById('r-' + s); });
+  function show(){
+    var h = decodeURIComponent(location.hash.replace(/^#\/?/, '')).split('/');
+    var slug = sections[h[0]] ? h[0] : 'accueil', anchor = h[1];
+    ORDER.forEach(function(s){ sections[s].classList.toggle('show', s === slug); });
+    document.querySelectorAll('nav.side .grp').forEach(function(g){
+      var on = g.getAttribute('data-slug') === slug;
+      g.classList.toggle('open', on); g.querySelector('a.rub').classList.toggle('active', on);
+    });
+    document.querySelectorAll('nav.side .subs a').forEach(function(a){ a.classList.toggle('cur', a.getAttribute('href') === location.hash); });
+    body.classList.remove('menu');
+    var el = anchor && document.getElementById(anchor);
+    if (el) { el.scrollIntoView({block:'start'}); el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+    else window.scrollTo(0, 0);
+    var t = sections[slug].querySelector('h1'); document.title = (t ? t.textContent + ' — ' : '') + 'Fiches 3D';
+  }
+  addEventListener('hashchange', show); show();
+  // Bouton haut de page
+  var topBtn = document.getElementById('topBtn');
+  addEventListener('scroll', function(){ topBtn.classList.toggle('show', scrollY > 600); }, {passive:true});
+  topBtn.onclick = function(){ scrollTo({top:0, behavior:'smooth'}); };
+  // Recherche plein texte (sans accents, sans casse)
+  function norm(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  var index = [];
+  ORDER.forEach(function(slug){
+    var sec = sections[slug], rub = sec.querySelector('h1').textContent, head = null, h2 = null;
+    sec.querySelectorAll('h1,h2,h3,p,li,tr').forEach(function(el){
+      if (/^H[123]$/.test(el.tagName)) { head = el; if (el.tagName !== 'H3') h2 = el; }
+      if (el.tagName === 'LI' && el.querySelector('li')) return;
+      var txt = el.textContent.replace(/\s+/g, ' ').trim(); if (!txt) return;
+      var where = head ? head.textContent : rub;
+      // le titre de la fiche (h2) et du paramètre (h3) comptent dans la recherche du paragraphe
+      var ctx = (h2 && h2 !== head ? h2.textContent + ' ' : '') + where;
+      index.push({slug:slug, rub:rub, id: head ? head.id : '', where: where,
+        txt: txt, n: norm(txt), ctx: norm(ctx), w: /^H/.test(el.tagName) ? 3 : 1});
+    });
+  });
+  var q = document.getElementById('q'), res = document.getElementById('results'), sel = -1;
+  function esc(s){ return s.replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function snippet(it, terms){
+    var t = it.txt, n = it.n, i = n.indexOf(terms[0]), a = Math.max(0, i - 50), b = Math.min(t.length, a + 170);
+    var s = (a ? '…' : '') + t.slice(a, b) + (b < t.length ? '…' : ''), ns = norm(s), out = '', k = 0;
+    // surligne chaque terme (positions calculées sur le texte sans accents, même longueur)
+    var marks = [];
+    terms.forEach(function(w){ var p = ns.indexOf(w); while (p >= 0) { marks.push([p, p + w.length]); p = ns.indexOf(w, p + w.length); } });
+    marks.sort(function(x, y){ return x[0] - y[0]; });
+    marks.forEach(function(m){ if (m[0] < k) return; out += esc(s.slice(k, m[0])) + '<mark>' + esc(s.slice(m[0], m[1])) + '</mark>'; k = m[1]; });
+    return out + esc(s.slice(k));
+  }
+  function search(){
+    var v = norm(q.value.trim()); sel = -1;
+    if (v.length < 2) { res.classList.remove('show'); res.innerHTML = ''; return; }
+    var terms = v.split(/\s+/).filter(Boolean), hits = [];
+    index.forEach(function(it){
+      // chaque mot doit se trouver dans le paragraphe ou dans le titre de sa fiche
+      var inTxt = 0, ok = terms.every(function(w){
+        if (it.n.indexOf(w) >= 0) { inTxt++; return true; } return it.ctx.indexOf(w) >= 0; });
+      if (!ok || !inTxt) return;
+      hits.push({it:it, score: inTxt * 20 + it.w * 10 - it.txt.length / 400});
+    });
+    hits.sort(function(a, b){ return b.score - a.score; });
+    var seen = {}, html = '', count = 0;
+    hits.forEach(function(h){
+      var it = h.it, key = it.slug + it.id + it.txt.slice(0, 40); if (seen[key] || count >= 60) return; seen[key] = 1; count++;
+      html += '<a role="option" href="#/' + it.slug + (it.id ? '/' + it.id : '') + '"><div class="where">' + esc(it.rub) +
+        (it.where !== it.rub ? ' › ' + esc(it.where) : '') + '</div><div class="snip">' + snippet(it, terms) + '</div></a>';
+    });
+    res.innerHTML = html || '<div class="none">Aucun résultat pour « ' + esc(q.value) + ' »</div>';
+    res.classList.add('show');
+  }
+  q.addEventListener('input', search);
+  q.addEventListener('focus', search);
+  q.addEventListener('keydown', function(e){
+    var items = res.querySelectorAll('a'); if (!items.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault(); sel = (sel + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items.forEach(function(a, i){ a.classList.toggle('sel', i === sel); }); items[sel].scrollIntoView({block:'nearest'});
+    } else if (e.key === 'Enter') { (items[sel] || items[0]).click(); }
+    else if (e.key === 'Escape') { res.classList.remove('show'); q.blur(); }
+  });
+  res.addEventListener('click', function(e){ if (e.target.closest('a')) { res.classList.remove('show'); q.blur(); } });
+  document.addEventListener('click', function(e){ if (!e.target.closest('.search')) res.classList.remove('show'); });
+  // Liens externes : nouvel onglet
+  document.querySelectorAll('main a[href^="http"]').forEach(function(a){ a.target = '_blank'; a.rel = 'noopener'; });
+  // Hors connexion (navigateur) : service worker, seulement en http(s)
+  if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function(){});
+})();
+</script>
+</body>
+</html>
