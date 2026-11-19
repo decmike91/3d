@@ -467,6 +467,7 @@ export function initModel3D(ctx) {
     $('#m3Legend').hidden = !paths;
     if (!viewer) return;
     if (paths) {
+      if (!sliced.preview) sliced.preview = parsePreview(sliced.gcode);
       const multi = sliced.tools.length > 1;
       viewer.setToolpaths(sliced.preview, { colorBy: multi ? 'tool' : 'type', toolColors: slotColorsBySlot() });
       const n = sliced.preview.layers.length;
@@ -531,6 +532,13 @@ export function initModel3D(ctx) {
   return {
     show() { if (ensureViewer()) viewer.resize(); refreshView(); },
     onFilamentsChange() { renderSlots(); invalidate(); },
+    // Avant d'ouvrir la surveillance : on garde le G-code (pour un nouvel envoi) mais on libère l'aperçu des couches
+    releaseMemory() {
+      if (sliced && sliced.preview) {
+        if (viewer && viewer.showingPaths) { viewer.setToolpaths(null); setView('model'); }
+        sliced.preview = null; // recalculé si on revient sur « Couches »
+      }
+    },
     onPrinterChange() {
       fillJob(); renderSlots(); invalidate();
       if (viewer) { viewer.setBed(P().bed); viewer.resetCamera(); }

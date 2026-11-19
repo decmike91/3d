@@ -610,6 +610,8 @@ function showTab(t) {
   try { localStorage.setItem(TAB_STORE, t); } catch {}
 }
 async function openMonitor() {
+  // L'aperçu 3D des couches occupe beaucoup de mémoire : on le libère pour qu'Android ne décharge pas l'appli
+  try { if (m3) m3.releaseMemory(); } catch {}
   try { await globalThis.Capacitor.Plugins.PrinterNet.openMonitor(); }
   catch (e) { log(`Surveillance indisponible : ${e.message}`, 'err'); }
 }
