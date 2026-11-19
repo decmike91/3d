@@ -76,10 +76,17 @@ app.whenReady().then(async () => {
       const dt = new DataTransfer(); dt.items.add(new File([bin], 'projet-2-couleurs.3mf'));
       const inp = document.querySelector('#m3File'); inp.files = dt.files; inp.dispatchEvent(new Event('change'));`);
     await wait(1500);
-    let st = await run(`const d = window.__m3._debug; return { n: d.objects.length, names: d.objects.map(o => o.name), tools: d.objects.map(o => o.parts.map(p => p.tool)), canvas: document.querySelector('#m3Canvas').checked, slotColor: d.st.slots[1].color, warn: document.querySelector('#m3Warn').innerText };`);
+    let st = await run(`const d = window.__m3._debug; return { n: d.objects.length, names: d.objects.map(o => o.name), tools: d.objects.map(o => o.parts.map(p => p.tool)), canvas: document.querySelector('#m3CanvasOn').checked, slotColor: d.st.slots[1].color, warn: document.querySelector('#m3Warn').innerText };`);
     console.log('   chargé :', JSON.stringify(st));
     check(st.n === 2 && st.tools[1].every((t) => t === 1), '3MF : 2 objets, le champignon sur le filament 2');
     check(st.canvas && st.slotColor === '#E02020', 'CANVAS activé automatiquement, couleurs reprises du projet');
+    // La case doit vraiment basculer le mode (1 ou 4 emplacements)
+    const rows = async () => run(`return document.querySelectorAll('#m3Slots .slot').length;`);
+    await run(`document.querySelector('#m3CanvasOn').click();`);
+    const off = await rows();
+    await run(`document.querySelector('#m3CanvasOn').click();`);
+    const on = await rows();
+    check(off === 1 && on === 4, `case CANVAS : ${off} emplacement décochée, ${on} cochée`);
     await shot('m3_charge.png');
 
     // Orientation solidité de la barre (sélection puis bouton)

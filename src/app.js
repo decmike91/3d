@@ -2,7 +2,7 @@ import { parseSVG, bounds, SCALE } from './core/svg.js';
 import { transformPattern, makePlate, clampRelief } from './core/slicer.js';
 import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
-import { sendToPrinter, testPrinter, ccCanvas } from './net/printers.js';
+import { sendToPrinter, testPrinter, ccCanvas, canvasSlotMap } from './net/printers.js';
 import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume } from './core/materials.js';
 import { initModel3D } from './model3d/ui3d.js';
 import { initHelp } from './help/help.js';
@@ -415,10 +415,17 @@ $('#sendBtn').addEventListener('click', async () => {
   $('#sendBtn').disabled = true;
   progress(0);
   try {
+    // CANVAS (plaque et motif) : correspondance outil → plateau, sinon l'imprimante prend le dernier filament
+    let slotMap = [];
+    const cs = state.canvasSvg;
+    if (state.printer === 'cc' && cs.on && sliced.stats.tools) {
+      const typeOf = (t) => (t === cs.reliefSlot && sliced.stats.tools.length > 1 ? materialProfile(cs.reliefMat, 'cc').type : state.fil.cc.type);
+      slotMap = await canvasSlotMap(net.host, net.mainboardId, sliced.stats.tools.map((t) => ({ t, type: typeOf(t) })), (m) => log(m));
+    }
     await sendToPrinter(state.printer, {
       host: net.host, port: net.port ? +net.port : 0, mainboardId: net.mainboardId,
       filename: gcodeName(), gcode: sliced.gcode, start: state.startAfter,
-      autoLevel: state.autoLevel, timelapse: false,
+      autoLevel: state.autoLevel, timelapse: false, slotMap,
       log: (m) => log(m), onProgress: progress,
     });
     log(state.startAfter ? 'Impression lancée sur l’imprimante.' : 'Fichier envoyé.', 'ok');
@@ -554,7 +561,7 @@ function setPrinter(p) {
   state.printer = p; save(); fillForm(); rebuild();
   if (m3) m3.onPrinterChange();
 }
-m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, setPrinter });
+m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter });
 globalThis.__m3 = m3;
 const myPrinters = initMyPrinters({ state, save, setPrinter, platform });
 globalThis.__myPrinters = myPrinters;

@@ -240,6 +240,7 @@ ${warn('Un dessin plus grand que le plateau est réduit automatiquement ; le jou
 </ul>
 <h4>Plaque et motif de couleurs différentes (CANVAS)</h4>
 <p>Sur la Centauri Carbon équipée du CANVAS, cocher <b>Plaque et motif de couleurs différentes</b>, puis choisir l'emplacement (1 à 4) et la couleur de la plaque et du motif, et la matière du motif. Un <b>seul changement de filament</b> a lieu, juste avant la première couche du motif ; la purge est calculée d'après les deux couleurs.</p>
+<p>Pour imprimer toute la pièce dans une seule couleur depuis un emplacement choisi, donnez le même emplacement à la plaque et au motif. L'application indique à la Centauri le plateau à utiliser ; sans le CANVAS coché, elle prend le filament actif.</p>
 ${tip('Plaque blanche et motif noir, ou l’inverse : l’effet le plus lisible, avec une seule purge.')}`,
   },
   {
@@ -343,7 +344,9 @@ ${tip('Une barre, un crochet ou une patte de fixation doivent presque toujours �
 <li><b>Tour de purge</b> (conseillée) : petite tour imprimée à l'arrière pour stabiliser le débit après chaque changement.</li>
 <li><b>Volume de purge (×)</b> : multiplie la purge calculée d'après les couleurs (passer du foncé au clair demande plus de purge).</li>
 </ol>
-<p>À l'envoi, si le CANVAS a été lu, l'application indique à l'imprimante quel plateau utiliser pour chaque filament. Sinon, l'imprimante utilise l'ordre des emplacements.</p>
+<p>À l'envoi, l'application <b>lit le CANVAS</b> et indique à l'imprimante quel plateau utiliser pour chaque filament. Un emplacement vide est refusé, et une matière différente de celle du tranchage est signalée dans le journal.</p>
+<h4>Une seule couleur, depuis un emplacement précis</h4>
+<p>Cochez aussi <b>Multifilament CANVAS</b>, puis choisissez l'emplacement (<i>Filament 1 à 4</i>) de l'objet dans la liste. Sans cette case, la Centauri imprime avec le <b>filament actif</b>, c'est-à-dire le dernier utilisé.</p>
 ${warn('Le TPU ne passe pas dans le CANVAS (il est refusé). Le nylon y est possible mais doit être parfaitement sec.')}
 ${tip('Chaque couche où deux couleurs se côtoient coûte un changement (environ 1 min et quelques grammes de purge). Grouper les couleurs par hauteur réduit fortement le temps.')}`,
   },
@@ -486,6 +489,8 @@ ${warn('Ne jamais ouvrir dans la box (NAT/PAT, DMZ) les ports des imprimantes ou
 <tr><td>Vectorisation : le fond devient du trait</td><td>Cocher <i>Traits clairs sur fond sombre</i> ou régler le seuil.</td></tr>
 <tr><td>Caméra Centauri noire</td><td>Un seul flux possible : fermer la caméra dans ElegooSlicer / l'appli Elegoo.</td></tr>
 <tr><td>Caméra K1 injoignable après mise à jour</td><td>Les firmwares récents ne diffusent plus le MJPEG 8080 : réappliquer le correctif <code>S59mjpg_streamer</code> (K1 rootée, voir le guide de surveillance).</td></tr>
+<tr><td>Impression lancée avec le mauvais filament (CANVAS)</td><td>Cocher <i>Multifilament CANVAS</i> (Modèle 3D) ou <i>Plaque et motif de couleurs différentes</i> (Relief SVG) et choisir l'emplacement : sinon la Centauri prend le dernier filament utilisé.</td></tr>
+<tr><td>« L'emplacement N du CANVAS est vide »</td><td>Charger le filament dans cet emplacement, ou choisir un autre emplacement pour l'objet.</td></tr>
 <tr><td>Prise Tapo « HTTP 403 »</td><td>Activer <i>Compatibilité tierce</i> dans l'appli Tapo.</td></tr>
 <tr><td>Pas d'alerte écran éteint</td><td>Batterie « Non restreinte », surveillance en arrière-plan activée, notifications autorisées.</td></tr>
 <tr><td>Mise à jour Android impossible</td><td>Seulement depuis une très ancienne version signée autrement : désinstaller une fois, puis réinstaller.</td></tr>

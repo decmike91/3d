@@ -255,7 +255,7 @@ export function initModel3D(ctx) {
   function renderSlots() {
     const isCC = printer() === 'cc';
     $('#m3CanvasRow').hidden = !isCC;
-    $('#m3Canvas').checked = canvasOn();
+    $('#m3CanvasOn').checked = canvasOn();
     $('#m3CanvasTools').hidden = !canvasOn();
     $('#m3FlushRow').hidden = !canvasOn();
     $('#m3LevelRow').hidden = !isCC;
@@ -306,9 +306,9 @@ export function initModel3D(ctx) {
       const r = await ctx.ccCanvas(net.host, net.mainboardId, (m) => log(m));
       if (r.mainboard && !net.mainboardId) { net.mainboardId = r.mainboard; ctx.save(); }
       if (!r.trays.length) { log('Aucun CANVAS connecté à cette imprimante.', 'err'); canvasRead = null; renderSlots(); return; }
-      canvasRead = r.trays.slice(0, 4);
+      canvasRead = [0, 1, 2, 3].map((i) => r.trays.find((t) => t.slot === i) || null);
       canvasRead.forEach((t, i) => {
-        if (!t.loaded) return;
+        if (!t || !t.loaded) return;
         if (t.color) st.slots[i].color = t.color.toUpperCase();
         const m = MAT_OF_TYPE(t.type || t.name);
         if (m) st.slots[i].mat = m;
@@ -354,7 +354,7 @@ export function initModel3D(ctx) {
     const b = e.target.closest('button'); if (!b) return;
     ctx.setPrinter(b.dataset.printer);
   });
-  $('#m3Canvas').addEventListener('change', (e) => { st.canvas = e.target.checked; save(); invalidate(); renderSlots(); renderList(); refreshView(); });
+  $('#m3CanvasOn').addEventListener('change', (e) => { st.canvas = e.target.checked; save(); invalidate(); renderSlots(); renderList(); refreshView(); });
   $('#m3ReadCanvas').addEventListener('click', readCanvas);
   $('#m3Start').addEventListener('change', (e) => { st.startAfter = e.target.checked; save(); });
   $('#m3Level').addEventListener('change', (e) => { st.autoLevel = e.target.checked; save(); });
@@ -503,10 +503,12 @@ export function initModel3D(ctx) {
     $('#m3Send').disabled = true;
     progress(0);
     try {
-      // Correspondance filament → plateau du CANVAS (seulement si le CANVAS a été lu)
+      // Correspondance filament → plateau du CANVAS : toujours envoyée, sinon l'imprimante prend le dernier filament utilisé
       let slotMap = [];
-      if (canvasOn() && canvasRead) {
-        slotMap = sliced.tools.map((t) => canvasRead[t.slot] && { t: t.slot, canvas_id: canvasRead[t.slot].canvas_id, tray_id: canvasRead[t.slot].tray_id }).filter(Boolean);
+      if (canvasOn()) {
+        slotMap = await ctx.canvasSlotMap(net.host, net.mainboardId, sliced.tools.map((t) => ({ t: t.slot, type: t.fil.type })), (m) => log(m));
+      } else if (printer() === 'cc') {
+        log('Un seul filament : la Centauri utilisera le filament actif. Avec un CANVAS, cochez « Multifilament CANVAS » pour choisir l’emplacement.');
       }
       await ctx.sendToPrinter(printer(), {
         host: net.host, port: net.port ? +net.port : 0, mainboardId: net.mainboardId,

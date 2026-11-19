@@ -198,28 +198,68 @@ export async function ccStatus(host, mainboardHint, log) {
   } finally { s.close(); }
 }
 
-// Lecture du CANVAS (multifilament Elegoo) : commande SDCP 324
+// Lecture du CANVAS (multifilament Elegoo) : commande SDCP 324.
+// Chaque plateau reçoit un numéro d'emplacement (0 à 3 pour le premier CANVAS, 4 à 7 pour un second…).
 export async function ccCanvas(host, mainboardHint, log) {
   host = checkHost(host);
   const s = await sdcpSession(host, mainboardHint, log);
   try {
     const r = await s.request(324, {}, 8000);
-    const d = r?.Data?.Data || {};
+    const findList = (o, depth = 0) => {
+      if (!o || typeof o !== 'object' || depth > 5) return null;
+      if (Array.isArray(o.canvas_list)) return o;
+      for (const v of Object.values(o)) { const f = findList(v, depth + 1); if (f) return f; }
+      return null;
+    };
+    const d = findList(r) || {};
     const units = Array.isArray(d.canvas_list) ? d.canvas_list : [];
     const trays = [];
-    for (const u of units) {
-      if (!u || u.connected === 0) continue;
-      for (const t of u.tray_list || []) {
+    units.forEach((u, ui) => {
+      if (!u || u.connected === 0) return;
+      (u.tray_list || []).forEach((t, ti) => {
+        const col = String(t.filament_color || '').replace('#', '');
         trays.push({
-          canvas_id: u.canvas_id ?? 0, tray_id: t.tray_id ?? trays.length,
+          slot: ui * 4 + (Number.isInteger(t.tray_id) && t.tray_id < 4 ? t.tray_id : ti),
+          canvas_id: u.canvas_id ?? ui, tray_id: t.tray_id ?? ti,
           type: t.filament_type || '', name: t.filament_name || '', brand: t.brand || '',
-          color: /^#?[0-9a-f]{6}/i.test(t.filament_color || '') ? '#' + t.filament_color.replace('#', '').slice(0, 6) : '',
+          color: /^[0-9a-f]{6}/i.test(col) ? '#' + col.slice(0, 6).toUpperCase() : '',
           loaded: (t.status ?? 0) > 0, minTemp: t.min_nozzle_temp, maxTemp: t.max_nozzle_temp,
         });
-      }
-    }
+      });
+    });
     return { mainboard: s.mainboard, trays, active: { canvas: d.active_canvas_id, tray: d.active_tray_id } };
   } finally { s.close(); }
+}
+
+const familyOf = (t) => (/TPU/i.test(t) ? 'TPU' : /PA|NYLON/i.test(t) ? 'PA' : /PETG|PET/i.test(t) ? 'PETG' : /PLA/i.test(t) ? 'PLA' : /ABS/i.test(t) ? 'ABS' : /ASA/i.test(t) ? 'ASA' : String(t || '').toUpperCase());
+
+/**
+ * Correspondance « outil du G-code → plateau du CANVAS » pour la commande de lancement (slot_map).
+ * uses : [{ t: n° d'outil (= emplacement choisi, 0 à 3), type: 'PLA'… }]
+ * Lit le CANVAS ; refuse un emplacement vide ; signale une matière différente.
+ * Sans réponse du CANVAS : correspondance directe (outil n → plateau n du premier CANVAS).
+ */
+export async function canvasSlotMap(host, mainboardId, uses, log) {
+  let trays = null;
+  try {
+    const r = await ccCanvas(host, mainboardId, log);
+    trays = r.trays;
+  } catch (e) {
+    log && log(`Lecture du CANVAS impossible (${e.message}) : emplacements pris tels quels.`);
+  }
+  if (trays && !trays.length) throw new Error('Aucun CANVAS connecté à cette imprimante : décochez « Multifilament CANVAS » ou vérifiez le CANVAS.');
+  const map = [];
+  for (const u of uses) {
+    const tray = trays ? trays.find((x) => x.slot === u.t) : null;
+    if (trays && !tray) throw new Error(`L'emplacement ${u.t + 1} n'existe pas sur ce CANVAS.`);
+    if (tray && !tray.loaded) throw new Error(`L'emplacement ${u.t + 1} du CANVAS est vide : chargez-y le filament ou choisissez un autre emplacement.`);
+    if (tray && u.type && tray.type && familyOf(tray.type) !== familyOf(u.type)) {
+      log && log(`Attention : emplacement ${u.t + 1} chargé en ${tray.type}, tranché pour du ${u.type}.`);
+    }
+    map.push({ t: u.t, canvas_id: tray ? tray.canvas_id : 0, tray_id: tray ? tray.tray_id : u.t });
+    log && log(`Filament ${u.t + 1} → CANVAS ${tray ? `${tray.brand} ${tray.type} ${tray.color}`.replace(/\s+/g, ' ').trim() : `plateau ${u.t + 1}`}`);
+  }
+  return map;
 }
 
 export async function ccSend({ host, mainboardId, filename, gcode, start, autoLevel, timelapse, slotMap, log, onProgress }) {
