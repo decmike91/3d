@@ -7,6 +7,7 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 const MODEL = { cc: 'Elegoo Centauri Carbon', k1: 'Creality K1 / K1C' };
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { cleanHost } from '../net/host.js';
 const isIp = (v) => /^(\d{1,3}\.){3}\d{1,3}$/.test(v) || /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(v);
 
 export function initMyPrinters({ state, save, setPrinter, platform }) {
@@ -16,7 +17,7 @@ export function initMyPrinters({ state, save, setPrinter, platform }) {
 
   const entries = () => [
     ...monitor.map((m) => ({ id: `mon:${m.key}`, name: m.name, model: m.model, ip: m.ip, source: 'monitor' })),
-    ...state.myPrinters.filter((p) => p.ip).map((p) => ({ ...p, source: 'app' })),
+    ...state.myPrinters.filter((p) => p.ip).map((p) => ({ ...p, ip: cleanHost(p.ip), source: 'app' })),
   ];
   const find = (id) => entries().find((e) => e.id === id);
 
@@ -58,7 +59,7 @@ export function initMyPrinters({ state, save, setPrinter, platform }) {
     if (platform() !== 'android') return;
     try {
       const r = await globalThis.Capacitor.Plugins.PrinterNet.monitorPrinters();
-      monitor = (r && r.printers) || [];
+      monitor = ((r && r.printers) || []).map((m) => ({ ...m, ip: cleanHost(m.ip) }));
     } catch { monitor = []; }
     // L'imprimante choisie a changé d'adresse dans Surveiller : on suit
     const e = state.selPrinter && find(state.selPrinter);
@@ -104,7 +105,8 @@ export function initMyPrinters({ state, save, setPrinter, platform }) {
       li.addEventListener('change', (ev) => {
         const f = ev.target.dataset.f;
         if (!f) return;
-        p[f] = ev.target.value.trim();
+        p[f] = f === 'ip' ? cleanHost(ev.target.value) : ev.target.value.trim();
+        if (f === 'ip') ev.target.value = p.ip;
         if (f === 'ip' && p.ip && !isIp(p.ip)) ev.target.setCustomValidity('Adresse IP invalide'); else ev.target.setCustomValidity('');
         if (state.selPrinter === p.id && p.ip) apply(p.ip ? { ...p, source: 'app' } : p, true);
         save(); render();

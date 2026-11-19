@@ -7,6 +7,7 @@ import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume } from './core/ma
 import { initModel3D } from './model3d/ui3d.js';
 import { initHelp } from './help/help.js';
 import { initMyPrinters } from './core/myprinters.js';
+import { cleanHost } from './net/host.js';
 import { platform } from './net/transport.js';
 
 const $ = (s) => document.querySelector(s);
@@ -43,6 +44,7 @@ try {
   }
 } catch {}
 state.part.reliefHeight = clampRelief(state.part.reliefHeight);
+for (const k of ['cc', 'k1']) if (state.net?.[k]?.host) state.net[k].host = cleanHost(state.net[k].host);
 const save = () => {
   // Identifiant carte mère mémorisé par adresse (deux Centauri Carbon)
   const cc = state.net.cc;
@@ -109,6 +111,10 @@ function onField(e) {
   if (el.type === 'checkbox') v = el.checked;
   else if (el.type === 'number') { v = el.value === '' ? (el.dataset.k === 'port' ? '' : 0) : parseFloat(el.value); if (Number.isNaN(v)) return; }
   else v = el.value.trim();
+  if (el.dataset.g === 'net' && el.dataset.k === 'host') {
+    v = cleanHost(v);
+    for (const i of document.querySelectorAll('[data-g="net"][data-k="host"]')) i.value = v;
+  }
   if (el.dataset.k === 'reliefHeight') {
     const c = clampRelief(v);
     if (c !== v) log(`Hauteur du motif ramenée à ${String(c).replace('.', ',')} mm (plage autorisée : 0,2 à 1 mm).`);

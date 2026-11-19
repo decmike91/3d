@@ -110,7 +110,7 @@ app.whenReady().then(async () => {
 
     // K1 : un seul filament, envoi au faux Moonraker
     await run(`document.querySelector('#m3PrinterSeg [data-printer="k1"]').click();`);
-    await run(`const h = document.querySelector('#m3Wrap').closest('main').querySelector('[data-k="host"]'); h.value = '127.0.0.1'; h.dispatchEvent(new Event('change', {bubbles:true}));
+    await run(`const h = document.querySelector('#m3Wrap').closest('main').querySelector('[data-k="host"]'); h.value = '\u00A0127.0.0.1\u200B '; h.dispatchEvent(new Event('change', {bubbles:true}));
                const p = document.querySelector('#printView [data-k="port"]'); p.value = '17127'; p.dispatchEvent(new Event('change', {bubbles:true}));`);
     await run(`document.querySelector('#m3Slice').click();`);
     let ready = false;

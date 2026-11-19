@@ -3,6 +3,7 @@
 // Elegoo Centauri Carbon : SDCP v3 (upload HTTP par blocs de 1 Mio + MD5, puis Cmd 128 via WebSocket :3030)
 import { http, buildMultipart, uuidHex } from './transport.js';
 import { md5 } from './md5.js';
+import { checkHost } from './host.js';
 
 const enc = new TextEncoder();
 
@@ -26,6 +27,7 @@ async function moonrakerBase(host, port, log) {
 }
 
 export async function k1Status(host, port, log) {
+  host = checkHost(host);
   const base = await moonrakerBase(host, port, log);
   const r = await http({ url: `${base}/printer/objects/query?print_stats&extruder&heater_bed`, timeoutMs: 5000 });
   const j = JSON.parse(r.text).result.status;
@@ -38,6 +40,7 @@ export async function k1Status(host, port, log) {
 }
 
 export async function k1Send({ host, port, filename, gcode, start, log, onProgress }) {
+  host = checkHost(host);
   const st = await k1Status(host, port, log);
   log(`Connecté (${st.base}) — état : ${st.state}`);
   if (start && (st.state === 'printing' || st.state === 'paused')) throw new Error("L'imprimante est déjà en cours d'impression.");
@@ -154,6 +157,7 @@ function sdcpSession(host, mainboardHint, log) {
 }
 
 export async function ccStatus(host, mainboardHint, log) {
+  host = checkHost(host);
   const s = await sdcpSession(host, mainboardHint, log);
   try {
     if (!s.status) { try { await s.request(0, {}, 4000); } catch {} }
@@ -171,6 +175,7 @@ export async function ccStatus(host, mainboardHint, log) {
 
 // Lecture du CANVAS (multifilament Elegoo) : commande SDCP 324
 export async function ccCanvas(host, mainboardHint, log) {
+  host = checkHost(host);
   const s = await sdcpSession(host, mainboardHint, log);
   try {
     const r = await s.request(324, {}, 8000);
@@ -193,6 +198,7 @@ export async function ccCanvas(host, mainboardHint, log) {
 }
 
 export async function ccSend({ host, mainboardId, filename, gcode, start, autoLevel, timelapse, slotMap, log, onProgress }) {
+  host = checkHost(host);
   const bytes = enc.encode(gcode);
   log(`Envoi de ${filename} (${(bytes.length / 1024).toFixed(0)} Kio)…`);
   await sdcpUpload(host, filename, bytes, log, onProgress);

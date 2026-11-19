@@ -50,7 +50,8 @@ public class PrinterNetPlugin extends Plugin {
         new Thread(() -> {
             HttpURLConnection conn = null;
             try {
-                String url = call.getString("url");
+                // Retire espaces, espaces insécables et caractères invisibles (zéro largeur…) collés par le clavier
+                String url = call.getString("url", "").replaceAll("[\\s\\p{Z}\\p{Cf}]", "");
                 String method = call.getString("method", "GET");
                 int timeout = call.getInt("timeoutMs", 15000);
                 String bodyB64 = call.getString("bodyBase64", "");
