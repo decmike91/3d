@@ -27,6 +27,15 @@ export function postProcess(raw, ctx) {
   if (!tools[tool]) tool = 0;
   const initTool = tool;
 
+  // Temps écoulé selon CuraEngine au début de chaque couche (;TIME_ELAPSED en fin de couche précédente)
+  const elapsedBefore = [];
+  { let L = -1, last = 0;
+    for (let k = i0; k < lines.length; k++) {
+      const l = lines[k];
+      if (l.startsWith(';LAYER:')) { L = +l.slice(7); elapsedBefore[L] = last; }
+      else if (l.startsWith(';TIME_ELAPSED:')) last = +l.slice(14) || last;
+    }
+  }
   const out = [START_MARK];
   let z = 0, layer = -1, layerCount = 0, maxZ = 0, changes = 0;
   let pendingZ = null;
@@ -61,8 +70,9 @@ export function postProcess(raw, ctx) {
       inPrint = true;
       out.push(t);
       if (layer >= 0) {
-        if (P.layerStats) out.push(`SET_PRINT_STATS_INFO TOTAL_LAYER=${LAYERS_MARK} CURRENT_LAYER=${layer + 1}`);
-        if (layerCount) out.push(`M73 P${Math.floor((layer / layerCount) * 100)}`);
+        // Centauri : total donné une seule fois au démarrage, ici la couche courante seulement
+        if (P.layerStats) out.push(`SET_PRINT_STATS_INFO CURRENT_LAYER=${layer + 1}`);
+        if (layerCount) out.push(`M73 P${Math.floor((layer / layerCount) * 100)} R@@RT${Math.round(elapsedBefore[layer] || 0)}@@`);
       }
       continue;
     }
@@ -160,7 +170,13 @@ export function postProcess(raw, ctx) {
   const body = out.join('\n')
     .replace(START_MARK, startG + '\nM83\nG90')
     .replace(END_MARK, 'M106 S0\n' + P.endGcode({ maxZ }));
-  const gcode = (head.join('\n') + '\n' + body + '\n' + tail.join('\n') + '\n').split(LAYERS_MARK).join(String(layers));
+  const curaTotal = meta.printTime > 0 ? meta.printTime : 0;
+  const bodyT = body.replace(/@@RT(\d+)@@/g, (_, e) => {
+    const done = +e;
+    const frac = curaTotal ? Math.min(1, done / curaTotal) : 0;
+    return String(Math.max(0, Math.round((time * (1 - frac)) / 60)));
+  });
+  const gcode = (head.join('\n') + '\n' + bodyT + '\n' + tail.join('\n') + '\n').split(LAYERS_MARK).join(String(layers));
   return {
     gcode,
     stats: {

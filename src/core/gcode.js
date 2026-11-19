@@ -88,10 +88,12 @@ export function slice(pattern, printerId, print, fil0, opts = {}) {
     emit(`;LAYER_CHANGE`);
     emit(`;Z:${f3(z)}`);
     emit(`;HEIGHT:${f3(layer.height)}`);
-    if (P.layerStats) emit(`SET_PRINT_STATS_INFO TOTAL_LAYER=${layers.length} CURRENT_LAYER=${layer.index + 1}`);
+    // Centauri : nombre total de couches donné une seule fois (G-code de démarrage), ici la couche courante seulement
+    if (P.layerStats) emit(`SET_PRINT_STATS_INFO CURRENT_LAYER=${layer.index + 1}`);
     emit(`;LAYER:${layer.index}`);
     emit(`G92 E0`);
-    emit(`M73 P${Math.floor((layer.index / layers.length) * 100)}`);
+    // Progression + temps restant (minutes), complété à la fin quand la durée totale est connue
+    emit(`M73 P${Math.floor((layer.index / layers.length) * 100)} R@@RT${Math.round(time)}@@`);
     // Température / ventilateur après la 1re couche
     if (layer.index === 1) {
       if (fil.nozzle !== fil.nozzleFirst) emit(`M104 S${fil.nozzle}`);
@@ -127,6 +129,11 @@ export function slice(pattern, printerId, print, fil0, opts = {}) {
   }
 
   const maxZ = layers.length ? layers[layers.length - 1].z : 0;
+  // Temps restant à chaque couche (M73 R, en minutes)
+  for (let k = 0; k < body.length; k++) {
+    const m = /@@RT(\d+)@@/.exec(body[k]);
+    if (m) body[k] = body[k].replace(m[0], String(Math.max(0, Math.round((time - +m[1]) / 60))));
+  }
   const lenMM = totalE;
   const filOf = (t) => (cv && t === toolRelief && multi ? cv.reliefFil : cv && startsWithRelief ? cv.reliefFil : fil0);
   const grams = Object.entries(usedE).reduce((g, [t, e]) => g + (e * filArea * filOf(+t).density) / 1000, 0);

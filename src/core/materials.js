@@ -21,6 +21,22 @@ export const MATERIALS = {
     speedCap: null, accelCap: null, canvas: true, color: '#3f8fa8',
     notes: [],
   },
+  pla_std: {
+    id: 'pla_std', label: 'PLA standard (eSUN PLA+)', name: 'eSUN PLA+', type: 'PLA',
+    density: 1.23, nozzle: 210, nozzleFirst: 215, bed: 60, bedFirst: 60, tempHigh: 225,
+    fan: 100, fanFirstLayers: 1, flow: 0.98, maxVolumetric: { cc: 12, k1: 12 }, pressureAdvance: 0.03,
+    retractLength: 0.8, retractSpeed: { cc: 30, k1: 40 }, zHop: 0.4,
+    speedCap: 50, accelCap: 5000, canvas: true, color: '#e8e4da',
+    notes: [],
+  },
+  petg_std: {
+    id: 'petg_std', label: 'PETG standard (eSUN PETG)', name: 'eSUN PETG', type: 'PETG',
+    density: 1.27, nozzle: 235, nozzleFirst: 240, bed: 75, bedFirst: 75, tempHigh: 250,
+    fan: 40, fanFirstLayers: 2, flow: 0.95, maxVolumetric: { cc: 8, k1: 8 }, pressureAdvance: 0.04,
+    retractLength: 0.8, retractSpeed: { cc: 30, k1: 40 }, zHop: 0.4,
+    speedCap: 50, accelCap: 5000, canvas: true, color: '#3f8fa8',
+    notes: [],
+  },
   tpu: {
     id: 'tpu', label: 'TPU 95A (eSUN eTPU-95A)', name: 'eSUN eTPU-95A', type: 'TPU',
     density: 1.21, nozzle: 225, nozzleFirst: 230, bed: 45, bedFirst: 45, tempHigh: 240,
@@ -41,6 +57,26 @@ export const MATERIALS = {
   },
 };
 export const MATERIAL_IDS = Object.keys(MATERIALS);
+
+// Matière + type de filament (haute vitesse ou standard à 50 mm/s)
+export const FAMILIES = {
+  pla: { label: 'PLA', hs: 'pla_hs', std: 'pla_std' },
+  petg: { label: 'PETG', hs: 'petg_hs', std: 'petg_std' },
+  tpu: { label: 'TPU 95A (eSUN eTPU-95A)', std: 'tpu' },
+  nylon: { label: 'Nylon PA (eSUN ePA)', std: 'nylon' },
+};
+export const SPEEDS = { hs: 'Haute vitesse (HS)', std: 'Standard (50 mm/s)' };
+export function familyOf(matId) { return Object.keys(FAMILIES).find((f) => FAMILIES[f].hs === matId || FAMILIES[f].std === matId) || 'petg'; }
+export function speedOf(matId) { const f = FAMILIES[familyOf(matId)]; return f.hs === matId ? 'hs' : 'std'; }
+export function matIdOf(family, speed) { const f = FAMILIES[family] || FAMILIES.petg; return f[speed] || f.std || f.hs; }
+// Filament lu sur le CANVAS : « PLA », « PETG HS », « High Speed PLA »… → matière de l'application
+export function matFromTrayType(type, keepSpeed = 'hs') {
+  const t = String(type || '');
+  const fam = /TPU/i.test(t) ? 'tpu' : /PA|NYLON/i.test(t) ? 'nylon' : /PETG|PET/i.test(t) ? 'petg' : /PLA/i.test(t) ? 'pla' : null;
+  if (!fam) return null;
+  const speed = /\bHS\b|HIGH.?SPEED|RAPID|FAST/i.test(t) ? 'hs' : keepSpeed;
+  return matIdOf(fam, speed);
+}
 
 // Réglages filament complets (forme attendue par le trancheur SVG et le trancheur 3D)
 export function materialProfile(matId, printerId, retractDefaults) {

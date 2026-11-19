@@ -2,7 +2,7 @@
 // filaments (PLA HS, PETG HS, TPU, nylon), multifilament CANVAS (Centauri Carbon), tranchage CuraEngine.
 import { PRINTERS } from '../core/profiles.js';
 import { fmtTime } from '../core/gcode.js';
-import { MATERIALS, MATERIAL_IDS, materialProfile } from '../core/materials.js';
+import { MATERIALS, MATERIAL_IDS, materialProfile, FAMILIES, SPEEDS, familyOf, speedOf, matIdOf, matFromTrayType } from '../core/materials.js';
 import { readModelFile, SUPPORTED } from './mesh.js';
 import { autoOrient, arrange, m3mul, rotAxis } from './orient.js';
 import { makeObject, worldParts, objectSize, prepareSlice } from './job.js';
@@ -19,7 +19,7 @@ const DEFAULT_SLOTS = [
   { mat: 'pla_hs', color: '#D23A2A' },
   { mat: 'petg_hs', color: '#2F6FD0' },
 ];
-const MAT_OF_TYPE = (t) => (/TPU/i.test(t) ? 'tpu' : /PA|NYLON/i.test(t) ? 'nylon' : /PETG|PET/i.test(t) ? 'petg_hs' : /PLA/i.test(t) ? 'pla_hs' : null);
+const MAT_OF_TYPE = (t, cur) => matFromTrayType(t, cur ? speedOf(cur) : 'hs');
 
 export function initModel3D(ctx) {
   const { state } = ctx;
@@ -198,7 +198,7 @@ export function initModel3D(ctx) {
           if (r.filaments && r.filaments.length) {
             r.filaments.slice(0, 4).forEach((fl, i) => {
               if (/^#[0-9a-f]{6}$/i.test(fl.color)) st.slots[i].color = fl.color.toUpperCase();
-              const m = MAT_OF_TYPE(fl.type);
+              const m = MAT_OF_TYPE(fl.type, st.slots[i].mat);
               if (m) st.slots[i].mat = m;
             });
           }
@@ -265,14 +265,24 @@ export function initModel3D(ctx) {
       const row = document.createElement('div');
       row.className = 'slot';
       const b = document.createElement('b'); b.textContent = canvasOn() ? i + 1 : '◉';
-      const sel = document.createElement('select');
-      for (const id of MATERIAL_IDS) {
-        const m = MATERIALS[id];
-        const o = new Option(m.label + (canvasOn() && m.canvas === false ? ' — hors CANVAS' : ''), id);
-        sel.append(o);
+      // Matière (PLA, PETG, TPU, nylon) + type de filament (haute vitesse / standard 50 mm/s)
+      const fam = document.createElement('select');
+      for (const [k, f] of Object.entries(FAMILIES)) {
+        const off = canvasOn() && MATERIALS[f.std || f.hs].canvas === false;
+        fam.append(new Option(f.label + (off ? ' — hors CANVAS' : ''), k));
       }
-      sel.value = st.slots[i].mat;
-      sel.addEventListener('change', () => { st.slots[i].mat = sel.value; save(); invalidate(); renderSlots(); });
+      fam.value = familyOf(st.slots[i].mat);
+      const spd = document.createElement('select');
+      for (const [k, l] of Object.entries({ hs: 'HS rapide', std: 'Standard' })) spd.append(new Option(l, k));
+      spd.title = SPEEDS[speedOf(st.slots[i].mat)];
+      spd.value = speedOf(st.slots[i].mat);
+      spd.disabled = !FAMILIES[fam.value].hs;
+      const onMat = () => { st.slots[i].mat = matIdOf(fam.value, spd.value); save(); invalidate(); renderSlots(); };
+      fam.addEventListener('change', onMat);
+      spd.addEventListener('change', onMat);
+      const sel = document.createElement('div');
+      sel.className = 'matpair';
+      sel.append(fam, spd);
       const col = document.createElement('input');
       col.type = 'color'; col.value = st.slots[i].color;
       col.title = 'Couleur du filament';
@@ -281,7 +291,7 @@ export function initModel3D(ctx) {
       const f = slotFil(i);
       const info = document.createElement('small');
       const tray = canvasRead && canvasRead[i];
-      info.textContent = `Buse ${f.nozzle} °C · plateau ${f.bed} °C · ${f.fan} % ventilateur` + (tray ? ` · CANVAS : ${tray.loaded ? `${tray.brand} ${tray.type || tray.name}`.trim() : 'vide'}` : '');
+      info.textContent = `${f.name} · buse ${f.nozzle} °C · plateau ${f.bed} °C · ${f.fan} % ventilateur${f.speedCap ? ` · ${f.speedCap} mm/s max` : ''}` + (tray ? ` · CANVAS : ${tray.loaded ? `${tray.brand} ${tray.type || tray.name}`.trim() : 'vide'}` : '');
       row.append(info);
       box.append(row);
     }
@@ -310,7 +320,7 @@ export function initModel3D(ctx) {
       canvasRead.forEach((t, i) => {
         if (!t || !t.loaded) return;
         if (t.color) st.slots[i].color = t.color.toUpperCase();
-        const m = MAT_OF_TYPE(t.type || t.name);
+        const m = MAT_OF_TYPE(`${t.type} ${t.name}`, st.slots[i].mat);
         if (m) st.slots[i].mat = m;
       });
       save(); invalidate(); renderSlots(); renderList(); refreshView();

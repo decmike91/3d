@@ -88,7 +88,11 @@ function box(x0, y0, z0, x1, y1, z1) {
       const changes = (g.match(/^M6211 T\d/gm) || []);
       check(changes.length >= 2 && changes.every((c) => /T[02]$/.test(c.split(' ')[1]) || /^M6211 T[02]/.test(c)), `cc : ${changes.length} changements CANVAS vers les emplacements 1 et 3`);
       check(/^T2$/m.test(g) && !/^T1$/m.test(g), 'cc : outils T0/T2 (numéros d’emplacement réels)');
-      check(/SET_PRINT_STATS_INFO TOTAL_LAYER=\d+ CURRENT_LAYER=1/.test(g), 'cc : progression par couche');
+      const tl = (g.match(/SET_PRINT_STATS_INFO TOTAL_LAYER=(\d+)/g) || []);
+      check(tl.length === 1 && tl[0].endsWith('=' + post.stats.layers), `cc : nombre total de couches donné une seule fois (${tl.join(' ')})`);
+      check(/^SET_PRINT_STATS_INFO CURRENT_LAYER=2$/m.test(g), 'cc : couche courante à chaque couche');
+      const rs = [...g.matchAll(/^M73 P(\d+) R(\d+)$/gm)].map((m) => +m[2]);
+      check(rs.length > 50 && rs[0] >= rs[rs.length - 1] && rs[0] > 5, `cc : temps restant décroissant (${rs[0]} → ${rs[rs.length - 1]} min)`);
       check(/;TYPE:PRIME-TOWER/.test(g), 'cc : tour de purge');
       check(/; filament_colour = #FFFFFF;#D02020/.test(g), 'cc : couleurs dans l’en-tête');
     } else {
@@ -97,6 +101,21 @@ function box(x0, y0, z0, x1, y1, z1) {
     }
     const pv = parsePreview(g);
     check(pv.layers.length > 50 && pv.pos.length > 1000, `${printerId} : aperçu ${pv.layers.length} couches, ${pv.kind.length} segments`);
+  }
+  {
+    const P = PRINTERS.cc;
+    const o = makeObject(m1); o.x = 128; o.y = 128;
+    const slots = [{ fil: materialProfile('pla_std', 'cc'), color: '#FFFFFF' }];
+    const prep = prepareSlice([o], { ...defaultJob('cc'), support: 'none' }, slots, false);
+    const res = await sliceCura({ definition: prep.definition, command: prep.command, files: prep.files });
+    const g = postProcess(res.gcode, { printerId: 'cc', tools: prep.tools, metadata: res.metadata }).gcode;
+    let maxF = 0, f = 0;
+    for (const l of g.slice(g.indexOf(';LAYER:0')).split('\n')) {
+      const fm = /^G1 .*F(\d+)/.exec(l); if (fm) f = +fm[1];
+      if (/^G1 .*X.*E[0-9.]+/.test(l) && !/E-/.test(l)) maxF = Math.max(maxF, f);
+    }
+    check(maxF > 0 && maxF <= 3000, `PLA standard : extrusion à ${maxF / 60} mm/s max (≤ 50)`);
+    void P;
   }
   console.log(ok ? 'RÉSULTAT : OK' : 'RÉSULTAT : ÉCHEC');
   process.exit(ok ? 0 : 1);

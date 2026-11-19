@@ -67,10 +67,12 @@ ${figN('telephone', 'Sur téléphone, les réglages passent sous la vue')}`,
 <tr><th>Matière</th><th>Buse (1re couche)</th><th>Plateau</th><th>Ventilateur</th><th>Débit max</th><th>Remarques</th></tr>
 <tr><td>PLA HS (eSUN ePLA-HS)</td><td>220 °C (225)</td><td>60 °C</td><td>100 %</td><td>21 mm³/s (CC) · 20 (K1)</td><td>Ventilation de la chambre activée sur la Centauri</td></tr>
 <tr><td>PETG HS (eSUN PETG+HS)</td><td>240 °C (245)</td><td>75 °C</td><td>40 %</td><td>16 mm³/s (CC) · 15 (K1)</td><td>Réglage par défaut du relief SVG</td></tr>
+<tr><td>PLA standard (eSUN PLA+)</td><td>210 °C (215)</td><td>60 °C</td><td>100 %</td><td>12 mm³/s</td><td>Vitesse limitée à 50 mm/s</td></tr>
+<tr><td>PETG standard (eSUN PETG)</td><td>235 °C (240)</td><td>75 °C</td><td>40 %</td><td>8 mm³/s</td><td>Vitesse limitée à 50 mm/s</td></tr>
 <tr><td>TPU 95A (eSUN eTPU-95A)</td><td>225 °C (230)</td><td>45 °C</td><td>60 %</td><td>3,6 mm³/s</td><td>30 mm/s max, peu de rétraction, jamais via le CANVAS</td></tr>
 <tr><td>Nylon PA (eSUN ePA)</td><td>255 °C (260)</td><td>85 °C (90)</td><td>10 %</td><td>8 mm³/s</td><td>Bobine séchée, capot fermé, colle sur le PEI, bordure automatique</td></tr>
 </table>
-${tip('Tous ces réglages restent modifiables. Le bouton <i>Rétablir le réglage optimisé</i> (onglet Relief SVG) revient aux valeurs ci-dessus.')}`,
+${tip('<b>Haute vitesse ou standard</b> : choisissez « Standard (50 mm/s) » pour un filament classique (non HS). Imprimé aux vitesses HS, un filament standard ne fond pas assez vite : l’extrudeur patine et les couches deviennent creuses ou absentes. Tous ces réglages restent modifiables. Le bouton <i>Rétablir le réglage optimisé</i> (onglet Relief SVG) revient aux valeurs ci-dessus.')}`,
   },
   {
     id: 'install', title: 'Installation et mises à jour', parent: 'intro',
@@ -234,7 +236,7 @@ ${warn('Un dessin plus grand que le plateau est réduit automatiquement ; le jou
     keywords: ['matière', 'filament', 'PLA', 'PETG', 'TPU', 'nylon', 'CANVAS', 'plaque et motif', 'deux couleurs', 'réglages avancés', 'vitesses'],
     html: `
 <ul>
-<li><b>Matière</b> : PLA HS, PETG HS (défaut), TPU 95A ou nylon PA. Le réglage optimisé de l'imprimante est appliqué (voir <a href="#printers" data-topic="printers">@@printers@@</a>).</li>
+<li><b>Matière</b> (PLA, PETG, TPU 95A, nylon PA) et <b>type de filament</b> : <i>Haute vitesse (HS)</i> ou <i>Standard (50 mm/s)</i>. Le réglage optimisé de l'imprimante est appliqué, vitesses comprises (voir <a href="#printers" data-topic="printers">@@printers@@</a>).</li>
 <li><b>Modifier les réglages filament</b> : températures, ventilateur, débit, débit volumique max, avance de pression, rétraction, levée Z.</li>
 <li><b>Réglages d'impression avancés</b> : hauteur de couche (0,2 mm), largeur d'extrusion (0,45 mm), parois (2), vitesses, accélérations.</li>
 </ul>
@@ -323,10 +325,10 @@ ${tip('Une barre, un crochet ou une patte de fixation doivent presque toujours �
     id: 'm3-filament', title: 'Imprimante et filament', parent: 'm3',
     keywords: ['imprimante', 'filament', 'matière', 'couleur', 'PLA HS', 'PETG HS', 'TPU', 'nylon', 'séchage', 'colle'],
     html: `
-<p>Choisir l'imprimante (l'adresse IP est la même que dans l'onglet Relief SVG), puis la matière et la couleur du filament. La couleur sert à l'aperçu et, en multicolore, au calcul des purges.</p>
+<p>Choisir l'imprimante (l'adresse IP est la même que dans l'onglet Relief SVG), puis la matière, le <b>type</b> (<i>HS rapide</i> ou <i>Standard</i>, limité à 50 mm/s) et la couleur du filament. La couleur sert à l'aperçu et, en multicolore, au calcul des purges.</p>
 <ul>
-<li><b>PLA HS</b> : le plus simple, rapide, net. Ventilation de la chambre activée sur la Centauri pour éviter le bouchage.</li>
-<li><b>PETG HS</b> : plus résistant à la chaleur et aux chocs, plus souple que le PLA.</li>
+<li><b>PLA</b> : le plus simple et net ; en <i>HS</i> jusqu'à ~250 mm/s, en <i>Standard</i> à 50 mm/s. Ventilation de la chambre activée sur la Centauri pour éviter le bouchage.</li>
+<li><b>PETG</b> : plus résistant à la chaleur et aux chocs, plus souple que le PLA ; HS ou Standard (50 mm/s).</li>
 <li><b>TPU 95A</b> : souple. Vitesse plafonnée à 30 mm/s, rétraction courte ; bobine montée en direct.</li>
 <li><b>Nylon PA</b> : très résistant, absorbe l'humidité. <b>Sécher la bobine</b> (70 °C, 8 h) juste avant, capot fermé, film de colle sur le plateau PEI ; bordure automatique.</li>
 </ul>

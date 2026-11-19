@@ -359,14 +359,22 @@
     <!-- 4. Filament -->
     <section class="step">
       <h2><span class="n">4</span>Filament</h2>
-      <label class="field">Matière
-        <select id="matSel">
-          <option value="pla_hs">PLA HS (eSUN ePLA-HS)</option>
-          <option value="petg_hs">PETG HS (eSUN PETG+HS)</option>
-          <option value="tpu">TPU 95A (eSUN eTPU-95A)</option>
-          <option value="nylon">Nylon PA (eSUN ePA)</option>
-        </select>
-      </label>
+      <div class="grid2">
+        <label class="field">Matière
+          <select id="matSel">
+            <option value="pla">PLA</option>
+            <option value="petg">PETG</option>
+            <option value="tpu">TPU 95A (eSUN eTPU-95A)</option>
+            <option value="nylon">Nylon PA (eSUN ePA)</option>
+          </select>
+        </label>
+        <label class="field">Type de filament
+          <select id="matSpeed">
+            <option value="hs">Haute vitesse (HS)</option>
+            <option value="std">Standard (50 mm/s)</option>
+          </select>
+        </label>
+      </div>
       <p class="hint" id="filHint" style="margin-top:8px"></p>
       <label class="check" id="svgCanvasRow"><input type="checkbox" id="svgCanvasOn"> Plaque et motif de couleurs différentes (CANVAS)</label>
       <div id="svgCanvasBox" hidden>
@@ -381,8 +389,10 @@
           <label class="field">Couleur motif<input type="color" id="svgReliefColor"></label>
           <label class="field" style="grid-column:1/-1">Matière du motif
             <select id="svgReliefMat">
-              <option value="pla_hs">PLA HS (eSUN ePLA-HS)</option>
-              <option value="petg_hs">PETG HS (eSUN PETG+HS)</option>
+              <option value="pla_hs">PLA haute vitesse (eSUN ePLA-HS)</option>
+              <option value="pla_std">PLA standard, 50 mm/s (eSUN PLA+)</option>
+              <option value="petg_hs">PETG haute vitesse (eSUN PETG+HS)</option>
+              <option value="petg_std">PETG standard, 50 mm/s (eSUN PETG)</option>
               <option value="nylon">Nylon PA (eSUN ePA)</option>
             </select>
           </label>

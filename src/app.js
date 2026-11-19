@@ -3,7 +3,7 @@ import { transformPattern, makePlate, clampRelief } from './core/slicer.js';
 import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
 import { sendToPrinter, testPrinter, ccCanvas, canvasSlotMap } from './net/printers.js';
-import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume } from './core/materials.js';
+import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume, FAMILIES, familyOf, speedOf, matIdOf } from './core/materials.js';
 import { initModel3D } from './model3d/ui3d.js';
 import { initHelp } from './help/help.js';
 import { initMyPrinters } from './core/myprinters.js';
@@ -92,7 +92,10 @@ function fillForm() {
   $('#discoverBtn').hidden = !(state.printer === 'cc' && platform() !== 'web');
   $('#startChk').checked = state.startAfter;
   $('#levelChk').checked = state.autoLevel;
-  $('#matSel').value = state.fil[state.printer].material || 'petg_hs';
+  const matId = state.fil[state.printer].material || 'petg_hs';
+  $('#matSel').value = familyOf(matId);
+  $('#matSpeed').value = speedOf(matId);
+  $('#matSpeed').disabled = !FAMILIES[familyOf(matId)].hs;
   const cs = state.canvasSvg;
   $('#svgCanvasRow').hidden = state.printer !== 'cc';
   $('#svgCanvasOn').checked = cs.on && state.printer === 'cc';
@@ -275,11 +278,17 @@ $('#polaritySeg').addEventListener('click', (e) => {
 });
 $('#resetFil').addEventListener('click', () => { state.fil[state.printer] = defaultFilament(state.printer, state.fil[state.printer].material); save(); fillForm(); invalidate(); log('Réglage filament optimisé rétabli.'); });
 $('#resetPrint').addEventListener('click', () => { state.print[state.printer] = stripPart(defaultPrint(state.printer)); save(); fillForm(); invalidate(); });
-$('#matSel').addEventListener('change', (e) => {
-  state.fil[state.printer] = defaultFilament(state.printer, e.target.value);
+// Matière + type (haute vitesse / standard) → réglage filament optimisé
+function onMaterial() {
+  const id = matIdOf($('#matSel').value, $('#matSpeed').value);
+  state.fil[state.printer] = defaultFilament(state.printer, id);
   save(); fillForm(); invalidate();
-  for (const n of MATERIALS[e.target.value].notes) log(n);
-});
+  const f = state.fil[state.printer];
+  log(`${MATERIALS[id].label} : ${f.speedCap ? `vitesse limitée à ${f.speedCap} mm/s, ` : ''}débit max ${f.maxVolumetric} mm³/s.`);
+  for (const n of MATERIALS[id].notes) log(n);
+}
+$('#matSel').addEventListener('change', onMaterial);
+$('#matSpeed').addEventListener('change', onMaterial);
 $('#svgCanvasOn').addEventListener('change', (e) => { state.canvasSvg.on = e.target.checked; save(); fillForm(); invalidate(); });
 for (const [id, key, num] of [['#svgPlateSlot', 'plateSlot', true], ['#svgReliefSlot', 'reliefSlot', true], ['#svgReliefMat', 'reliefMat', false], ['#svgPlateColor', 'plateColor', false], ['#svgReliefColor', 'reliefColor', false]]) {
   $(id).addEventListener('change', (e) => { state.canvasSvg[key] = num ? +e.target.value : e.target.value; save(); invalidate(); });
