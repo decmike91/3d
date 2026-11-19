@@ -270,3 +270,44 @@ button:disabled { opacity: .45; cursor: default; }
 
 .matpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; min-width: 0; }
 .matpair select { padding: 8px 6px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--alu); color: var(--ink); font-size: 14px; min-width: 0; }
+
+/* ---- Sélecteur de filament ---- */
+.matpick { min-width: 0; }
+.matpick-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto auto; gap: 6px; align-items: center; }
+.matpick-row select, .matpick-row input { padding: 8px 6px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--alu); color: var(--ink); font-size: 14px; min-width: 0; }
+.matpick-row select[hidden], .matpick-row input[hidden], .matpick-row span[hidden] { display: none; }
+.matpick-speed { width: 70px; }
+.matpick-unit { font-size: 12.5px; color: var(--ink-2); }
+.matpick-info { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-2); }
+.matpick-info .warn, .filgroup small.warn { color: var(--warn); font-weight: 600; }
+.slot { grid-template-columns: 26px minmax(0, 1fr) 44px; }
+
+/* ---- Onglet Filaments ---- */
+.fil-view { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: calc(100dvh - 50px - env(safe-area-inset-top)); }
+.fil-side { border-right: 1px solid var(--line); background: var(--alu); padding: 16px; }
+.fil-main { padding: 16px clamp(16px, 3vw, 32px) 40px; max-width: 820px; }
+.fil-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.fil-list li { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--panel); cursor: pointer; }
+.fil-list li.on { border-color: var(--fil); background: var(--fil-tint); }
+.fil-list .sw { width: 18px; height: 18px; border-radius: 5px; flex: none; border: 1px solid rgba(0,0,0,.25); }
+.fil-list .nm { min-width: 0; font-weight: 600; }
+.fil-list .nm small { display: block; font-weight: 400; color: var(--ink-2); font-size: 12px; }
+.fil-list .fil-empty { cursor: default; color: var(--ink-2); font-size: 14px; }
+.fil-speed { display: grid; grid-template-columns: minmax(0, 1fr) 90px auto; gap: 10px; align-items: center; }
+.fil-speed input[type=range] { width: 100%; accent-color: var(--fil); }
+.fil-calc { margin-top: 12px; }
+.filgroup { border: 1px solid var(--line); border-radius: var(--radius-s); padding: 8px 12px 12px; margin: 0 0 12px; }
+.filgroup legend { font-weight: 700; padding: 0 6px; }
+.filgroup small { display: block; font-size: 11.5px; color: var(--ink-2); margin-top: 2px; }
+#filMode button small { display: block; font-size: 11.5px; font-weight: 400; }
+@media (max-width: 760px) {
+  .fil-view { grid-template-columns: 1fr; }
+  .fil-side { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+/* onglets défilants sur petit écran */
+@media (max-width: 640px) {
+  .tabs { overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: 0 0 auto; }
+}
+#filColor { width: 90px; height: 40px; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--alu); }

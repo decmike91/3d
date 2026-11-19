@@ -2,7 +2,8 @@
 // filaments (PLA HS, PETG HS, TPU, nylon), multifilament CANVAS (Centauri Carbon), tranchage CuraEngine.
 import { PRINTERS } from '../core/profiles.js';
 import { fmtTime } from '../core/gcode.js';
-import { MATERIALS, MATERIAL_IDS, materialProfile, FAMILIES, SPEEDS, familyOf, speedOf, matIdOf, matFromTrayType } from '../core/materials.js';
+import { MATERIALS, MATERIAL_IDS, materialProfile, materialInfo, FAMILIES, SPEEDS, familyOf, speedOf, matIdOf, matFromTrayType } from '../core/materials.js';
+import { materialPicker } from '../core/matpicker.js';
 import { readModelFile, SUPPORTED } from './mesh.js';
 import { autoOrient, arrange, m3mul, rotAxis } from './orient.js';
 import { makeObject, worldParts, objectSize, prepareSlice } from './job.js';
@@ -265,43 +266,37 @@ export function initModel3D(ctx) {
       const row = document.createElement('div');
       row.className = 'slot';
       const b = document.createElement('b'); b.textContent = canvasOn() ? i + 1 : '◉';
-      // Matière (PLA, PETG, TPU, nylon) + type de filament (haute vitesse / standard 50 mm/s)
-      const fam = document.createElement('select');
-      for (const [k, f] of Object.entries(FAMILIES)) {
-        const off = canvasOn() && MATERIALS[f.std || f.hs].canvas === false;
-        fam.append(new Option(f.label + (off ? ' — hors CANVAS' : ''), k));
-      }
-      fam.value = familyOf(st.slots[i].mat);
-      const spd = document.createElement('select');
-      for (const [k, l] of Object.entries({ hs: 'HS rapide', std: 'Standard' })) spd.append(new Option(l, k));
-      spd.title = SPEEDS[speedOf(st.slots[i].mat)];
-      spd.value = speedOf(st.slots[i].mat);
-      spd.disabled = !FAMILIES[fam.value].hs;
-      const onMat = () => { st.slots[i].mat = matIdOf(fam.value, spd.value); save(); invalidate(); renderSlots(); };
-      fam.addEventListener('change', onMat);
-      spd.addEventListener('change', onMat);
+      // Filament : matière ou filament personnalisé + type (HS / standard / vitesse personnalisée)
       const sel = document.createElement('div');
-      sel.className = 'matpair';
-      sel.append(fam, spd);
+      materialPicker(sel, {
+        value: st.slots[i].mat, printer, compact: true, canvas: canvasOn(),
+        onChange: (id) => { st.slots[i].mat = id; save(); invalidate(); renderWarnings(); },
+      });
       const col = document.createElement('input');
       col.type = 'color'; col.value = st.slots[i].color;
       col.title = 'Couleur du filament';
       col.addEventListener('input', () => { st.slots[i].color = col.value.toUpperCase(); save(); invalidate(); renderList(); refreshView(); });
       row.append(b, sel, col);
-      const f = slotFil(i);
       const info = document.createElement('small');
       const tray = canvasRead && canvasRead[i];
-      info.textContent = `${f.name} · buse ${f.nozzle} °C · plateau ${f.bed} °C · ${f.fan} % ventilateur${f.speedCap ? ` · ${f.speedCap} mm/s max` : ''}` + (tray ? ` · CANVAS : ${tray.loaded ? `${tray.brand} ${tray.type || tray.name}`.trim() : 'vide'}` : '');
+      info.textContent = tray ? `CANVAS : ${tray.loaded ? `${tray.brand} ${tray.type || tray.name}`.trim() : 'emplacement vide'}` : '';
+      info.hidden = !tray;
       row.append(info);
       box.append(row);
     }
-    // Avertissements matière
+    renderWarnings();
+  }
+  function renderWarnings() {
     const w = $('#m3MatWarn');
     w.innerHTML = '';
     const used = canvasOn() ? usedTools() : [0];
     const mats = [...new Set(used.map((t) => st.slots[Math.min(t, slotCount() - 1)].mat))];
-    for (const m of mats) for (const n of MATERIALS[m].notes) { const li = document.createElement('li'); li.textContent = n; w.append(li); }
-    if (canvasOn() && used.some((t) => MATERIALS[st.slots[t].mat].canvas === false)) {
+    for (const m of mats) for (const n of materialInfo(m).notes) { const li = document.createElement('li'); li.textContent = n; w.append(li); }
+    for (const m of mats) {
+      const p = materialProfile(m, printer());
+      if (p.limited) { const li = document.createElement('li'); li.textContent = `${materialInfo(m).label} : vitesse limitée à ${p.speedMax} mm/s, le filament ne peut pas fondre plus vite (${String(p.flowMax).replace('.', ',')} mm³/s).`; w.append(li); }
+    }
+    if (canvasOn() && used.some((t) => materialInfo(st.slots[t].mat).canvas === false)) {
       const li = document.createElement('li'); li.textContent = 'Le TPU ne passe pas dans le CANVAS : choisissez une autre matière pour ces objets.'; w.append(li);
     }
     if (printer() === 'k1' && st.canvas) {
@@ -535,6 +530,7 @@ export function initModel3D(ctx) {
   renderSlots();
   return {
     show() { if (ensureViewer()) viewer.resize(); refreshView(); },
+    onFilamentsChange() { renderSlots(); invalidate(); },
     onPrinterChange() {
       fillJob(); renderSlots(); invalidate();
       if (viewer) { viewer.setBed(P().bed); viewer.resetCamera(); }

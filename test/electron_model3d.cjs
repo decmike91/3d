@@ -64,6 +64,7 @@ app.whenReady().then(async () => {
     const wc = win.webContents;
     wc.on('console-message', (_e, level, msg) => { if (level >= 2) console.log('[page]', msg); });
     const run = (js) => wc.executeJavaScript(`(async () => { ${js} })()`);
+    await run(`localStorage.clear();`); wc.reload(); await wait(2500); // test isolé des précédents
     const shot = async (name) => { if (outDir) fs.writeFileSync(path.join(outDir, name), (await wc.capturePage()).toPNG()); };
     const b64 = Buffer.from(make3mf()).toString('base64');
 
@@ -128,7 +129,8 @@ app.whenReady().then(async () => {
     const log2 = await run(`return document.querySelector('#m3Log').innerText.split('\\n').slice(0, 3).join(' | ');`);
     console.log('   journal :', log2);
     check(uploaded > 10000, `K1 : G-code reçu par le faux Moonraker (${uploaded} octets)`);
-    const k1 = await run(`const s = window.__m3._debug.sliced; return { start: /START_PRINT EXTRUDER_TEMP=225/.test(s.gcode), noT: !/^M6211/m.test(s.gcode) };`);
+    const k1 = await run(`const s = window.__m3._debug.sliced; return { start: /START_PRINT EXTRUDER_TEMP=225/.test(s.gcode), noT: !/^M6211/m.test(s.gcode), line: (s.gcode.match(/^START_PRINT.*$/m) || [''])[0], mat: window.__m3._debug.st.slots[0].mat };`);
+    console.log('   K1 :', k1.line, k1.mat);
     check(k1.start && k1.noT, 'K1 : G-code mono-filament PLA (START_PRINT, sans CANVAS)');
   } catch (e) { console.error(e); ok = false; }
   console.log(ok ? 'RÉSULTAT : OK' : 'RÉSULTAT : ÉCHEC');

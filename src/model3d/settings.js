@@ -95,6 +95,7 @@ export function buildCura(job, tools, meshes, extra) {
 
   const perTool = tools.map((t, i) => {
     const f = t.fil;
+    const S = f.speeds || {};
     const fullFanLayer = (f.fanFirstLayers || 0) + 1;
     return {
       extruder_nr: i,
@@ -110,20 +111,21 @@ export function buildCura(job, tools, meshes, extra) {
       retraction_speed: f.retractSpeed, retraction_retract_speed: f.retractSpeed, retraction_prime_speed: f.retractSpeed,
       retraction_hop_enabled: f.zHop > 0, retraction_hop: f.zHop || 0.2, retraction_hop_only_when_collides: true,
       switch_extruder_retraction_amount: 0, switch_extruder_extra_prime_amount: 0,
-      cool_fan_speed: f.fan, cool_fan_speed_min: f.fan, cool_fan_speed_max: Math.max(f.fan, Math.min(100, f.fan + 20)),
+      cool_fan_speed: f.fan, cool_fan_speed_min: f.fan, cool_fan_speed_max: Math.max(f.fan, f.fanMax ?? Math.min(100, f.fan + 20)),
       cool_fan_full_layer: fullFanLayer, cool_fan_speed_0: 0,
-      speed_print: cap(sp.infill, f, h, 0.45),
-      speed_infill: cap(sp.infill, f, h, 0.45),
-      speed_wall_0: cap(sp.outerWall, f, h),
-      speed_wall_x: cap(sp.innerWall, f, h, 0.45),
-      speed_topbottom: cap(Math.round(sp.outerWall * 0.9), f, h),
-      speed_support: cap(Math.round(sp.infill * 0.7), f, h),
-      speed_support_interface: cap(Math.round(sp.outerWall * 0.5), f, h),
-      speed_prime_tower: cap(Math.round(sp.outerWall * 0.6), f, h),
-      speed_layer_0: cap(sp.firstLayer, f, h0), speed_print_layer_0: cap(sp.firstLayer, f, h0),
-      speed_travel: f.speedCap ? Math.min(sp.travel, 250) : sp.travel,
-      speed_travel_layer_0: 150,
-      skirt_brim_speed: cap(sp.firstLayer, f, h0),
+      // Vitesses du filament (mode expert) sinon celles de l'imprimante ; toujours limitées par le débit max
+      speed_print: cap(S.infill ?? sp.infill, f, h, 0.45),
+      speed_infill: cap(S.infill ?? sp.infill, f, h, 0.45),
+      speed_wall_0: cap(S.outerWall ?? sp.outerWall, f, h),
+      speed_wall_x: cap(S.innerWall ?? sp.innerWall, f, h, 0.45),
+      speed_topbottom: cap(S.topBottom ?? Math.round(sp.outerWall * 0.9), f, h),
+      speed_support: cap(S.support ?? Math.round(sp.infill * 0.7), f, h),
+      speed_support_interface: cap(Math.round((S.outerWall ?? sp.outerWall) * 0.5), f, h),
+      speed_prime_tower: cap(Math.round((S.outerWall ?? sp.outerWall) * 0.6), f, h),
+      speed_layer_0: cap(S.firstLayer ?? sp.firstLayer, f, h0), speed_print_layer_0: cap(S.firstLayer ?? sp.firstLayer, f, h0),
+      speed_travel: S.travel ?? (f.speedCap ? Math.min(sp.travel, 250) : sp.travel),
+      speed_travel_layer_0: Math.min(150, S.travel ?? 150),
+      skirt_brim_speed: cap(S.firstLayer ?? sp.firstLayer, f, h0),
       machine_extruder_start_code: '', machine_extruder_end_code: '',
       machine_nozzle_offset_x: 0, machine_nozzle_offset_y: 0,
     };

@@ -3,7 +3,9 @@ import { transformPattern, makePlate, clampRelief } from './core/slicer.js';
 import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
 import { sendToPrinter, testPrinter, ccCanvas, canvasSlotMap } from './net/printers.js';
-import { MATERIALS, MATERIAL_IDS, materialProfile, flushVolume, FAMILIES, familyOf, speedOf, matIdOf } from './core/materials.js';
+import { MATERIALS, MATERIAL_IDS, materialProfile, materialInfo, flushVolume } from './core/materials.js';
+import { materialPicker } from './core/matpicker.js';
+import { initFilaments } from './core/filaments-ui.js';
 import { initModel3D } from './model3d/ui3d.js';
 import { initHelp } from './help/help.js';
 import { initMyPrinters } from './core/myprinters.js';
@@ -92,16 +94,13 @@ function fillForm() {
   $('#discoverBtn').hidden = !(state.printer === 'cc' && platform() !== 'web');
   $('#startChk').checked = state.startAfter;
   $('#levelChk').checked = state.autoLevel;
-  const matId = state.fil[state.printer].material || 'petg_hs';
-  $('#matSel').value = familyOf(matId);
-  $('#matSpeed').value = speedOf(matId);
-  $('#matSpeed').disabled = !FAMILIES[familyOf(matId)].hs;
+  if (svgPick) svgPick.set(state.fil[state.printer].material || 'petg_hs');
   const cs = state.canvasSvg;
   $('#svgCanvasRow').hidden = state.printer !== 'cc';
   $('#svgCanvasOn').checked = cs.on && state.printer === 'cc';
   $('#svgCanvasBox').hidden = !(cs.on && state.printer === 'cc');
   $('#svgPlateSlot').value = String(cs.plateSlot); $('#svgReliefSlot').value = String(cs.reliefSlot);
-  $('#svgReliefMat').value = cs.reliefMat; $('#svgPlateColor').value = cs.plateColor; $('#svgReliefColor').value = cs.reliefColor;
+  if (reliefPick) reliefPick.set(cs.reliefMat); $('#svgPlateColor').value = cs.plateColor; $('#svgReliefColor').value = cs.reliefColor;
   const f = state.fil[state.printer];
   $('#filHint').textContent = `${f.name} — buse ${f.nozzle} °C, plateau ${f.bed} °C, ventilateur ${f.fan} %, parois pleines. Réglage optimisé pour la ${P.name}.`;
   updateSizeInputs();
@@ -278,19 +277,22 @@ $('#polaritySeg').addEventListener('click', (e) => {
 });
 $('#resetFil').addEventListener('click', () => { state.fil[state.printer] = defaultFilament(state.printer, state.fil[state.printer].material); save(); fillForm(); invalidate(); log('Réglage filament optimisé rétabli.'); });
 $('#resetPrint').addEventListener('click', () => { state.print[state.printer] = stripPart(defaultPrint(state.printer)); save(); fillForm(); invalidate(); });
-// Matière + type (haute vitesse / standard) → réglage filament optimisé
-function onMaterial() {
-  const id = matIdOf($('#matSel').value, $('#matSpeed').value);
+// Filament (matière + type, vitesse personnalisée ou filament de la bibliothèque) → réglage optimisé
+function onMaterial(id) {
   state.fil[state.printer] = defaultFilament(state.printer, id);
   save(); fillForm(); invalidate();
   const f = state.fil[state.printer];
-  log(`${MATERIALS[id].label} : ${f.speedCap ? `vitesse limitée à ${f.speedCap} mm/s, ` : ''}débit max ${f.maxVolumetric} mm³/s.`);
-  for (const n of MATERIALS[id].notes) log(n);
+  log(`${materialInfo(id).label} : ${f.speeds ? 'vitesses du mode expert' : f.speedCap ? `${f.speedCap} mm/s max` : 'pleine vitesse'}, débit max ${String(f.maxVolumetric).replace('.', ',')} mm³/s, buse ${f.nozzle} °C.`);
+  if (f.limited) log(`Vitesse limitée à ${f.speedMax} mm/s : le filament ne peut pas fondre plus vite.`, 'err');
+  for (const n of materialInfo(id).notes) log(n);
 }
-$('#matSel').addEventListener('change', onMaterial);
-$('#matSpeed').addEventListener('change', onMaterial);
+var svgPick = materialPicker($('#svgMatPick'), { value: state.fil[state.printer].material || 'petg_hs', printer: () => state.printer, onChange: onMaterial });
+var reliefPick = materialPicker($('#svgReliefPick'), {
+  value: state.canvasSvg.reliefMat, printer: () => 'cc', exclude: ['tpu'], canvas: true,
+  onChange: (id) => { state.canvasSvg.reliefMat = id; save(); invalidate(); },
+});
 $('#svgCanvasOn').addEventListener('change', (e) => { state.canvasSvg.on = e.target.checked; save(); fillForm(); invalidate(); });
-for (const [id, key, num] of [['#svgPlateSlot', 'plateSlot', true], ['#svgReliefSlot', 'reliefSlot', true], ['#svgReliefMat', 'reliefMat', false], ['#svgPlateColor', 'plateColor', false], ['#svgReliefColor', 'reliefColor', false]]) {
+for (const [id, key, num] of [['#svgPlateSlot', 'plateSlot', true], ['#svgReliefSlot', 'reliefSlot', true], ['#svgPlateColor', 'plateColor', false], ['#svgReliefColor', 'reliefColor', false]]) {
   $(id).addEventListener('change', (e) => { state.canvasSvg[key] = num ? +e.target.value : e.target.value; save(); invalidate(); });
 }
 function svgCanvas() {
@@ -572,6 +574,20 @@ function setPrinter(p) {
 }
 m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter });
 globalThis.__m3 = m3;
+// Bibliothèque de filaments : un changement met à jour les choix des autres onglets
+const filUi = initFilaments({
+  printer: () => state.printer,
+  onChange: () => {
+    svgPick.refresh(); reliefPick.refresh();
+    if (m3) m3.onFilamentsChange();
+    for (const k of ['cc', 'k1']) {
+      const id = state.fil[k].material;
+      if (String(id).startsWith('cust:')) state.fil[k] = defaultFilament(k, id);
+    }
+    save(); invalidate();
+  },
+});
+$('[data-help-topic="fil"]').addEventListener('click', () => help.openTopic('fil'));
 const myPrinters = initMyPrinters({ state, save, setPrinter, platform });
 globalThis.__myPrinters = myPrinters;
 
@@ -584,6 +600,8 @@ function showTab(t) {
   $('#printView').hidden = t !== 'print';
   $('#modelView').hidden = t !== 'model';
   $('#helpView').hidden = t !== 'help';
+  $('#filView').hidden = t !== 'filaments';
+  if (t === 'filaments') filUi.show();
   if (t === 'model') m3.show();
   if (t === 'help') help.show();
   curTab = t;
@@ -630,4 +648,4 @@ fillForm();
 draw();
 let startTab = 'print';
 try { startTab = localStorage.getItem(TAB_STORE) || 'print'; } catch {}
-showTab(['vector', 'model', 'help'].includes(startTab) ? startTab : 'print');
+showTab(['vector', 'model', 'help', 'filaments'].includes(startTab) ? startTab : 'print');

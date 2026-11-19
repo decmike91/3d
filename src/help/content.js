@@ -40,6 +40,7 @@ ${see('tabs', 'printers', 'install')}`,
 <tr><td><b>Vectoriser</b></td><td>Image (PNG, JPG…) → SVG, en ligne centrale ou en contour. Bouton <i>Imprimer en 3D</i> pour passer directement au relief.</td><td>Android, Windows</td></tr>
 <tr><td><b>Relief SVG</b></td><td>SVG → plaque avec motif en relief (positif) ou en creux (négatif), tranchage intégré et envoi à l'imprimante.</td><td>Android, Windows</td></tr>
 <tr><td><b>Modèle 3D</b></td><td>STL / 3MF / OBJ → orientation, supports, filaments, multicolore CANVAS, tranchage CuraEngine et envoi.</td><td>Android, Windows</td></tr>
+<tr><td><b>Filaments</b></td><td>Vos filaments nommés : mode rapide (vitesse seule, débit calculé) ou mode expert (tous les réglages d’extrusion, comme Cura).</td><td>Android, Windows</td></tr>
 <tr><td><b>Surveiller</b></td><td>État des imprimantes, caméras, pause / reprise / arrêt, lumière, prises Tapo, alertes de fin d'impression.</td><td>Android</td></tr>
 <tr><td><b>Aide</b></td><td>Cette aide : sommaire, index, recherche. Les boutons <b>?</b> des étapes ouvrent directement le bon sujet (touche <kbd>F1</kbd> sous Windows).</td><td>Android, Windows</td></tr>
 </table>
@@ -236,7 +237,7 @@ ${warn('Un dessin plus grand que le plateau est réduit automatiquement ; le jou
     keywords: ['matière', 'filament', 'PLA', 'PETG', 'TPU', 'nylon', 'CANVAS', 'plaque et motif', 'deux couleurs', 'réglages avancés', 'vitesses'],
     html: `
 <ul>
-<li><b>Matière</b> (PLA, PETG, TPU 95A, nylon PA) et <b>type de filament</b> : <i>Haute vitesse (HS)</i> ou <i>Standard (50 mm/s)</i>. Le réglage optimisé de l'imprimante est appliqué, vitesses comprises (voir <a href="#printers" data-topic="printers">@@printers@@</a>).</li>
+<li><b>Filament</b> : matière (PLA, PETG, TPU 95A, nylon PA) et type — <i>Haute vitesse (HS)</i>, <i>Standard (50 mm/s)</i> ou <i>Personnalisée</i> (vitesse au choix, débit calculé) — ou un filament de l'onglet Filaments (voir <a href="#fil" data-topic="fil">@@fil@@</a>). Le réglage optimisé de l'imprimante est appliqué, vitesses comprises (voir <a href="#printers" data-topic="printers">@@printers@@</a>).</li>
 <li><b>Modifier les réglages filament</b> : températures, ventilateur, débit, débit volumique max, avance de pression, rétraction, levée Z.</li>
 <li><b>Réglages d'impression avancés</b> : hauteur de couche (0,2 mm), largeur d'extrusion (0,45 mm), parois (2), vitesses, accélérations.</li>
 </ul>
@@ -377,6 +378,43 @@ ${tip('Chaque couche où deux couleurs se côtoient coûte un changement (enviro
 </ol>
 ${fig('m3-couches', 'Aperçu des couches en multicolore : filament 1, filament 2, tour de purge')}
 <p>Toute modification (objet, réglage, imprimante) efface le tranchage précédent : il faut retrancher avant d'envoyer.</p>`,
+  },
+
+  // ===================================================================== Filaments
+  {
+    id: 'fil', title: 'Filaments personnalisés et vitesse', parent: null,
+    keywords: ['filaments', 'personnalisé', 'bibliothèque', 'vitesse personnalisée', 'débit', 'débit volumique', 'mode rapide', 'mode expert', 'Cura', 'haute vitesse', 'standard'],
+    html: `
+<p>Chaque filament se choisit par sa <b>matière</b> (PLA, PETG, TPU, nylon) et son <b>type</b> :</p>
+<table class="htab">
+<tr><th>Type</th><th>Pour</th><th>Vitesse</th></tr>
+<tr><td><b>Haute vitesse (HS)</b></td><td>Filaments « HS », « High Speed », « Rapid »</td><td>Pleine vitesse de l'imprimante, limitée par le débit du filament</td></tr>
+<tr><td><b>Standard</b></td><td>Filaments classiques</td><td>50 mm/s</td></tr>
+<tr><td><b>Personnalisée…</b></td><td>Choisir soi-même la vitesse</td><td>Vitesse saisie ; débit et température calculés</td></tr>
+</table>
+<h4>Comment la vitesse donne le débit</h4>
+<p>Le <b>débit</b> (mm³/s) est la quantité de plastique que la buse doit fondre chaque seconde : <b>vitesse × section de la ligne</b>. Pour une ligne de 0,45 × 0,2 mm (0,081 mm²), 100 mm/s demandent environ <b>8,1 mm³/s</b>.</p>
+<ul>
+<li>Plus le débit est élevé, plus la buse doit être chaude : la température est ajustée entre celle du filament standard (à 50 mm/s) et celle du filament HS (à 80 % de son débit max).</li>
+<li>Si la vitesse demande plus que ce que le filament peut fondre (21 mm³/s pour le PLA HS sur la Centauri, 16 pour le PETG HS…), la vitesse est <b>limitée</b> et un avertissement s'affiche.</li>
+</ul>
+<h4>L'onglet Filaments</h4>
+<p>Il garde vos filaments sous un nom (« PETG gris atelier »…) ; ils apparaissent ensuite dans <b>Mes filaments</b> des onglets Relief SVG et Modèle 3D, y compris pour chaque emplacement du CANVAS.</p>
+<ol>
+<li><b>+ Nouveau filament</b>, puis nom, couleur et <b>réglages de départ</b> (PLA HS, PETG standard…).</li>
+<li><b>Mode rapide</b> : seule la vitesse se règle (curseur ou saisie) ; le débit nécessaire, la température et l'accélération sont calculés et affichés.</li>
+<li><b>Mode expert</b> : tous les réglages d'extrusion, groupés comme dans Cura :
+  <ul>
+  <li><i>Températures</i> : buse, buse 1re couche, plateau, plateau 1re couche, température max (CANVAS) ;</li>
+  <li><i>Débit</i> : multiplicateur (%), débit volumique max, avance de pression, densité ;</li>
+  <li><i>Vitesses</i> : paroi externe, parois internes, remplissage, dessus/dessous, supports, 1re couche, déplacements, accélération max — le débit de chaque vitesse est affiché, en rouge s'il dépasse le débit max ;</li>
+  <li><i>Rétraction</i> : longueur, vitesse, levée Z ;</li>
+  <li><i>Refroidissement</i> : ventilateur, ventilateur max, couches sans ventilateur.</li>
+  </ul></li>
+</ol>
+${fig('filaments', 'Onglet Filaments, mode rapide : la vitesse choisie donne le débit et la température')}
+<p>Toute modification est enregistrée aussitôt et prise en compte au prochain tranchage. <b>Dupliquer</b> sert à décliner un réglage, <b>Revenir aux réglages de départ</b> à repartir de zéro en mode expert.</p>
+${tip('En mode expert, une vitesse dont le débit dépasse le « débit volumique max » est réduite au tranchage : augmentez ce débit seulement si le filament le supporte (souvent indiqué « jusqu’à N mm³/s » ou par une vitesse max sur la bobine).')}`,
   },
 
   // ===================================================================== 6
@@ -547,7 +585,7 @@ for (const t of TOPICS) t.html = t.html.replace(/@@([a-z0-9-]+)@@/g, (_, id) => 
 
 // Aide contextuelle : identifiant d'étape → sujet
 export const CONTEXT = {
-  vector: 'vec', print: 'svg', model: 'm3',
+  vector: 'vec', print: 'svg', model: 'm3', filaments: 'fil',
   'svg-1': 'svg-file', 'svg-2': 'first-connect', 'svg-3': 'svg-pattern', 'svg-4': 'svg-filament', 'svg-5': 'svg-slice',
   'm3-1': 'm3-open', 'm3-2': 'm3-orient', 'm3-3': 'm3-canvas', 'm3-4': 'm3-quality', 'm3-5': 'm3-slice',
 };

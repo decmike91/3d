@@ -35,7 +35,8 @@ export function slice(pattern, printerId, print, fil0, opts = {}) {
   let e = 0, totalE = 0, time = 0;
   let pos = [0, 0], z = 0;
   let lostIslands = 0;
-  const travelF = print.travel * 60;
+  const travelSpeed = (fil0.speeds && fil0.speeds.travel) || print.travel;
+  const travelF = travelSpeed * 60;
 
   let curTool = cv ? (startsWithRelief ? toolRelief : toolPlate) : 0;
   const emit = (s) => body.push(s);
@@ -52,7 +53,7 @@ export function slice(pattern, printerId, print, fil0, opts = {}) {
       emit(`G1 E${f3(fil.retractLength)} F${fil.retractSpeed * 60}`);
       time += (2 * fil.retractLength) / fil.retractSpeed + (fil.zHop > 0 ? (2 * fil.zHop) / 15 : 0);
     }
-    time += d / print.travel + 0.02;
+    time += d / travelSpeed + 0.02;
     pos = [x, y];
   };
   const extrudeTo = (x, y, h, speed) => {
@@ -70,7 +71,9 @@ export function slice(pattern, printerId, print, fil0, opts = {}) {
   const speedFor = (type, layer) => {
     const area = (print.lineWidth - layer.height) * layer.height + (Math.PI * layer.height ** 2) / 4;
     const cap = Math.min(fil.maxVolumetric / area, fil.speedCap || Infinity);
-    let v = layer.index === 0 ? print.firstLayer : type === 'outer' ? print.outerWall : type === 'inner' ? print.innerWall : print.infill;
+    // Vitesses du filament (mode expert) prioritaires sur les réglages d'impression
+    const S = fil.speeds || {};
+    let v = layer.index === 0 ? (S.firstLayer ?? print.firstLayer) : type === 'outer' ? (S.outerWall ?? print.outerWall) : type === 'inner' ? (S.innerWall ?? print.innerWall) : (S.infill ?? print.infill);
     return Math.max(5, Math.min(v, cap));
   };
   const TYPE = { outer: 'Outer wall', inner: 'Inner wall', infill: 'Solid infill' };
