@@ -51,8 +51,10 @@ const sd = http.createServer(async (req, res) => {
   res.writeHead(404); res.end();
 });
 const wss = new WebSocketServer({ server: sd, path: '/websocket' });
+// SILENT=1 : comme certaines Centauri, rien n'est envoyé tant qu'on ne demande pas (Cmd 0 / Cmd 1)
+const SILENT = process.env.SILENT === '1';
 wss.on('connection', (ws) => {
-  setTimeout(() => ws.send(JSON.stringify({ Attributes: { Name: 'CC', MainboardID: 'abc123' }, MainboardID: 'abc123', Topic: 'sdcp/attributes/abc123' })), 100);
+  if (!SILENT) setTimeout(() => ws.send(JSON.stringify({ Attributes: { Name: 'CC', MainboardID: 'abc123' }, MainboardID: 'abc123', Topic: 'sdcp/attributes/abc123' })), 100);
   ws.on('message', (m) => {
     const j = JSON.parse(m.toString());
     if (j.Data.Cmd === 128) ccStart = j;

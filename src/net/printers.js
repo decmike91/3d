@@ -1,7 +1,7 @@
 // Téléversement + lancement d'impression.
 // Creality K1/K1C : API Moonraker  (POST /server/files/upload, print=true)
 // Elegoo Centauri Carbon : SDCP v3 (upload HTTP par blocs de 1 Mio + MD5, puis Cmd 128 via WebSocket :3030)
-import { http, buildMultipart, uuidHex } from './transport.js';
+import { http, buildMultipart, uuidHex, platform } from './transport.js';
 import { md5 } from './md5.js';
 import { checkHost } from './host.js';
 
@@ -97,6 +97,15 @@ async function sdcpUpload(host, filename, bytes, log, onProgress) {
   throw new Error(`Échec du téléversement : ${lastErr?.message}. Vérifiez l'adresse IP de l'imprimante.`);
 }
 
+// Recherche UDP des Centauri du réseau ; renvoie l'identifiant de celle qui a cette adresse
+async function discoverMainboard(host) {
+  const p = platform();
+  const list = p === 'windows' ? await globalThis.electronAPI.discover()
+    : p === 'android' ? (await globalThis.Capacitor.Plugins.PrinterNet.discover()).printers : [];
+  const hit = (list || []).find((x) => x && x.ip === host && x.mainboardId);
+  return hit ? hit.mainboardId : null;
+}
+
 function findMainboard(obj) {
   if (!obj || typeof obj !== 'object') return null;
   if (typeof obj.MainboardID === 'string' && obj.MainboardID) return obj.MainboardID;
@@ -117,6 +126,7 @@ function sdcpSession(host, mainboardHint, log) {
       if (resolved || !mainboard) return;
       resolved = true;
       clearTimeout(to);
+      clearInterval(probeTimer);
       resolve({
         mainboard, ws, get status() { return lastStatus; },
         request(cmd, data, timeoutMs = 10000) {
@@ -136,13 +146,28 @@ function sdcpSession(host, mainboardHint, log) {
         close() { try { ws.close(); } catch {} },
       });
     };
-    const to = setTimeout(() => {
-      if (!resolved) { try { ws.close(); } catch {} reject(new Error("L'imprimante n'a pas transmis son identifiant (MainboardID). Renseignez-le dans les réglages réseau.")); }
+    // Comme l'écran Surveiller : on demande les attributs (Cmd 1) et l'état (Cmd 0) sans identifiant,
+    // la Centauri répond alors avec son MainboardID. On relance toutes les 1,5 s.
+    const probe = () => {
+      if (resolved || mainboard || ws.readyState !== 1) return;
+      for (const cmd of [1, 0]) {
+        ws.send(JSON.stringify({ Id: '', Data: { Cmd: cmd, Data: {}, RequestID: uuidHex(), MainboardID: '', TimeStamp: Math.floor(Date.now() / 1000), From: 1 }, Topic: 'sdcp/request/' }));
+      }
+    };
+    const probeTimer = setInterval(probe, 1500);
+    const to = setTimeout(async () => {
+      clearInterval(probeTimer);
+      if (resolved) return;
+      // Dernier recours : recherche réseau (UDP « M99999 ») qui renvoie aussi l'identifiant
+      const found = await discoverMainboard(host).catch(() => null);
+      if (found && ws.readyState === 1) { mainboard = found; log && log(`Imprimante identifiée par recherche réseau : ${found}`); done(); return; }
+      try { ws.close(); } catch {}
+      reject(new Error("L'imprimante n'a pas transmis son identifiant (MainboardID). Touchez « Rechercher » (saisie manuelle) ou renseignez-le dans les réglages réseau."));
     }, 8000);
     ws.onerror = () => { if (!resolved) { clearTimeout(to); reject(new Error(`Connexion WebSocket impossible vers ${host}:3030`)); } };
     ws.onopen = () => {
       log && log('WebSocket connecté');
-      if (mainboard) done();
+      if (mainboard) done(); else probe();
     };
     ws.onmessage = (ev) => {
       let j;
