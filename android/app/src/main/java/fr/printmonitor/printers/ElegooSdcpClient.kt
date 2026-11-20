@@ -101,6 +101,10 @@ class ElegooSdcpClient(
             val cur0 = pi?.lng("CurrentTicks")
             val tot = pi?.lng("TotalTicks")
             val prog = pi?.int("Progress") ?: 0
+            val fileNow = pi?.optString("Filename")?.takeIf { it.isNotBlank() }
+            // Repli : valeurs mémorisées par l'application à l'envoi du fichier
+            val job = if ((pi?.int("TotalLayer") ?: 0) <= 0 || (tot ?: 0) <= 0)
+                fr.printmonitor.MonitorHub.sentJob(ip, fileNow ?: s.fileName) else null
             s.copy(
                 status = status,
                 nozzle = st.dbl("TempOfNozzle") ?: s.nozzle,
@@ -115,10 +119,11 @@ class ElegooSdcpClient(
                 fileName = pi?.optString("Filename")?.takeIf { it.isNotBlank() } ?: s.fileName,
                 layer = pi?.int("CurrentLayer") ?: s.layer,
                 // 0 = inconnu (en-tête du G-code non reconnu par l'imprimante) : on affiche « ? »
-                totalLayers = pi?.int("TotalLayer")?.takeIf { it > 0 } ?: s.totalLayers,
+                totalLayers = pi?.int("TotalLayer")?.takeIf { it > 0 } ?: job?.layers?.takeIf { it > 0 } ?: s.totalLayers,
                 elapsedSec = cur0 ?: s.elapsedSec,
                 remainingSec = when {
                     cur0 != null && tot != null && tot > 0 && tot >= cur0 -> tot - cur0
+                    cur0 != null && job != null && job.seconds > cur0 -> job.seconds - cur0
                     // Durée totale inconnue : estimation d'après l'avancement
                     cur0 != null && cur0 > 60 && prog in 1..99 -> cur0 * (100 - prog) / prog
                     else -> null

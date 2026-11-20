@@ -440,7 +440,7 @@ $('#sendBtn').addEventListener('click', async () => {
       log: (m) => log(m), onProgress: progress,
     });
     log(state.startAfter ? 'Impression lancée sur l’imprimante.' : 'Fichier envoyé.', 'ok');
-    if (state.startAfter) await armPowerOffAfterStart(net.host, log);
+    if (state.startAfter) { await noteSentJob(net.host, gcodeName(), sliced.stats); await armPowerOffAfterStart(net.host, log); }
   } catch (e) {
     log(e.message, 'err');
   } finally { $('#sendBtn').disabled = false; setTimeout(() => progress(null), 800); }
@@ -570,6 +570,11 @@ function thumbnail(w, h) {
 // ---------------- Onglet Modèle 3D ----------------
 // ---------------- Extinction à la fin (prise Tapo, via la surveillance Android) ----------------
 // Après le lancement : la surveillance coupe la prise quand l'impression est terminée et la buse froide.
+// L'écran Surveiller reçoit le nombre de couches et la durée du fichier lancé (repli si l'imprimante ne les donne pas)
+async function noteSentJob(host, file, stats) {
+  if (platform() !== 'android' || !stats) return;
+  try { await globalThis.Capacitor.Plugins.PrinterNet.noteJob({ ip: host, file, layers: stats.layers | 0, seconds: Math.round(stats.timeSec || 0) }); } catch { /* */ }
+}
 async function armPowerOffAfterStart(host, logFn) {
   if (!state.powerOff || platform() !== 'android') return;
   try {
@@ -593,7 +598,7 @@ function setPrinter(p) {
   state.printer = p; save(); fillForm(); rebuild();
   if (m3) m3.onPrinterChange();
 }
-m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart });
+m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart, noteSentJob });
 globalThis.__m3 = m3;
 // Bibliothèque de filaments : un changement met à jour les choix des autres onglets
 const filUi = initFilaments({

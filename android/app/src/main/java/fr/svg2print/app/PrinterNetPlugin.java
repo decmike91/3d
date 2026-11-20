@@ -106,6 +106,15 @@ public class PrinterNetPlugin extends Plugin {
         }).start();
     }
 
+    /** Mémorise le nombre de couches et la durée du fichier envoyé, pour l'écran Surveiller. */
+    @PluginMethod
+    public void noteJob(final PluginCall call) {
+        String ip = call.getString("ip", "").replaceAll("[\\s\\p{Z}\\p{Cf}]", "");
+        fr.printmonitor.MonitorHub.INSTANCE.noteSentJob(getContext(), ip, call.getString("file", ""),
+            call.getInt("layers", 0), (long) Math.round(call.getDouble("seconds", 0.0)));
+        call.resolve();
+    }
+
     /** Coupe la prise Tapo de l'imprimante (adresse IP) à la fin de l'impression en cours. */
     @PluginMethod
     public void armPowerOff(final PluginCall call) {

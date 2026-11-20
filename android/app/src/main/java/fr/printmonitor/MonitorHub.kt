@@ -68,6 +68,29 @@ object MonitorHub {
         if (on) MonitorService.update(ctx, true)
         else if (_powerOffOnce.value.isEmpty() && !_config.value.backgroundMonitoring) MonitorService.update(ctx, false)
     }
+    /** Fichier envoyé par l'application : nombre de couches et durée estimée, connus au tranchage.
+     *  Sert quand l'imprimante ne les donne pas (TotalLayer = 0, TotalTicks = 0). */
+    data class SentJob(val file: String, val layers: Int, val seconds: Long, val at: Long)
+    private const val JOBS = "svg2print.sentJobs"
+
+    fun noteSentJob(context: Context, ip: String, file: String, layers: Int, seconds: Long) {
+        context.applicationContext.getSharedPreferences(JOBS, Context.MODE_PRIVATE).edit()
+            .putString(ip.trim(), listOf(file, layers, seconds, System.currentTimeMillis()).joinToString("\t")).apply()
+    }
+
+    fun sentJob(ip: String, file: String?): SentJob? {
+        val ctx = appContextOrNull() ?: return null
+        val raw = ctx.getSharedPreferences(JOBS, Context.MODE_PRIVATE).getString(ip.trim(), null) ?: return null
+        val p = raw.split('\t')
+        if (p.size < 4) return null
+        val job = SentJob(p[0], p[1].toIntOrNull() ?: 0, p[2].toLongOrNull() ?: 0, p[3].toLongOrNull() ?: 0)
+        val name = file?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
+        return when {
+            name != null -> job.takeIf { it.file.substringAfterLast('/') == name }
+            else -> job.takeIf { System.currentTimeMillis() - it.at < 3 * 24 * 3600_000L }
+        }
+    }
+
     private fun appContextOrNull(): Context? = if (::appContext.isInitialized) appContext else null
     private var watching = false
 
