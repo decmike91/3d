@@ -57,7 +57,13 @@ wss.on('connection', (ws) => {
   if (!SILENT) setTimeout(() => ws.send(JSON.stringify({ Attributes: { Name: 'CC', MainboardID: 'abc123' }, MainboardID: 'abc123', Topic: 'sdcp/attributes/abc123' })), 100);
   ws.on('message', (m) => {
     const j = JSON.parse(m.toString());
-    if (j.Data.Cmd === 128) ccStart = j;
+    if (j.Data.Cmd === 128) {
+      ccStart = j;
+      // LATE=1 : comme après un gros envoi, le fichier n'est « trouvé » qu'au 3e essai
+      if (process.env.LATE === '1' && (globalThis.__late = (globalThis.__late || 0) + 1) <= 2) {
+        return ws.send(JSON.stringify({ Id: j.Id, Data: { Cmd: 128, Data: { Ack: 2 }, RequestID: j.Data.RequestID, MainboardID: 'abc123' }, Topic: 'sdcp/response/abc123' }));
+      }
+    }
     if (j.Data.Cmd === 324) {
       // Réponse CANVAS : plateau 1 PLA blanc, plateau 2 PETG rouge, plateau 3 vide (imbriquée comme le firmware)
       return ws.send(JSON.stringify({ Id: j.Id, Data: { Cmd: 324, RequestID: j.Data.RequestID, MainboardID: 'abc123', Data: { Data: { active_canvas_id: 0, active_tray_id: 0, canvas_list: [{ canvas_id: 0, connected: 1, tray_list: [

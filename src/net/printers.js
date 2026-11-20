@@ -270,21 +270,37 @@ export async function ccSend({ host, mainboardId, filename, gcode, start, autoLe
   log('Fichier reçu par l’imprimante (MD5 vérifié).');
   if (!start) { onProgress && onProgress(1); return { started: false }; }
   const s = await sdcpSession(host, mainboardId, log);
+  const ACK = { 1: 'imprimante occupée', 2: 'fichier introuvable', 3: 'MD5 incorrect', 4: 'erreur de lecture', 6: 'format inconnu', 7: 'modèle inconnu' };
+  // Après un gros envoi, la Centauri met quelques secondes à enregistrer le fichier :
+  // « fichier introuvable » → on patiente et on réessaie (environ 1 min 30), en alternant
+  // les deux écritures du nom acceptées par les firmwares (« nom » + path_prefix, ou « /local/nom »).
+  const waits = [0, 3, 5, 8, 10, 12, 15, 20, 20];
   try {
-    const r = await s.request(128, {
-      Filename: filename,
-      StartLayer: 0,
-      Calibration_switch: autoLevel ? 1 : 0,
-      PrintPlatformType: 0,
-      Tlp_Switch: timelapse ? 1 : 0,
-      slot_map: Array.isArray(slotMap) ? slotMap : [],
-      path_prefix: '/local',
-    }, 15000);
-    const ack = r?.Data?.Data?.Ack;
-    const ACK = { 1: "imprimante occupée", 2: 'fichier introuvable', 3: 'MD5 incorrect', 4: 'erreur de lecture', 6: 'format inconnu', 7: 'modèle inconnu' };
-    if (ack && ack !== 0) throw new Error(`Démarrage refusé : ${ACK[ack] || 'code ' + ack}`);
-    onProgress && onProgress(1);
-    return { started: true };
+    let last = 0;
+    for (let i = 0; i < waits.length; i++) {
+      if (waits[i]) {
+        log(`Fichier pas encore prêt sur l’imprimante, nouvel essai dans ${waits[i]} s…`);
+        await new Promise((r) => setTimeout(r, waits[i] * 1000));
+      }
+      const full = i % 2 === 1;
+      const r = await s.request(128, {
+        Filename: full ? `/local/${filename}` : filename,
+        StartLayer: 0,
+        Calibration_switch: autoLevel ? 1 : 0,
+        PrintPlatformType: 0,
+        Tlp_Switch: timelapse ? 1 : 0,
+        slot_map: Array.isArray(slotMap) ? slotMap : [],
+        ...(full ? {} : { path_prefix: '/local' }),
+      }, 15000);
+      last = r?.Data?.Data?.Ack ?? 0;
+      if (!last) {
+        if (i) log('Fichier trouvé, impression lancée.');
+        onProgress && onProgress(1);
+        return { started: true };
+      }
+      if (last !== 2) break; // autre refus : inutile d'insister
+    }
+    throw new Error(`Démarrage refusé : ${ACK[last] || 'code ' + last}${last === 2 ? ' — le fichier est sur l’imprimante, lancez-le depuis son écran (Fichiers › Local).' : ''}`);
   } finally { s.close(); }
 }
 
