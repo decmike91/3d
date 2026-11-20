@@ -433,7 +433,7 @@ ${see('mon-dash', 'mon-tapo', 'mon-settings')}`,
     html: `
 <p>Une carte par imprimante :</p>
 <ul>
-<li><b>État</b>, fichier en cours, <b>progression</b>, couche, temps écoulé / restant, heure de fin estimée ;</li>
+<li><b>État</b>, fichier en cours, <b>progression</b>, couche en cours sur le total (par ex. <i>couche 2/30</i>), temps écoulé / restant et <b>heure de fin de l'impression complète</b>. Ces valeurs viennent de l'en-tête du G-code : un fichier tranché avec une ancienne version de l'application affiche <i>couche 1/0</i> ; il suffit de le trancher et de l'envoyer à nouveau ;</li>
 <li>températures buse, plateau, caisson ;</li>
 <li><b>caméra</b> en direct (masquable) ;</li>
 <li>boutons <b>Pause</b>, <b>Reprendre</b>, <b>Arrêter l'impression</b> (avec confirmation) ;</li>

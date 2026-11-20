@@ -88,9 +88,11 @@ function box(x0, y0, z0, x1, y1, z1) {
       const changes = (g.match(/^M6211 T\d/gm) || []);
       check(changes.length >= 2 && changes.every((c) => /T[02]$/.test(c.split(' ')[1]) || /^M6211 T[02]/.test(c)), `cc : ${changes.length} changements CANVAS vers les emplacements 1 et 3`);
       check(/^T2$/m.test(g) && !/^T1$/m.test(g), 'cc : outils T0/T2 (numéros d’emplacement réels)');
-      const tl = (g.match(/SET_PRINT_STATS_INFO TOTAL_LAYER=(\d+)/g) || []);
+      const tl = (g.match(/SET_PRINT_STATS_INFO TOTAL_LAYERS=(\d+)/g) || []);
       check(tl.length === 1 && tl[0].endsWith('=' + post.stats.layers), `cc : nombre total de couches donné une seule fois (${tl.join(' ')})`);
       check(/^SET_PRINT_STATS_INFO CURRENT_LAYER=2$/m.test(g), 'cc : couche courante à chaque couche');
+      const fw = require('./fw_preview.cjs').firmwarePreview(g);
+      check(fw.slicer === 'elegoo' && fw.totalLayers === post.stats.layers && fw.estimatedTime > 60, `cc : en-tête lu par le micrologiciel (${fw.totalLayers} couches, ${Math.round(fw.estimatedTime / 60)} min)`);
       const rs = [...g.matchAll(/^M73 P(\d+) R(\d+)$/gm)].map((m) => +m[2]);
       check(rs.length > 50 && rs[0] >= rs[rs.length - 1] && rs[0] > 5, `cc : temps restant décroissant (${rs[0]} → ${rs[rs.length - 1]} min)`);
       check(/;TYPE:PRIME-TOWER/.test(g), 'cc : tour de purge');

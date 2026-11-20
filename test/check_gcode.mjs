@@ -1,6 +1,8 @@
 // Contrôle de cohérence des G-code générés
 import fs from 'fs';
 import { PRINTERS } from '../src/core/profiles.js';
+import { createRequire } from 'module';
+const { firmwarePreview } = createRequire(import.meta.url)('./fw_preview.cjs');
 let fail = 0;
 for (const [f, pid] of [['test/out_cc_positive.gcode', 'cc'], ['test/out_k1_negative.gcode', 'k1']]) {
   const g = fs.readFileSync(f, 'utf8');
@@ -22,5 +24,12 @@ for (const [f, pid] of [['test/out_cc_positive.gcode', 'cc'], ['test/out_k1_nega
   console.log(`${f}: ${n} mouvements, X ${minX}..${maxX}, Y ${minY}..${maxY}, E total ${eSum.toFixed(1)} mm`, ok ? 'OK' : 'ÉCHEC');
   if (!ok) fail++;
   if (!g.includes(pid === 'cc' ? 'M6211' : 'START_PRINT EXTRUDER_TEMP')) { console.error('start gcode manquant'); fail++; }
+  if (pid === 'cc') {
+    const fw = firmwarePreview(g);
+    const layers = +(/; total layer number: (\d+)/.exec(g) || [])[1];
+    const ok2 = fw.slicer === 'elegoo' && fw.totalLayers === layers && fw.estimatedTime > 0 && /^SET_PRINT_STATS_INFO TOTAL_LAYERS=\d+$/m.test(g);
+    console.log(`${f}: en-tête micrologiciel ${fw.slicer}, ${fw.totalLayers}/${layers} couches, ${fw.estimatedTime} s`, ok2 ? 'OK' : 'ÉCHEC');
+    if (!ok2) fail++;
+  }
 }
 process.exit(fail ? 1 : 0);

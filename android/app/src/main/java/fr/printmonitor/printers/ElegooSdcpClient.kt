@@ -100,6 +100,7 @@ class ElegooSdcpClient(
         target.update { s ->
             val cur0 = pi?.lng("CurrentTicks")
             val tot = pi?.lng("TotalTicks")
+            val prog = pi?.int("Progress") ?: 0
             s.copy(
                 status = status,
                 nozzle = st.dbl("TempOfNozzle") ?: s.nozzle,
@@ -113,9 +114,15 @@ class ElegooSdcpClient(
                 progress = pi?.int("Progress") ?: s.progress,
                 fileName = pi?.optString("Filename")?.takeIf { it.isNotBlank() } ?: s.fileName,
                 layer = pi?.int("CurrentLayer") ?: s.layer,
-                totalLayers = pi?.int("TotalLayer") ?: s.totalLayers,
+                // 0 = inconnu (en-tête du G-code non reconnu par l'imprimante) : on affiche « ? »
+                totalLayers = pi?.int("TotalLayer")?.takeIf { it > 0 } ?: s.totalLayers,
                 elapsedSec = cur0 ?: s.elapsedSec,
-                remainingSec = if (cur0 != null && tot != null && tot >= cur0) tot - cur0 else s.remainingSec,
+                remainingSec = when {
+                    cur0 != null && tot != null && tot > 0 && tot >= cur0 -> tot - cur0
+                    // Durée totale inconnue : estimation d'après l'avancement
+                    cur0 != null && cur0 > 60 && prog in 1..99 -> cur0 * (100 - prog) / prog
+                    else -> null
+                },
                 message = if (status == PrintStatus.ERROR) s.message else null,
             )
         }
