@@ -204,7 +204,7 @@ private fun PrinterCard(id: PrinterId) {
                         onCheckedChange = { wantOn ->
                             if (wantOn) MonitorHub.setPlug(id, true)
                             else {
-                                val hot = (s.nozzle ?: 0.0) >= 50.0
+                                val hot = (s.nozzle ?: 0.0) >= MonitorHub.POWER_OFF_NOZZLE_C
                                 val busy = s.status == PrintStatus.PRINTING || s.status == PrintStatus.PAUSED
                                 val msg = when {
                                     busy -> "⚠️ Une impression est en cours : couper la prise la fera échouer. Couper quand même ?"
@@ -214,6 +214,25 @@ private fun PrinterCard(id: PrinterId) {
                                 confirm = msg to { MonitorHub.setPlug(id, false) }
                             }
                         },
+                    )
+                }
+                // Extinction à la fin de l'impression en cours (une seule fois)
+                val armed by MonitorHub.powerOffOnce.collectAsStateWithLifecycle()
+                val cfgAuto = MonitorHub.config.collectAsStateWithLifecycle().value.printer(id).autoOff
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Éteindre à la fin de l'impression", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            if (cfgAuto) "Toujours activé dans les réglages"
+                            else "Prise coupée dès que la buse est sous 80 °C",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Switch(
+                        checked = cfgAuto || id in armed,
+                        enabled = !cfgAuto,
+                        onCheckedChange = { MonitorHub.armPowerOff(id, it) },
                     )
                 }
             }

@@ -76,7 +76,7 @@ fun SettingsScreen(onDone: () -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 )
                 Ip("Adresse IP de la prise Tapo", pc.plugIp) { set(pc.copy(plugIp = it)) }
-                Toggle("Couper la prise après impression (buse < 50 °C)", pc.autoOff) { set(pc.copy(autoOff = it)) }
+                Toggle("Couper la prise après chaque impression (buse < 80 °C)", pc.autoOff) { set(pc.copy(autoOff = it)) }
             }
 
             Section("Compte Tapo")

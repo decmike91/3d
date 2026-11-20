@@ -258,6 +258,7 @@ ${tip('Plaque blanche et motif noir, ou l’inverse : l’effet le plus lisible,
 <ul>
 <li><b>Lancer l'impression après l'envoi</b> : sinon le fichier est seulement déposé sur l'imprimante.</li>
 <li><b>Nivellement automatique avant impression</b> (Centauri Carbon).</li>
+<li><b>Éteindre l'imprimante à la fin (prise Tapo)</b> (Android) : la prise associée dans Surveiller est coupée quand l'impression est terminée et la buse redescendue sous 80 °C (voir <a href="#mon-tapo" data-topic="mon-tapo">@@mon-tapo@@</a>).</li>
 </ul>
 ${fig('relief-couches', 'Aperçu couche par couche après tranchage')}
 <p>Le G-code reprend les débuts et fins officiels des imprimantes (purge, nettoyage de buse, <code>START_PRINT</code> sur K1) et contient une vignette affichée sur leur écran.</p>`,
@@ -444,12 +445,14 @@ ${warn('La surveillance à distance ne remplace pas un détecteur de fumée prè
   },
   {
     id: 'mon-tapo', title: 'Prises Tapo et extinction automatique', parent: 'mon',
-    keywords: ['Tapo', 'prise', 'P110', 'P115', 'consommation', 'puissance', 'extinction automatique', 'compatibilité tierce'],
+    keywords: ['Tapo', 'prise', 'P110', 'P115', 'consommation', 'puissance', 'extinction automatique', 'éteindre à la fin', 'couper la prise', 'compatibilité tierce'],
     html: `
 <ul>
 <li>Marche / arrêt de la prise, <b>puissance</b> instantanée et <b>consommation du jour</b> (P110 / P115).</li>
 <li>Garde-fou : couper une prise alors que la buse est chaude ou qu'une impression tourne demande une confirmation.</li>
-<li><b>Extinction automatique</b> (option par imprimante) : la prise est coupée après la fin de l'impression, une fois la buse sous 50 °C, plus 2 minutes.</li>
+<li><b>Extinction automatique</b> (option par imprimante, dans les réglages) : la prise est coupée après <b>chaque</b> impression, dès que la buse est redescendue <b>sous 80 °C</b> (deux mesures de suite).</li>
+<li><b>Éteindre à la fin de l'impression</b> (interrupteur sur la carte de l'imprimante) : même coupure, pour l'impression en cours seulement. Il s'arme aussi avec la case <i>Éteindre l'imprimante à la fin (prise Tapo)</i> au moment de l'envoi, dans les onglets Relief SVG et Modèle 3D.</li>
+<li>Une impression <b>annulée</b> ne coupe pas la prise. Si la prise ne répond pas, une notification demande d'éteindre à la main. La surveillance reste active écran éteint jusqu'à la coupure.</li>
 </ul>
 ${tip('Dans l’appli Tapo : Moi › Services tiers › Compatibilité tierce → activer. Sans cette option, les firmwares récents refusent les connexions locales.')}`,
   },

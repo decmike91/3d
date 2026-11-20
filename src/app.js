@@ -440,6 +440,7 @@ $('#sendBtn').addEventListener('click', async () => {
       log: (m) => log(m), onProgress: progress,
     });
     log(state.startAfter ? 'Impression lancée sur l’imprimante.' : 'Fichier envoyé.', 'ok');
+    if (state.startAfter) await armPowerOffAfterStart(net.host, log);
   } catch (e) {
     log(e.message, 'err');
   } finally { $('#sendBtn').disabled = false; setTimeout(() => progress(null), 800); }
@@ -567,12 +568,32 @@ function thumbnail(w, h) {
 }
 
 // ---------------- Onglet Modèle 3D ----------------
+// ---------------- Extinction à la fin (prise Tapo, via la surveillance Android) ----------------
+// Après le lancement : la surveillance coupe la prise quand l'impression est terminée et la buse froide.
+async function armPowerOffAfterStart(host, logFn) {
+  if (!state.powerOff || platform() !== 'android') return;
+  try {
+    const r = await globalThis.Capacitor.Plugins.PrinterNet.armPowerOff({ ip: host, on: true });
+    logFn(`${r.name} sera éteinte à la fin de l’impression (dès que la buse est sous 80 °C). Annulable dans Surveiller.`, 'ok');
+  } catch (e) {
+    logFn(`Extinction automatique impossible : ${e.message}`, 'err');
+  }
+}
+for (const row of document.querySelectorAll('.powerOffRow')) row.hidden = platform() !== 'android';
+for (const c of document.querySelectorAll('.powerOffChk')) {
+  c.checked = !!state.powerOff;
+  c.addEventListener('change', () => {
+    state.powerOff = c.checked; save();
+    for (const o of document.querySelectorAll('.powerOffChk')) o.checked = c.checked;
+  });
+}
+
 let m3 = null;
 function setPrinter(p) {
   state.printer = p; save(); fillForm(); rebuild();
   if (m3) m3.onPrinterChange();
 }
-m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter });
+m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart });
 globalThis.__m3 = m3;
 // Bibliothèque de filaments : un changement met à jour les choix des autres onglets
 const filUi = initFilaments({

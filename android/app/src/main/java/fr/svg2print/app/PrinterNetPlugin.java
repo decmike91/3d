@@ -106,6 +106,23 @@ public class PrinterNetPlugin extends Plugin {
         }).start();
     }
 
+    /** Coupe la prise Tapo de l'imprimante (adresse IP) à la fin de l'impression en cours. */
+    @PluginMethod
+    public void armPowerOff(final PluginCall call) {
+        String ip = call.getString("ip", "").replaceAll("[\\s\\p{Z}\\p{Cf}]", "");
+        boolean on = call.getBoolean("on", true);
+        fr.printmonitor.data.PrinterId id = fr.printmonitor.MonitorHub.INSTANCE.findByIp(ip);
+        if (id == null) { call.reject("Cette imprimante (" + ip + ") n'est pas dans Surveiller › Réglages."); return; }
+        if (on && !fr.printmonitor.MonitorHub.INSTANCE.hasPlug(id)) {
+            call.reject("Aucune prise Tapo associée à cette imprimante : renseignez son adresse et vos identifiants Tapo dans Surveiller › Réglages.");
+            return;
+        }
+        fr.printmonitor.MonitorHub.INSTANCE.armPowerOff(id, on);
+        JSObject ret = new JSObject();
+        ret.put("name", fr.printmonitor.MonitorHub.INSTANCE.getConfig().getValue().displayName(id));
+        call.resolve(ret);
+    }
+
     /** Imprimantes saisies dans l'écran Surveiller (nom, modèle, adresse IP). */
     @PluginMethod
     public void monitorPrinters(final PluginCall call) {

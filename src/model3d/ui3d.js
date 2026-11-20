@@ -522,6 +522,7 @@ export function initModel3D(ctx) {
         log: (m) => log(m), onProgress: progress,
       });
       log(st.startAfter ? 'Impression lancée sur l’imprimante.' : 'Fichier envoyé.', 'ok');
+      if (st.startAfter && ctx.armPowerOffAfterStart) await ctx.armPowerOffAfterStart(net.host, log);
     } catch (e) { log(e.message, 'err'); }
     finally { $('#m3Send').disabled = false; setTimeout(() => progress(null), 800); }
   });

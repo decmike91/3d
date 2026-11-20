@@ -52,6 +52,23 @@ object MonitorHub {
     private val plugClients = ConcurrentHashMap<PrinterId, TapoKlapClient>()
     private var plugPoll: Job? = null
     private val autoOffJobs = ConcurrentHashMap<PrinterId, Job>()
+
+    /** Extinction demandée pour l'impression en cours seulement (depuis l'envoi ou le tableau de bord). */
+    private val _powerOffOnce = MutableStateFlow<Set<PrinterId>>(emptySet())
+    val powerOffOnce: StateFlow<Set<PrinterId>> = _powerOffOnce.asStateFlow()
+
+    fun findByIp(ip: String): PrinterId? = PrinterId.entries.firstOrNull { _config.value.printer(it).ip.trim() == ip.trim() }
+    fun hasPlug(id: PrinterId): Boolean = plugClients.containsKey(id)
+
+    /** Arme (ou désarme) la coupure de la prise à la fin de l'impression en cours. */
+    fun armPowerOff(id: PrinterId, on: Boolean) {
+        _powerOffOnce.update { if (on) it + id else it - id }
+        val ctx = appContextOrNull() ?: return
+        // Le service au premier plan garde la surveillance active écran éteint jusqu'à la fin
+        if (on) MonitorService.update(ctx, true)
+        else if (_powerOffOnce.value.isEmpty() && !_config.value.backgroundMonitoring) MonitorService.update(ctx, false)
+    }
+    private fun appContextOrNull(): Context? = if (::appContext.isInitialized) appContext else null
     private var watching = false
 
     fun init(ctx: Context, cfg: AppConfig) {
@@ -155,8 +172,11 @@ object MonitorHub {
                 PrintStatus.PAUSED -> if (p == PrintStatus.PRINTING)
                     Notifier.alert(appContext, id, "${s.name} : impression en pause", "Fin de filament ou pause manuelle ?")
                 PrintStatus.ERROR -> Notifier.alert(appContext, id, "${s.name} : erreur", s.message ?: "")
-                PrintStatus.STOPPED -> if (wasActive)
+                PrintStatus.STOPPED -> if (wasActive) {
                     Notifier.alert(appContext, id, "${s.name} : impression arrêtée", s.fileName ?: "")
+                    // Impression annulée : on ne coupe pas, l'utilisateur intervient sans doute
+                    if (id in _powerOffOnce.value) armPowerOff(id, false)
+                }
                 PrintStatus.OFFLINE -> if (wasActive)
                     Notifier.alert(appContext, id, "${s.name} : connexion perdue", "Pendant une impression — vérifier l'imprimante")
                 PrintStatus.PRINTING -> autoOffJobs.remove(id)?.cancel()
@@ -166,21 +186,30 @@ object MonitorHub {
     }
 
     private fun autoOffEnabled(id: PrinterId) =
-        _config.value.printer(id).autoOff && plugClients.containsKey(id)
+        (_config.value.printer(id).autoOff || id in _powerOffOnce.value) && plugClients.containsKey(id)
 
-    /** Attend que la buse soit sous 50 °C (ventilation de la tête), puis coupe la prise. */
+    /** Seuil de coupure : la buse doit être redescendue sous cette température (ventilation de la tête). */
+    const val POWER_OFF_NOZZLE_C = 80.0
+
+    /** Attend que la buse soit redescendue sous 80 °C (deux mesures de suite), puis coupe la prise. */
     private fun scheduleAutoOff(id: PrinterId) {
         autoOffJobs[id]?.cancel()
         autoOffJobs[id] = scope.launch {
             val flow = printerFlows.getValue(id)
             val cooled = withTimeoutOrNull(60 * 60_000L) {
-                flow.first { (it.nozzle ?: Double.MAX_VALUE) < 50.0 }
-            } ?: return@launch
-            delay(2 * 60_000L)
+                var below = 0
+                flow.first {
+                    below = if ((it.nozzle ?: Double.MAX_VALUE) < POWER_OFF_NOZZLE_C) below + 1 else 0
+                    below >= 2 // deux mesures consécutives : évite une lecture isolée erronée
+                }
+            } ?: run { if (id in _powerOffOnce.value) armPowerOff(id, false); return@launch }
             if (flow.value.status == PrintStatus.PRINTING || flow.value.status == PrintStatus.PAUSED) return@launch
             if (setPlugNow(id, false)) {
-                Notifier.alert(appContext, id, "${cooled.name} : prise coupée", "Buse refroidie, imprimante éteinte automatiquement")
+                Notifier.alert(appContext, id, "${cooled.name} : prise coupée", "Buse sous 80 °C, imprimante éteinte automatiquement")
+            } else {
+                Notifier.alert(appContext, id, "${cooled.name} : coupure impossible", "La prise Tapo n'a pas répondu : éteignez l'imprimante à la main")
             }
+            if (id in _powerOffOnce.value) armPowerOff(id, false)
         }
     }
 }
