@@ -129,6 +129,7 @@ export function initModel3D(ctx) {
 
   // ---------- Liste des objets ----------
   function renderList() {
+    $('#m3ClearAll').hidden = !objects.length;
     const ul = $('#m3Objects');
     ul.innerHTML = '';
     for (const o of objects) {
@@ -172,6 +173,12 @@ export function initModel3D(ctx) {
     updateDims();
   }
   const escapeHtml = (t) => t.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // Nouveau plateau : on retire tout pour préparer l'impression suivante (les envois en cours continuent)
+  $('#m3ClearAll').addEventListener('click', () => {
+    objects = []; selected = null;
+    invalidate(); renderList(); refreshView();
+  });
 
   // ---------- Import ----------
   async function openFiles(list) {
@@ -506,26 +513,19 @@ export function initModel3D(ctx) {
     const net = state.net[printer()];
     if (!net.host) { log("Saisissez l'adresse IP de l'imprimante (étape 3).", 'err'); return; }
     if (!sliced || sliced.printer !== printer()) { if (!(await doSlice())) return; }
-    $('#m3Send').disabled = true;
-    progress(0);
-    try {
-      // Correspondance filament → plateau du CANVAS : toujours envoyée, sinon l'imprimante prend le dernier filament utilisé
-      let slotMap = [];
-      if (canvasOn()) {
-        slotMap = await ctx.canvasSlotMap(net.host, net.mainboardId, sliced.tools.map((t) => ({ t: t.slot, type: t.fil.type })), (m) => log(m));
-      } else if (printer() === 'cc') {
-        log('Un seul filament : la Centauri utilisera le filament actif. Avec un CANVAS, cochez « Multifilament CANVAS » pour choisir l’emplacement.');
-      }
-      await ctx.sendToPrinter(printer(), {
-        host: net.host, port: net.port ? +net.port : 0, mainboardId: net.mainboardId,
-        filename: fileName(), gcode: sliced.gcode, start: st.startAfter, autoLevel: st.autoLevel, timelapse: false, slotMap,
-        log: (m) => log(m), onProgress: progress,
-      });
-      log(st.startAfter ? 'Impression lancée sur l’imprimante.' : 'Fichier envoyé.', 'ok');
-      if (st.startAfter && ctx.noteSentJob) await ctx.noteSentJob(net.host, fileName(), sliced.stats);
-      if (st.startAfter && ctx.armPowerOffAfterStart) await ctx.armPowerOffAfterStart(net.host, log);
-    } catch (e) { log(e.message, 'err'); }
-    finally { $('#m3Send').disabled = false; setTimeout(() => progress(null), 800); }
+    // Tout est figé ici : l'envoi continue en arrière-plan pendant qu'on charge et tranche le modèle suivant
+    const job = {
+      pid: printer(), host: net.host, port: net.port ? +net.port : 0, mainboardId: net.mainboardId,
+      file: fileName(), gcode: sliced.gcode, stats: sliced.stats, start: st.startAfter, autoLevel: st.autoLevel,
+      canvas: canvasOn(), uses: sliced.tools.map((t) => ({ t: t.slot, type: t.fil.type })),
+    };
+    if (!ctx.checkFree(job, log)) return;
+    if (!job.canvas && job.pid === 'cc') {
+      log('Un seul filament : la Centauri utilisera le filament actif. Avec un CANVAS, cochez « Multifilament CANVAS » pour choisir l’emplacement.');
+    }
+    log(`Envoi de ${job.file} en arrière-plan. Impression suivante : « Nouveau plateau », ouvrez le modèle, choisissez l’autre imprimante, puis tranchez et envoyez.`);
+    // Correspondance filament → plateau du CANVAS : toujours envoyée, sinon l'imprimante prend le dernier filament utilisé
+    ctx.queueSend(job, log, async (jlog) => (job.canvas ? ctx.canvasSlotMap(job.host, job.mainboardId, job.uses, (m) => jlog(m)) : []));
   });
 
   // ---------- API pour l'application ----------

@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -55,12 +59,26 @@ fun Dashboard(onSettings: () -> Unit, onBack: (() -> Unit)? = null) {
             )
         }
     ) { pad ->
+        val ids = PrinterId.entries.filter { cfg.printer(it).ip.isNotBlank() }
+        val list = rememberLazyListState()
+        val scope = rememberCoroutineScope()
         LazyColumn(
             Modifier.fillMaxSize().padding(pad),
+            state = list,
             contentPadding = PaddingValues(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            PrinterId.entries.filter { cfg.printer(it).ip.isNotBlank() }.forEach { id ->
+            // Plusieurs imprimantes : résumé en tête (impressions en parallèle), toucher une ligne mène à sa carte
+            if (ids.size > 1) item(key = "summary") {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        ids.forEachIndexed { i, id ->
+                            SummaryRow(id) { scope.launch { list.animateScrollToItem(i + 1) } }
+                        }
+                    }
+                }
+            }
+            ids.forEach { id ->
                 item(key = id.name) { PrinterCard(id) }
             }
             if (cfg.isEmpty) item { Text("Aucune imprimante configurée. Ouvrez les réglages.") }
@@ -82,6 +100,45 @@ private fun dur(sec: Long?): String {
     if (sec == null) return "–"
     val h = sec / 3600; val m = (sec % 3600) / 60
     return if (h > 0) "${h} h ${"%02d".format(m)}" else "$m min"
+}
+
+@Composable
+private fun SummaryRow(id: PrinterId, onClick: () -> Unit) {
+    val s by MonitorHub.printer(id).collectAsStateWithLifecycle()
+    val busy = s.status == PrintStatus.PRINTING || s.status == PrintStatus.PAUSED
+    val p = when {
+        busy -> (s.progress ?: 0).coerceIn(0, 100)
+        s.status == PrintStatus.FINISHED -> 100
+        else -> 0
+    }
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(s.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Text(
+                if (busy) "$p %" else s.status.label,
+                color = statusColor(s.status), fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        if (busy) {
+            LinearProgressIndicator(
+                progress = { p / 100f },
+                modifier = Modifier.fillMaxWidth().height(6.dp),
+                color = statusColor(s.status),
+            )
+            val end = s.remainingSec?.let {
+                SimpleDateFormat("HH:mm", Locale.FRANCE).format(Date(System.currentTimeMillis() + it * 1000))
+            }
+            Text(
+                listOfNotNull(
+                    s.layer?.let { "couche $it/${s.totalLayers ?: "?"}" },
+                    s.remainingSec?.let { "reste ${dur(it)}" },
+                    end?.let { "fin ≈ $it" },
+                ).joinToString(" · ").ifBlank { s.fileName ?: "" },
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
 }
 
 @Composable

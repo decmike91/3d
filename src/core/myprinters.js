@@ -14,6 +14,9 @@ export function initMyPrinters({ state, save, setPrinter, platform }) {
   if (!Array.isArray(state.myPrinters)) state.myPrinters = [];
   if (!state.mbByIp) state.mbByIp = {};
   let monitor = [];
+  let live = {}; // état en direct par adresse IP (Android, depuis Surveiller)
+  const liveOf = (ip) => live[ip] || null;
+  const liveTxt = (l) => (!l ? '' : l.busy ? `${l.label.toLowerCase()} ${l.progress ?? 0} %` : l.status === 'offline' ? 'hors ligne' : 'libre');
 
   const entries = () => [
     ...monitor.map((m) => ({ id: `mon:${m.key}`, name: m.name, model: m.model, ip: m.ip, source: 'monitor' })),
@@ -40,13 +43,19 @@ export function initMyPrinters({ state, save, setPrinter, platform }) {
         ['Depuis Surveiller', list.filter((e) => e.source === 'monitor')],
         ['Ajoutées ici', list.filter((e) => e.source === 'app')],
       ];
-      s.innerHTML = groups.filter(([, l]) => l.length).map(([g, l]) => `<optgroup label="${g}">${l.map((e) => `<option value="${esc(e.id)}">${esc(e.name)} — ${esc(e.ip)}</option>`).join('')}</optgroup>`).join('')
+      s.innerHTML = groups.filter(([, l]) => l.length).map(([g, l]) => `<optgroup label="${g}">${l.map((e) => `<option value="${esc(e.id)}">${esc(e.name)} — ${esc(e.ip)}${liveOf(e.ip) ? ` · ${liveTxt(liveOf(e.ip))}` : ''}</option>`).join('')}</optgroup>`).join('')
         + '<option value="manual">Autre imprimante (saisie manuelle)</option><option value="manage">Gérer la liste…</option>';
       s.value = sel && find(sel) ? sel : 'manual';
     }
     const e = sel && find(sel);
     for (const p of $$('.mypick-info')) {
-      p.innerHTML = e ? `<b>${esc(e.name)}</b> · ${MODEL[e.model]} · ${esc(e.ip)}`
+      const l = e && liveOf(e.ip);
+      const fin = l && l.remainingSec ? ` · fin ≈ ${new Date(Date.now() + l.remainingSec * 1000).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : '';
+      const other = l && l.busy && entries().find((x) => x.ip !== e.ip && liveOf(x.ip) && !liveOf(x.ip).busy && liveOf(x.ip).status !== 'offline');
+      const liveHtml = !l ? '' : l.busy
+        ? `<br><span class="busy">Imprime déjà (${l.progress ?? 0} %${fin}).${other ? ` ${esc(other.name)} est libre : choisissez-la pour lancer une 2e impression en parallèle.` : ''}</span>`
+        : l.status === 'offline' ? '<br><span class="busy">Hors ligne.</span>' : '<br><span class="free">Libre.</span>';
+      p.innerHTML = e ? `<b>${esc(e.name)}</b> · ${MODEL[e.model]} · ${esc(e.ip)}${liveHtml}`
         : list.length ? 'Choisissez une imprimante de la liste, ou saisissez-la ci-dessous.'
           : platform() === 'android' ? 'Aucune imprimante dans Surveiller : renseignez-les dans Surveiller › Réglages, ou ajoutez-les avec « Gérer la liste… ».'
             : 'Ajoutez vos imprimantes avec « Gérer la liste… » pour les retrouver ici.';
@@ -136,11 +145,26 @@ export function initMyPrinters({ state, save, setPrinter, platform }) {
     save(); render();
   });
 
+  // État en direct (libre / en impression) lu toutes les 10 s quand l'application est affichée
+  async function refreshLive() {
+    if (platform() !== 'android' || document.hidden) return;
+    try {
+      const r = await globalThis.Capacitor.Plugins.PrinterNet.monitorStatus();
+      const next = {};
+      for (const m of (r && r.printers) || []) next[cleanHost(m.ip)] = m;
+      const changed = JSON.stringify(next) !== JSON.stringify(live);
+      live = next;
+      if (changed) render();
+    } catch { /* ancienne version native */ }
+  }
+  setInterval(refreshLive, 10000);
+  setTimeout(refreshLive, 1500);
+
   // Retour de l'écran Surveiller (ou de l'arrière-plan) : relire la liste
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshMonitor(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshMonitor(); refreshLive(); } });
   try { globalThis.Capacitor?.Plugins?.App?.addListener?.('resume', refreshMonitor); } catch { /* facultatif */ }
 
   render();
   refreshMonitor();
-  return { render, refresh: refreshMonitor, entries };
+  return { render, refresh: async () => { await refreshMonitor(); await refreshLive(); }, entries, liveOf };
 }

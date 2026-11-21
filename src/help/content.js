@@ -377,6 +377,15 @@ ${tip('Chaque couche où deux couleurs se côtoient coûte un changement (enviro
 <li>Le bandeau donne la durée, le poids total ; le journal détaille le poids par filament et le nombre de changements.</li>
 <li><b>Enregistrer le G-code</b> ou <b>Envoyer à l'imprimante</b>.</li>
 </ol>
+<h4>Deux impressions en parallèle</h4>
+<p>L'envoi se fait en arrière-plan et apparaît dans <b>Envois en cours</b> (progression, puis ✓ ou ✕). Pendant ce temps, on prépare l'impression suivante :</p>
+<ol>
+<li>lancer la 1re impression sur l'imprimante 1 ;</li>
+<li><b>Nouveau plateau</b> (étape 1), puis ouvrir le modèle suivant ;</li>
+<li>dans <i>Mes imprimantes</i>, choisir l'imprimante 2 : sur Android, la liste indique pour chacune si elle est <i>libre</i> ou <i>en impression</i>, avec son avancement ;</li>
+<li>trancher et envoyer.</li>
+</ol>
+<p>L'application refuse un second envoi vers une imprimante qui reçoit déjà un fichier ou qui imprime. Sur Android, chaque imprimante utilisée est ajoutée à <b>Surveiller</b> si elle n'y est pas encore : les deux impressions s'y suivent côte à côte.</p>
 ${fig('m3-couches', 'Aperçu des couches en multicolore : filament 1, filament 2, tour de purge')}
 <p>Toute modification (objet, réglage, imprimante) efface le tranchage précédent : il faut retrancher avant d'envoyer.</p>`,
   },
@@ -431,6 +440,7 @@ ${see('mon-dash', 'mon-tapo', 'mon-settings')}`,
     id: 'mon-dash', title: 'Tableau de bord et commandes', parent: 'mon',
     keywords: ['tableau de bord', 'progression', 'températures', 'caméra', 'pause', 'reprendre', 'arrêter', 'lumière', 'fin de filament', 'notifications'],
     html: `
+<p>Avec plusieurs imprimantes, un <b>résumé</b> en haut de l'écran donne pour chacune l'état, l'avancement, la couche et l'heure de fin ; toucher une ligne mène à sa carte.</p>
 <p>Une carte par imprimante :</p>
 <ul>
 <li><b>État</b>, fichier en cours, <b>progression</b>, couche en cours sur le total (par ex. <i>couche 2/30</i>), temps écoulé / restant et <b>heure de fin de l'impression complète</b>. Ces valeurs viennent de l'en-tête du G-code : un fichier tranché avec une ancienne version de l'application affiche <i>couche 1/0</i> ; il suffit de le trancher et de l'envoyer à nouveau ;</li>

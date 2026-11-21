@@ -132,6 +132,29 @@ public class PrinterNetPlugin extends Plugin {
         call.resolve(ret);
     }
 
+    /** État en direct des imprimantes de Surveiller (libre, en impression…), pour choisir l'imprimante d'envoi. */
+    @PluginMethod
+    public void monitorStatus(final PluginCall call) {
+        try {
+            JSObject ret = new JSObject();
+            ret.put("printers", new JSArray(fr.printmonitor.MonitorBridge.status().toString()));
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject(e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+    /** Ajoute l'imprimante (adresse IP) à Surveiller si elle n'y est pas, pour la suivre avec les autres. */
+    @PluginMethod
+    public void addMonitorPrinter(final PluginCall call) {
+        String ip = call.getString("ip", "").replaceAll("[\\s\\p{Z}\\p{Cf}]", "");
+        String name = fr.printmonitor.MonitorBridge.ensurePrinter(getContext(), ip, call.getString("model", "cc"), call.getString("name", ""));
+        if (name == null) { call.reject("Plus d'emplacement libre dans Surveiller pour ce modèle."); return; }
+        JSObject ret = new JSObject();
+        ret.put("name", name);
+        call.resolve(ret);
+    }
+
     /** Imprimantes saisies dans l'écran Surveiller (nom, modèle, adresse IP). */
     @PluginMethod
     public void monitorPrinters(final PluginCall call) {

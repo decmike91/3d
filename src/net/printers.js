@@ -133,7 +133,9 @@ function sdcpSession(host, mainboardHint, log) {
           const RequestID = uuidHex();
           const msg = { Id: mainboard, Data: { Cmd: cmd, Data: data || {}, RequestID, MainboardID: mainboard, TimeStamp: Date.now(), From: 1 }, Topic: `sdcp/request/${mainboard}` };
           return new Promise((res, rej) => {
-            const t = setTimeout(() => { listeners.delete(fn); rej(new Error(`Pas de réponse de l'imprimante (commande ${cmd})`)); }, timeoutMs);
+            // Délai en deux temps : si l'appli était occupée (tranchage d'un autre modèle pendant l'envoi),
+            // les réponses arrivées entre-temps sont traitées avant de conclure à une absence de réponse.
+            let t = setTimeout(() => { t = setTimeout(() => { listeners.delete(fn); rej(new Error(`Pas de réponse de l'imprimante (commande ${cmd})`)); }, 200); }, timeoutMs);
             const fn = (j) => {
               if (j?.Data?.RequestID === RequestID || (j?.Data?.Cmd === cmd && /response/.test(j.Topic || ''))) {
                 clearTimeout(t); listeners.delete(fn); res(j);
@@ -156,6 +158,7 @@ function sdcpSession(host, mainboardHint, log) {
     };
     const probeTimer = setInterval(probe, 1500);
     const to = setTimeout(async () => {
+      await new Promise((r) => setTimeout(r, 200)); // messages reçus pendant un tranchage
       clearInterval(probeTimer);
       if (resolved) return;
       // Dernier recours : recherche réseau (UDP « M99999 ») qui renvoie aussi l'identifiant

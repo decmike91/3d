@@ -138,6 +138,19 @@ button:disabled { opacity: .45; cursor: default; }
 .send:not(:disabled):active { transform: translateY(1px); }
 .progress { height: 6px; background: var(--alu); border-radius: 3px; overflow: hidden; margin: 8px 0; }
 .progress span { display: block; height: 100%; width: 0; background: var(--fil); transition: width .2s; }
+.sendJobs { margin-top: 12px; }
+.sendJobs h3 { font-size: 13px; margin: 0 0 6px; color: var(--ink-2); font-weight: 600; }
+.sendJobs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sj { position: relative; border: 1px solid var(--line); border-radius: 8px; padding: 8px 34px 8px 10px; font-size: 13px; }
+.sj-head { display: flex; justify-content: space-between; gap: 8px; }
+.sj-file { color: var(--ink-2); overflow-wrap: anywhere; }
+.sj .progress { margin: 6px 0 4px; }
+.sj small { display: block; color: var(--ink-2); overflow-wrap: anywhere; }
+.sj.ok { border-color: var(--ok); } .sj.ok .sj-head span { color: var(--ok); }
+.sj.err { border-color: var(--warn); } .sj.err small, .sj.err .sj-head span { color: var(--warn); }
+.sj-x { position: absolute; top: 4px; right: 4px; padding: 2px 8px; }
+.mypick-info .busy { color: var(--warn); }
+.mypick-info .free { color: var(--ok); }
 .log { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); max-height: 180px; overflow-y: auto; }
 .log li { padding: 3px 0; border-top: 1px dashed var(--line); }
 .log li.err { color: var(--warn); }

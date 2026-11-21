@@ -158,6 +158,7 @@
       <input type="file" id="m3File" multiple hidden>
       <div class="row">
         <button class="primary" id="m3Open">Ouvrir des fichiers 3D</button>
+        <button class="ghost" id="m3ClearAll" hidden title="Retirer tous les objets pour préparer l'impression suivante">Nouveau plateau</button>
         <span class="file-name">STL, 3MF, OBJ</span>
       </div>
       <ul class="objlist" id="m3Objects"></ul>
@@ -269,6 +270,7 @@
       <label class="check" id="m3LevelRow"><input type="checkbox" id="m3Level" checked> Nivellement automatique avant impression</label>
       <label class="check powerOffRow" hidden><input type="checkbox" class="powerOffChk"> Éteindre l’imprimante à la fin (prise Tapo)</label>
       <button class="send" id="m3Send" disabled>Envoyer à l’imprimante</button>
+      <div class="sendJobs" hidden><h3>Envois en cours</h3><ul></ul></div>
       <ol class="log" id="m3Log"></ol>
       <p class="hint" style="margin-top:12px">Tranchage par CuraEngine (WebAssembly, AGPL-3.0), entièrement sur l’appareil.</p>
     </section>
@@ -480,6 +482,7 @@
       <label class="check" id="levelRow"><input type="checkbox" id="levelChk" checked> Nivellement automatique avant impression</label>
       <label class="check powerOffRow" hidden><input type="checkbox" class="powerOffChk"> Éteindre l’imprimante à la fin (prise Tapo)</label>
       <button class="send" id="sendBtn" disabled>Envoyer à l'imprimante</button>
+      <div class="sendJobs" hidden><h3>Envois en cours</h3><ul></ul></div>
       <ol class="log" id="log"></ol>
     </section>
     <p class="version">SVG2Print version __VERSION__ · vectorisation Trait Fin · tranchage 3D CuraEngine · surveillance PrintMonitor (Android)</p>

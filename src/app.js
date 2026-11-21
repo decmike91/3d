@@ -3,6 +3,7 @@ import { transformPattern, makePlate, clampRelief } from './core/slicer.js';
 import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
 import { sendToPrinter, testPrinter, ccCanvas, canvasSlotMap } from './net/printers.js';
+import { createSendQueue } from './core/sendjobs.js';
 import { MATERIALS, MATERIAL_IDS, materialProfile, materialInfo, flushVolume } from './core/materials.js';
 import { materialPicker } from './core/matpicker.js';
 import { initFilaments } from './core/filaments-ui.js';
@@ -423,27 +424,21 @@ $('#sendBtn').addEventListener('click', async () => {
   const net = state.net[state.printer];
   if (!net.host) { log("Saisissez l'adresse IP de l'imprimante (étape 2).", 'err'); return; }
   if (!sliced && !(await doSlice())) return;
-  $('#sendBtn').disabled = true;
-  progress(0);
-  try {
+  // Tout est figé maintenant : l'envoi continue en arrière-plan même si l'on change d'imprimante ou de motif
+  const job = {
+    pid: state.printer, host: net.host, port: net.port ? +net.port : 0, mainboardId: net.mainboardId,
+    file: gcodeName(), gcode: sliced.gcode, stats: sliced.stats, start: state.startAfter, autoLevel: state.autoLevel,
+    canvas: state.printer === 'cc' && state.canvasSvg.on && sliced.stats.tools ? { ...state.canvasSvg } : null,
+    filType: state.fil.cc.type,
+  };
+  if (!checkFree(job, log)) return;
+  queueSend(job, log, async (jlog) => {
     // CANVAS (plaque et motif) : correspondance outil → plateau, sinon l'imprimante prend le dernier filament
-    let slotMap = [];
-    const cs = state.canvasSvg;
-    if (state.printer === 'cc' && cs.on && sliced.stats.tools) {
-      const typeOf = (t) => (t === cs.reliefSlot && sliced.stats.tools.length > 1 ? materialProfile(cs.reliefMat, 'cc').type : state.fil.cc.type);
-      slotMap = await canvasSlotMap(net.host, net.mainboardId, sliced.stats.tools.map((t) => ({ t, type: typeOf(t) })), (m) => log(m));
-    }
-    await sendToPrinter(state.printer, {
-      host: net.host, port: net.port ? +net.port : 0, mainboardId: net.mainboardId,
-      filename: gcodeName(), gcode: sliced.gcode, start: state.startAfter,
-      autoLevel: state.autoLevel, timelapse: false, slotMap,
-      log: (m) => log(m), onProgress: progress,
-    });
-    log(state.startAfter ? 'Impression lancée sur l’imprimante.' : 'Fichier envoyé.', 'ok');
-    if (state.startAfter) { await noteSentJob(net.host, gcodeName(), sliced.stats); await armPowerOffAfterStart(net.host, log); }
-  } catch (e) {
-    log(e.message, 'err');
-  } finally { $('#sendBtn').disabled = false; setTimeout(() => progress(null), 800); }
+    if (!job.canvas) return [];
+    const cs = job.canvas;
+    const typeOf = (t) => (t === cs.reliefSlot && job.stats.tools.length > 1 ? materialProfile(cs.reliefMat, 'cc').type : job.filType);
+    return canvasSlotMap(job.host, job.mainboardId, job.stats.tools.map((t) => ({ t, type: typeOf(t) })), (m) => jlog(m));
+  });
 });
 
 // ---------------- Rendu ----------------
@@ -570,6 +565,53 @@ function thumbnail(w, h) {
 // ---------------- Onglet Modèle 3D ----------------
 // ---------------- Extinction à la fin (prise Tapo, via la surveillance Android) ----------------
 // Après le lancement : la surveillance coupe la prise quand l'impression est terminée et la buse froide.
+// ---------------- Envois en parallèle (plusieurs imprimantes) ----------------
+const sendQueue = createSendQueue();
+const printerLabel = (host) => {
+  const e = myPrinters && myPrinters.entries().find((x) => x.ip === host);
+  return e ? e.name : host;
+};
+// Refuse d'envoyer deux fois vers la même imprimante, ou vers une imprimante qui imprime déjà
+function checkFree(job, logFn) {
+  const name = printerLabel(job.host);
+  if (sendQueue.busy(job.host)) { logFn(`Un envoi vers ${name} est déjà en cours.`, 'err'); return false; }
+  const live = myPrinters && myPrinters.liveOf(job.host);
+  if (job.start && live && live.busy) {
+    logFn(`${name} imprime déjà (${live.progress ?? 0} %). Choisissez l'autre imprimante pour lancer une impression en parallèle.`, 'err');
+    return false;
+  }
+  return true;
+}
+// Envoi en arrière-plan ; slotMapFn(jlog) prépare la correspondance CANVAS
+function queueSend(job, tabLog, slotMapFn) {
+  const name = printerLabel(job.host);
+  return sendQueue.start({
+    printer: name, host: job.host, file: job.file, log: tabLog,
+    doneMsg: job.start ? 'impression lancée.' : 'fichier envoyé.',
+    run: async (jlog, prog) => {
+      const slotMap = await slotMapFn(jlog);
+      await sendToPrinter(job.pid, {
+        host: job.host, port: job.port, mainboardId: job.mainboardId,
+        filename: job.file, gcode: job.gcode, start: job.start, autoLevel: job.autoLevel, timelapse: false, slotMap,
+        log: (m) => jlog(m), onProgress: prog,
+      });
+      if (job.start) await afterStart(job, name, jlog);
+    },
+  });
+}
+// Après le lancement : l'imprimante apparaît dans Surveiller (Android), avec couches/durée et extinction éventuelle
+async function afterStart(job, name, jlog) {
+  if (platform() === 'android') {
+    try {
+      const r = await globalThis.Capacitor.Plugins.PrinterNet.addMonitorPrinter({ ip: job.host, model: job.pid, name });
+      if (myPrinters) myPrinters.refresh();
+      void r;
+    } catch (e) { jlog(`Surveiller : ${e.message}`); }
+  }
+  await noteSentJob(job.host, job.file, job.stats);
+  await armPowerOffAfterStart(job.host, jlog);
+}
+
 // L'écran Surveiller reçoit le nombre de couches et la durée du fichier lancé (repli si l'imprimante ne les donne pas)
 async function noteSentJob(host, file, stats) {
   if (platform() !== 'android' || !stats) return;
@@ -598,7 +640,7 @@ function setPrinter(p) {
   state.printer = p; save(); fillForm(); rebuild();
   if (m3) m3.onPrinterChange();
 }
-m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart, noteSentJob });
+m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart, noteSentJob, checkFree, queueSend });
 globalThis.__m3 = m3;
 // Bibliothèque de filaments : un changement met à jour les choix des autres onglets
 const filUi = initFilaments({
