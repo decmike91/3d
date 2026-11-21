@@ -149,6 +149,8 @@ button:disabled { opacity: .45; cursor: default; }
 .sj.ok { border-color: var(--ok); } .sj.ok .sj-head span { color: var(--ok); }
 .sj.err { border-color: var(--warn); } .sj.err small, .sj.err .sj-head span { color: var(--warn); }
 .sj-x { position: absolute; top: 4px; right: 4px; padding: 2px 8px; }
+.sj-stop { margin-top: 6px; width: 100%; color: var(--warn); border-color: var(--warn); }
+.sj.cancel { border-color: var(--line); opacity: .8; }
 .mypick-info .busy { color: var(--warn); }
 .mypick-info .free { color: var(--ok); }
 .log { list-style: none; padding: 0; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); max-height: 180px; overflow-y: auto; }
@@ -324,3 +326,8 @@ button:disabled { opacity: .45; cursor: default; }
   .tabs button { flex: 0 0 auto; }
 }
 #filColor { width: 90px; height: 40px; padding: 2px; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--alu); }
+
+.m3-result.ok { color: var(--ok); }
+.m3-result.warn { color: var(--warn); }
+@keyframes m3flash { 0% { box-shadow: 0 0 0 3px var(--fil); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.m3-wrap.flash { animation: m3flash 1.2s ease-out; }

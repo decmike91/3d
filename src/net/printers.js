@@ -1,7 +1,7 @@
 // Téléversement + lancement d'impression.
 // Creality K1/K1C : API Moonraker  (POST /server/files/upload, print=true)
 // Elegoo Centauri Carbon : SDCP v3 (upload HTTP par blocs de 1 Mio + MD5, puis Cmd 128 via WebSocket :3030)
-import { http, buildMultipart, uuidHex, platform } from './transport.js';
+import { http, buildMultipart, uuidHex, platform, throwIfCancelled, sleep } from './transport.js';
 import { md5 } from './md5.js';
 import { checkHost } from './host.js';
 
@@ -39,25 +39,26 @@ export async function k1Status(host, port, log) {
   };
 }
 
-export async function k1Send({ host, port, filename, gcode, start, log, onProgress }) {
+export async function k1Send({ host, port, filename, gcode, start, log, onProgress, signal }) {
   host = checkHost(host);
   const st = await k1Status(host, port, log);
+  throwIfCancelled(signal);
   log(`Connecté (${st.base}) — état : ${st.state}`);
   if (start && (st.state === 'printing' || st.state === 'paused')) throw new Error("L'imprimante est déjà en cours d'impression.");
   const bytes = enc.encode(gcode);
   const { body, contentType } = buildMultipart(
-    { root: 'gcodes', print: start ? 'true' : 'false' },
+    // Lancement séparé après le téléversement : un envoi annulé ne démarre jamais d'impression
+    { root: 'gcodes', print: 'false' },
     { field: 'file', name: filename, bytes, type: 'application/octet-stream' },
   );
   onProgress && onProgress(0.1);
   log(`Envoi de ${filename} (${(bytes.length / 1024).toFixed(0)} Kio)…`);
-  const r = await http({ url: `${st.base}/server/files/upload`, method: 'POST', headers: { 'Content-Type': contentType }, body, timeoutMs: 180000 });
+  const r = await http({ url: `${st.base}/server/files/upload`, method: 'POST', headers: { 'Content-Type': contentType }, body, timeoutMs: 180000, signal });
   if (r.status !== 200 && r.status !== 201) throw new Error(`Échec du téléversement (HTTP ${r.status}) : ${r.text.slice(0, 200)}`);
   onProgress && onProgress(1);
   let started = false;
-  try { started = JSON.parse(r.text).print_started === true; } catch {}
-  if (start && !started) {
-    // Certaines versions ne démarrent pas via le champ print : on lance explicitement
+  if (start) {
+    throwIfCancelled(signal);
     const r2 = await http({ url: `${st.base}/printer/print/start?filename=${encodeURIComponent(filename)}`, method: 'POST', timeoutMs: 15000 });
     if (r2.status !== 200) throw new Error(`Fichier envoyé mais démarrage refusé (HTTP ${r2.status}).`);
     started = true;
@@ -68,19 +69,20 @@ export async function k1Send({ host, port, filename, gcode, start, log, onProgre
 // ---------------- SDCP (Centauri Carbon) ----------------
 const CHUNK = 1024 * 1024;
 
-async function sdcpUpload(host, filename, bytes, log, onProgress) {
+async function sdcpUpload(host, filename, bytes, log, onProgress, signal) {
   const digest = md5(bytes);
   const uuid = uuidHex();
   let lastErr = null;
   for (const port of [80, 3030]) {
     try {
       for (let off = 0; off < bytes.length || off === 0; off += CHUNK) {
+        throwIfCancelled(signal);
         const chunk = bytes.subarray(off, Math.min(off + CHUNK, bytes.length));
         const { body, contentType } = buildMultipart(
           { Check: '1', 'S-File-MD5': digest, Offset: String(off), Uuid: uuid, TotalSize: String(bytes.length) },
           { field: 'File', name: filename, bytes: chunk },
         );
-        const r = await http({ url: `http://${host}:${port}/uploadFile/upload`, method: 'POST', headers: { 'Content-Type': contentType }, body, timeoutMs: 120000 });
+        const r = await http({ url: `http://${host}:${port}/uploadFile/upload`, method: 'POST', headers: { 'Content-Type': contentType }, body, timeoutMs: 120000, signal });
         if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
         let j;
         try { j = JSON.parse(r.text); } catch { throw new Error('réponse inattendue'); }
@@ -90,6 +92,7 @@ async function sdcpUpload(host, filename, bytes, log, onProgress) {
       }
       return;
     } catch (e) {
+      if (e.cancelled) throw e;
       lastErr = e;
       log(`Téléversement via le port ${port} : ${e.message}`);
     }
@@ -265,13 +268,14 @@ export async function canvasSlotMap(host, mainboardId, uses, log) {
   return map;
 }
 
-export async function ccSend({ host, mainboardId, filename, gcode, start, autoLevel, timelapse, slotMap, log, onProgress }) {
+export async function ccSend({ host, mainboardId, filename, gcode, start, autoLevel, timelapse, slotMap, log, onProgress, signal }) {
   host = checkHost(host);
   const bytes = enc.encode(gcode);
   log(`Envoi de ${filename} (${(bytes.length / 1024).toFixed(0)} Kio)…`);
-  await sdcpUpload(host, filename, bytes, log, onProgress);
+  await sdcpUpload(host, filename, bytes, log, onProgress, signal);
   log('Fichier reçu par l’imprimante (MD5 vérifié).');
   if (!start) { onProgress && onProgress(1); return { started: false }; }
+  throwIfCancelled(signal);
   const s = await sdcpSession(host, mainboardId, log);
   const ACK = { 1: 'imprimante occupée', 2: 'fichier introuvable', 3: 'MD5 incorrect', 4: 'erreur de lecture', 6: 'format inconnu', 7: 'modèle inconnu' };
   // Après un gros envoi, la Centauri met quelques secondes à enregistrer le fichier :
@@ -283,8 +287,9 @@ export async function ccSend({ host, mainboardId, filename, gcode, start, autoLe
     for (let i = 0; i < waits.length; i++) {
       if (waits[i]) {
         log(`Fichier pas encore prêt sur l’imprimante, nouvel essai dans ${waits[i]} s…`);
-        await new Promise((r) => setTimeout(r, waits[i] * 1000));
+        await sleep(waits[i] * 1000, signal);
       }
+      throwIfCancelled(signal);
       const full = i % 2 === 1;
       const r = await s.request(128, {
         Filename: full ? `/local/${filename}` : filename,

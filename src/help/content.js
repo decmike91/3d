@@ -306,7 +306,7 @@ ${see('m3-open', 'm3-move', 'm3-orient', 'm3-support', 'm3-filament', 'm3-canvas
 <tr><td><b>Solidité</b></td><td>Coucher la <b>plus grande dimension</b> de la pièce à plat, pour que les couches soient dans le sens des efforts ; garder une grande face d'appui et peu de surplombs ; éviter les pièces hautes et étroites qui se décollent.</td></tr>
 <tr><td><b>Moins de supports</b></td><td>La surface en surplomb la plus faible possible (moins de matière perdue, surfaces plus propres), avec une bonne face d'appui.</td></tr>
 </table>
-<p><b>Orienter automatiquement</b> s'applique à l'objet sélectionné, ou à tous si aucun n'est sélectionné. L'application compare les grandes faces planes du modèle et les six directions principales, puis aligne la pièce sur les axes du plateau. Le résultat (surplombs en %) s'affiche sous les boutons.</p>
+<p><b>Orienter automatiquement</b> s'applique à l'objet sélectionné, ou à tous si aucun n'est sélectionné. L'application compare les grandes faces planes du modèle et les six directions principales, puis aligne la pièce sur les axes du plateau. Le résultat (objets pivotés, surplombs en %) s'affiche sous les boutons et la vue 3D revient à l'écran ; si la pièce est déjà dans la meilleure position, l'application le dit.</p>
 <p><b>Placer automatiquement</b> range tous les objets sur le plateau en laissant la place de la tour de purge.</p>
 ${tip('Une barre, un crochet ou une patte de fixation doivent presque toujours être imprimés couchés. Un bac ou un boîtier : ouverture vers le haut.')}`,
   },
@@ -378,7 +378,7 @@ ${tip('Chaque couche où deux couleurs se côtoient coûte un changement (enviro
 <li><b>Enregistrer le G-code</b> ou <b>Envoyer à l'imprimante</b>.</li>
 </ol>
 <h4>Deux impressions en parallèle</h4>
-<p>L'envoi se fait en arrière-plan et apparaît dans <b>Envois en cours</b> (progression, puis ✓ ou ✕). Pendant ce temps, on prépare l'impression suivante :</p>
+<p>L'envoi se fait en arrière-plan et apparaît dans <b>Envois en cours</b> (progression, puis ✓ ou ✕). <b>Annuler l'envoi</b> arrête le transfert tant que l'impression n'a pas démarré : aucune impression n'est alors lancée. Pendant ce temps, on prépare l'impression suivante :</p>
 <ol>
 <li>lancer la 1re impression sur l'imprimante 1 ;</li>
 <li><b>Nouveau plateau</b> (étape 1), puis ouvrir le modèle suivant ;</li>

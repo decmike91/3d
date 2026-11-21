@@ -36,6 +36,7 @@ const moon = http.createServer(async (req, res) => {
     k1Got = { name: p.file.filename, size: p.file.data.length, print: p.print, root: p.root };
     res.writeHead(201); return res.end(JSON.stringify({ item: { path: p.file.filename }, print_started: p.print === 'true', action: 'create_file' }));
   }
+  if (req.url.startsWith('/printer/print/start')) { k1Got && (k1Got.started = decodeURIComponent(req.url.split('filename=')[1] || '')); return res.end('{"result":"ok"}'); }
   res.writeHead(404); res.end();
 }).listen(17125);
 

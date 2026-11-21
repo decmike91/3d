@@ -226,36 +226,68 @@ export function initModel3D(ctx) {
   // ---------- Placement ----------
   function reservedTower() { return canvasOn() && st.job.primeTower && usedTools().length > 1 ? { w: 40 } : null; }
   function usedTools() { return [...new Set(objects.flatMap((o) => o.parts.map((p) => (canvasOn() ? p.tool : 0))))]; }
+  // Résultat visible même sur téléphone : la vue 3D est au-dessus des réglages, on la ramène à l'écran
+  function showResult(msg, cls = 'ok') {
+    const p = $('#m3OrientInfo');
+    p.textContent = msg;
+    p.className = `hint m3-result ${cls}`;
+    const wrap = $('#m3Wrap');
+    const r = wrap.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) {
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      wrap.classList.remove('flash'); void wrap.offsetWidth; wrap.classList.add('flash');
+    }
+  }
   function autoArrange(logIt = true) {
-    if (!objects.length) return;
+    if (!objects.length) { if (logIt) showResult('Ouvrez d’abord un fichier 3D (étape 1).', 'warn'); return; }
+    const before = objects.map((o) => `${o.x.toFixed(1)},${o.y.toFixed(1)}`).join(';');
     const r = arrange(objects.map(objectSize), P().bed, 8, reservedTower());
     objects.forEach((o, i) => { o.x = r.positions[i].x; o.y = r.positions[i].y; clampOnBed(o); });
+    const moved = before !== objects.map((o) => `${o.x.toFixed(1)},${o.y.toFixed(1)}`).join(';');
     if (!r.fits) addWarn('Tous les objets ne tiennent pas sur le plateau : réduisez l’échelle ou retirez-en.');
-    else if (logIt) log('Objets placés automatiquement.');
-    invalidate(); refreshView();
+    invalidate(); renderList(); refreshView();
+    if (logIt) {
+      const n = objects.length;
+      const msg = !r.fits ? 'Placement impossible : tous les objets ne tiennent pas sur le plateau.'
+        : moved ? `${n} objet${n > 1 ? 's' : ''} placé${n > 1 ? 's' : ''} au centre du plateau, espacé${n > 1 ? 's' : ''} de 8 mm.`
+          : `Placement déjà optimal : ${n > 1 ? 'les objets sont' : 'l’objet est'} centré${n > 1 ? 's' : ''} sur le plateau.`;
+      log(msg, r.fits ? '' : 'err');
+      showResult(msg, r.fits ? 'ok' : 'warn');
+    }
   }
+  const isIdentity = (m) => m.every((v, i) => Math.abs(v - ([0, 4, 8].includes(i) ? 1 : 0)) < 1e-6);
   function orient() {
     const targets = selected ? objects.filter((o) => o.id === selected) : objects;
-    if (!targets.length) return;
+    if (!targets.length) { showResult('Ouvrez d’abord un fichier 3D (étape 1).', 'warn'); return; }
     setBusy('Recherche de la meilleure orientation…');
+    $('#m3Orient').disabled = true;
     setTimeout(() => {
       try {
         const infos = [];
+        let changed = 0;
         for (const o of targets) {
           const cur = o.parts.map((p) => { const a = new Float32Array(p.positions.length); for (let i = 0; i < a.length; i += 3) { const x = p.positions[i] * o.scale, y = p.positions[i + 1] * o.scale, z = p.positions[i + 2] * o.scale; const m = o.rot; a[i] = m[0] * x + m[1] * y + m[2] * z; a[i + 1] = m[3] * x + m[4] * y + m[5] * z; a[i + 2] = m[6] * x + m[7] * y + m[8] * z; } return a; });
           const r = autoOrient(cur, { mode: st.job.orientMode, supportAngle: st.job.supportAngle, bedZ: P().bed.z });
+          if (!isIdentity(r.matrix)) changed++;
           o.rot = m3mul(r.matrix, o.rot);
           if (r.info) infos.push(r.info);
         }
         autoArrange(false);
         const i0 = infos[0];
-        $('#m3OrientInfo').textContent = i0
-          ? (st.job.orientMode === 'strength'
-            ? `Orientation solidité : ${i0.strengthAligned ? 'grande dimension à plat, couches dans le sens des efforts' : 'pièce compacte, couches au mieux'} · surplombs ${i0.overhangPct} % de la surface.`
-            : `Orientation « moins de supports » : surplombs ${i0.overhangPct} % de la surface.`)
-          : '';
-        log(`${targets.length} objet(s) orienté(s) (${st.job.orientMode === 'strength' ? 'solidité' : 'moins de supports'}).`);
-      } finally { setBusy(null); }
+        const mode = st.job.orientMode === 'strength' ? 'solidité' : 'moins de supports';
+        const detail = !i0 ? '' : st.job.orientMode === 'strength'
+          ? ` ${i0.strengthAligned ? 'Grande dimension à plat, couches dans le sens des efforts' : 'Pièce compacte, couches au mieux'} · surplombs ${i0.overhangPct} % de la surface.`
+          : ` Surplombs ${i0.overhangPct} % de la surface.`;
+        const what = targets.length > 1 ? `${targets.length} objets` : `« ${targets[0].name} »`;
+        const msg = changed
+          ? `Orientation ${mode} : ${what} ${changed > 1 || targets.length > 1 ? `(${changed} pivoté${changed > 1 ? 's' : ''})` : 'pivoté'}.${detail}`
+          : `Orientation ${mode} : ${what} déjà dans la meilleure position.${detail}`;
+        log(msg);
+        showResult(msg);
+      } catch (e) {
+        log(`Orientation impossible : ${e.message}`, 'err');
+        showResult(`Orientation impossible : ${e.message}`, 'warn');
+      } finally { setBusy(null); $('#m3Orient').disabled = false; }
     }, 30);
   }
 

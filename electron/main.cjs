@@ -16,8 +16,11 @@ function createWindow() {
   win.loadFile(path.join(__dirname, '..', 'www', 'index.html'));
 }
 
+const inflight = new Map(); // requêtes en cours, annulables (envoi annulé par l'utilisateur)
+ipcMain.handle('httpCancel', (_e, id) => { const c = inflight.get(id); if (c) c.abort(); return !!c; });
 ipcMain.handle('http', async (_e, req) => {
   const ctl = new AbortController();
+  if (req.id) inflight.set(req.id, ctl);
   const t = setTimeout(() => ctl.abort(), req.timeoutMs || 15000);
   try {
     const r = await fetch(req.url, {
@@ -29,7 +32,7 @@ ipcMain.handle('http', async (_e, req) => {
     return { status: r.status, text: await r.text() };
   } catch (e) {
     throw new Error(e.name === 'AbortError' ? 'délai dépassé' : (e.cause && e.cause.code) || e.message);
-  } finally { clearTimeout(t); }
+  } finally { clearTimeout(t); if (req.id) inflight.delete(req.id); }
 });
 
 ipcMain.handle('saveFile', async (e, name, content) => {

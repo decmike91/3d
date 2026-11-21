@@ -28,6 +28,7 @@ function fake(host, delayMs) {
         events.push(`${host}:début`);
         return setTimeout(() => { got[host] = n; events.push(`${host}:fin`); res.end('{"print_started":true}'); }, delayMs);
       }
+      if (req.url.startsWith('/printer/print/start')) { events.push(`${host}:lancé`); return res.end('{"result":"ok"}'); }
       res.writeHead(404); res.end();
     });
   }).listen(17131, host);
@@ -86,6 +87,17 @@ app.whenReady().then(async () => {
     const m3jobs = await run(`return [...document.querySelector('#m3Send').parentElement.querySelectorAll('.sj')].map((li) => ({ ok: li.classList.contains('ok'), file: li.querySelector('.sj-file').textContent }));`);
     console.log('   envois :', JSON.stringify(m3jobs));
     check(m3jobs.length === 2 && m3jobs.every((j) => j.ok) && /barre/.test(m3jobs[0].file) && /cube/.test(m3jobs[1].file), 'liste « Envois en cours » : 2 envois réussis, fichiers distincts');
+    // Annulation : envoi lent vers l'imprimante 1, annulé pendant le téléversement → aucune impression lancée
+    await setHost('127.0.0.1');
+    const before = events.filter((e) => e === '127.0.0.1:lancé').length;
+    await run(`document.querySelector('#m3Send').click();`);
+    for (let i = 0; i < 40 && events.filter((e) => e === '127.0.0.1:début').length < 2; i++) await wait(250);
+    await run(`document.querySelector('#m3Send').parentElement.querySelector('.sj.run .sj-stop').click();`);
+    await wait(7000); // au-delà de la réponse tardive du faux serveur
+    const after = events.filter((e) => e === '127.0.0.1:lancé').length;
+    const st = await run(`const li = document.querySelector('#m3Send').parentElement.querySelector('.sj'); return { cls: li.className, msg: li.querySelector('small').textContent };`);
+    console.log('   annulation :', JSON.stringify(st));
+    check(st.cls.includes('cancel') && after === before, 'envoi annulé : pas de lancement d’impression');
     if (outShot) { await run(`document.querySelector('#m3Send').scrollIntoView({block:'start'});`); await wait(300); require('fs').writeFileSync(outShot, (await wc.capturePage()).toPNG()); }
   } catch (e) { console.error(e); ok = false; }
   console.log(ok ? 'RÉSULTAT : OK' : 'RÉSULTAT : ÉCHEC');

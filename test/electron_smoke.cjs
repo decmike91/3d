@@ -10,6 +10,7 @@ const srv = http.createServer((req, res) => {
     if (req.url === '/server/info') return res.end('{"result":{"klippy_state":"ready"}}');
     if (req.url.startsWith('/printer/objects')) return res.end('{"result":{"status":{"print_stats":{"state":"standby"}}}}');
     if (req.url === '/server/files/upload') { got = n; return res.end('{"print_started":true}'); }
+    if (req.url.startsWith('/printer/print/start')) return res.end('{"result":"ok"}');
     res.writeHead(404); res.end();
   });
 }).listen(17126);

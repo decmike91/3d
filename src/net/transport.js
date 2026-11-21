@@ -17,32 +17,59 @@ export function toBase64(bytes) {
   return btoa(s);
 }
 
+/** Erreur levée quand l'utilisateur annule un envoi. */
+export class CancelledError extends Error {
+  constructor() { super('Envoi annulé.'); this.name = 'CancelledError'; this.cancelled = true; }
+}
+export function throwIfCancelled(signal) { if (signal && signal.aborted) throw new CancelledError(); }
+/** Attente interrompue par l'annulation. */
+export function sleep(ms, signal) {
+  return new Promise((res, rej) => {
+    if (signal && signal.aborted) return rej(new CancelledError());
+    const t = setTimeout(() => { if (signal) signal.removeEventListener('abort', on); res(); }, ms);
+    const on = () => { clearTimeout(t); rej(new CancelledError()); };
+    if (signal) signal.addEventListener('abort', on, { once: true });
+  });
+}
+
+let reqSeq = 0;
 /**
- * req : { url, method, headers, body: Uint8Array|string|undefined, timeoutMs }
+ * req : { url, method, headers, body: Uint8Array|string|undefined, timeoutMs, signal }
  * -> { status, text }
+ * signal (AbortSignal) : annule la requête en cours, y compris le téléversement natif.
  */
 export async function http(req) {
   const method = req.method || 'GET';
   const headers = req.headers || {};
   const timeoutMs = req.timeoutMs || 15000;
+  const signal = req.signal;
+  throwIfCancelled(signal);
   let bytes = req.body;
   if (typeof bytes === 'string') bytes = new TextEncoder().encode(bytes);
   const p = platform();
+  const id = `r${++reqSeq}`;
+  let doCancel = () => {};
+  let pending;
   if (p === 'windows') {
-    return globalThis.electronAPI.http({ url: req.url, method, headers, bodyBase64: bytes ? toBase64(bytes) : null, timeoutMs });
-  }
-  if (p === 'android') {
+    pending = globalThis.electronAPI.http({ id, url: req.url, method, headers, bodyBase64: bytes ? toBase64(bytes) : null, timeoutMs });
+    doCancel = () => globalThis.electronAPI.httpCancel && globalThis.electronAPI.httpCancel(id);
+  } else if (p === 'android') {
     const plugin = globalThis.Capacitor.Plugins.PrinterNet;
-    return plugin.request({ url: req.url, method, headers, bodyBase64: bytes ? toBase64(bytes) : '', timeoutMs });
+    pending = plugin.request({ id, url: req.url, method, headers, bodyBase64: bytes ? toBase64(bytes) : '', timeoutMs });
+    doCancel = () => plugin.cancelRequest && plugin.cancelRequest({ id }).catch(() => {});
+  } else {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), timeoutMs);
+    doCancel = () => ctl.abort();
+    pending = fetch(req.url, { method, headers, body: bytes, signal: ctl.signal })
+      .then(async (r) => ({ status: r.status, text: await r.text() }))
+      .finally(() => clearTimeout(t));
   }
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), timeoutMs);
-  try {
-    const r = await fetch(req.url, { method, headers, body: bytes, signal: ctl.signal });
-    return { status: r.status, text: await r.text() };
-  } finally {
-    clearTimeout(t);
-  }
+  if (!signal) return pending;
+  let onAbort;
+  const aborted = new Promise((_, rej) => { onAbort = () => { doCancel(); rej(new CancelledError()); }; signal.addEventListener('abort', onAbort, { once: true }); });
+  pending.catch(() => {}); // erreur de la requête coupée : ignorée après annulation
+  try { return await Promise.race([pending, aborted]); } finally { signal.removeEventListener('abort', onAbort); }
 }
 
 export function buildMultipart(fields, file) {

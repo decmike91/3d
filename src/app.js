@@ -11,7 +11,7 @@ import { initModel3D } from './model3d/ui3d.js';
 import { initHelp } from './help/help.js';
 import { initMyPrinters } from './core/myprinters.js';
 import { cleanHost } from './net/host.js';
-import { platform } from './net/transport.js';
+import { platform, throwIfCancelled } from './net/transport.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -588,12 +588,13 @@ function queueSend(job, tabLog, slotMapFn) {
   return sendQueue.start({
     printer: name, host: job.host, file: job.file, log: tabLog,
     doneMsg: job.start ? 'impression lancée.' : 'fichier envoyé.',
-    run: async (jlog, prog) => {
+    run: async (jlog, prog, signal) => {
       const slotMap = await slotMapFn(jlog);
+      throwIfCancelled(signal);
       await sendToPrinter(job.pid, {
         host: job.host, port: job.port, mainboardId: job.mainboardId,
         filename: job.file, gcode: job.gcode, start: job.start, autoLevel: job.autoLevel, timelapse: false, slotMap,
-        log: (m) => jlog(m), onProgress: prog,
+        log: (m) => jlog(m), onProgress: prog, signal,
       });
       if (job.start) await afterStart(job, name, jlog);
     },

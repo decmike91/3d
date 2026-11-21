@@ -47,6 +47,7 @@ public class PrinterNetPlugin extends Plugin {
 
     @PluginMethod
     public void request(final PluginCall call) {
+        final String reqId = call.getString("id", "");
         new Thread(() -> {
             HttpURLConnection conn = null;
             try {
@@ -58,6 +59,7 @@ public class PrinterNetPlugin extends Plugin {
                 JSObject headers = call.getObject("headers", new JSObject());
 
                 conn = (HttpURLConnection) new URL(url).openConnection();
+                if (!reqId.isEmpty()) INFLIGHT.put(reqId, conn);
                 conn.setRequestMethod(method);
                 conn.setConnectTimeout(Math.min(timeout, 8000));
                 conn.setReadTimeout(timeout);
@@ -74,6 +76,7 @@ public class PrinterNetPlugin extends Plugin {
                     OutputStream os = conn.getOutputStream();
                     int off = 0;
                     while (off < body.length) {
+                        if (!reqId.isEmpty() && CANCELLED.remove(reqId)) throw new java.io.IOException("annulé");
                         int n = Math.min(64 * 1024, body.length - off);
                         os.write(body, off, n);
                         off += n;
@@ -101,9 +104,23 @@ public class PrinterNetPlugin extends Plugin {
             } catch (Exception e) {
                 call.reject(e.getClass().getSimpleName() + ": " + e.getMessage());
             } finally {
+                if (!reqId.isEmpty()) { INFLIGHT.remove(reqId); CANCELLED.remove(reqId); }
                 if (conn != null) conn.disconnect();
             }
         }).start();
+    }
+
+    private static final java.util.concurrent.ConcurrentHashMap<String, HttpURLConnection> INFLIGHT = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Set<String> CANCELLED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Annule une requête en cours (envoi vers l'imprimante interrompu par l'utilisateur). */
+    @PluginMethod
+    public void cancelRequest(final PluginCall call) {
+        final String id = call.getString("id", "");
+        CANCELLED.add(id);
+        final HttpURLConnection c = INFLIGHT.get(id);
+        if (c != null) new Thread(() -> { try { c.disconnect(); } catch (Exception ignored) { } }).start();
+        call.resolve();
     }
 
     /** Mémorise le nombre de couches et la durée du fichier envoyé, pour l'écran Surveiller. */
