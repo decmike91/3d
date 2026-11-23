@@ -312,14 +312,15 @@ ${tip('Une barre, un crochet ou une patte de fixation doivent presque toujours �
   },
   {
     id: 'm3-support', title: 'Supports et adhérence', parent: 'm3',
-    keywords: ['supports', 'arborescents', 'tree', 'classiques', 'angle de surplomb', 'depuis le plateau', 'jupe', 'bordure', 'brim', 'adhérence', 'interface'],
+    keywords: ['supports', 'arborescents', 'tree', 'classiques', 'angle de surplomb', 'depuis le plateau', 'jupe', 'bordure', 'brim', 'adhérence', 'interface', 'première couche', 'écrasée', 'squish'],
     html: `
 <table class="htab">
 <tr><th>Réglage</th><th>Défaut</th><th>Détail</th></tr>
 <tr><td>Supports</td><td>Auto · arborescents</td><td><b>Arborescents</b> : branches qui touchent peu la pièce, faciles à retirer. <b>Classiques</b> : colonnes en zigzag, pour les grands surplombs plats. <b>Aucun</b>.</td></tr>
 <tr><td>Angle de surplomb</td><td>50°</td><td>Une face penchée au-delà de cet angle (par rapport à la verticale) reçoit un support.</td></tr>
 <tr><td>Depuis le plateau uniquement</td><td>non</td><td>Interdit les supports posés sur la pièce elle-même.</td></tr>
-<tr><td>Adhérence</td><td>Automatique</td><td>Jupe (une boucle autour), bordure / brim (collerette qui tient la pièce), ou aucune. En automatique : bordure pour le nylon et le TPU, jupe sinon.</td></tr>
+<tr><td>Adhérence</td><td>Automatique</td><td>Jupe (une boucle autour), bordure / brim (collerette qui tient la pièce), ou aucune. En automatique : bordure pour le nylon et le TPU, jupe sinon. L'aperçu s'affiche en bleu sur le plateau dès le choix, puis dans la vue <i>Couches</i> après tranchage.</td></tr>
+<tr><td>1re couche</td><td>Écrasée</td><td>Normale, écrasée (débit +10 %, lignes 15 % plus larges) ou très écrasée (+18 %, +25 %) : la première couche est pressée contre le plateau pour mieux accrocher. Si elle reste trop ronde, baisser aussi le décalage Z sur l'imprimante.</td></tr>
 </table>
 <p>Les supports ont une <b>interface</b> dense sous la pièce (surface plus nette) et un écart d'une couche pour se détacher facilement.</p>`,
   },

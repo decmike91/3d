@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const KIND_COLORS = { 0: 0x9aa5ad, 1: 0xf2a33a, 2: 0xf6d36b, 3: 0xd8553a, 4: 0x4a7fd0, 5: 0x2fb36d, 6: 0x7fd89c, 7: 0x8a8a8a, 8: 0xb07ad8 };
+const KIND_COLORS = { 0: 0x9aa5ad, 1: 0xf2a33a, 2: 0xf6d36b, 3: 0xd8553a, 4: 0x4a7fd0, 5: 0x2fb36d, 6: 0x7fd89c, 7: 0x2fb3b8, 8: 0xb07ad8 };
 
 export function createViewer(canvas, { onSelect, onMove } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -22,7 +22,8 @@ export function createViewer(canvas, { onSelect, onMove } = {}) {
   const bedGroup = new THREE.Group();
   const objGroup = new THREE.Group();
   const pathGroup = new THREE.Group();
-  scene.add(bedGroup, objGroup, pathGroup);
+  const adhGroup = new THREE.Group(); // aperçu jupe / bordure autour des pièces
+  scene.add(bedGroup, adhGroup, objGroup, pathGroup);
   let bed = { x: 256, y: 256, z: 256 };
   let meshes = new Map(); // id -> THREE.Mesh
   let selected = null;
@@ -104,6 +105,49 @@ export function createViewer(canvas, { onSelect, onMove } = {}) {
   }
   const OVER = new THREE.Color('#e0473a');
 
+  // Enveloppe convexe 2D (chaîne monotone)
+  function hull2(pts) {
+    const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (p.length < 3) return p;
+    const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lo = [], up = [];
+    for (const q of p) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+    for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+    return lo.slice(0, -1).concat(up.slice(0, -1));
+  }
+  // Décalage vers l'extérieur d'un polygone convexe (somme de Minkowski avec un disque)
+  function offset(poly, d) {
+    if (d <= 0) return poly;
+    const pts = [];
+    for (const [x, y] of poly) for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; pts.push([x + d * Math.cos(a), y + d * Math.sin(a)]); }
+    return hull2(pts);
+  }
+  function ring(outer, inner, color, z) {
+    const sh = new THREE.Shape(outer.map(([x, y]) => new THREE.Vector2(x, y)));
+    sh.holes.push(new THREE.Path(inner.slice().reverse().map(([x, y]) => new THREE.Vector2(x, y))));
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+    m.position.z = z;
+    adhGroup.add(m);
+  }
+  /**
+   * Aperçu de l'adhérence : spec = { type: 'skirt'|'brim'|'none', brimWidth, skirtGap, footprints: [[x,y]…] par objet }.
+   * Bordure : bande autour de chaque pièce ; jupe : une ligne autour de l'ensemble, à distance.
+   */
+  function setAdhesion(spec) {
+    for (const c of adhGroup.children) c.geometry.dispose();
+    adhGroup.clear();
+    if (!spec || spec.type === 'none') { render(); return; }
+    const hulls = spec.footprints.filter((f) => f.length >= 3).map(hull2);
+    if (!hulls.length) { render(); return; }
+    if (spec.type === 'brim') {
+      for (const h of hulls) ring(offset(h, spec.brimWidth), h, 0x2fb3b8, 0.08);
+    } else if (spec.type === 'skirt') {
+      const all = hull2(hulls.flat());
+      ring(offset(all, spec.skirtGap + 1), offset(all, spec.skirtGap), 0x2fb3b8, 0.08);
+    }
+    render();
+  }
+
   function select(id) {
     selected = id;
     for (const [mid, m] of meshes) m.material.emissive = new THREE.Color(mid === id ? 0x1d4f55 : 0x000000);
@@ -114,6 +158,7 @@ export function createViewer(canvas, { onSelect, onMove } = {}) {
   function setToolpaths(pv, opts = {}) {
     pathGroup.clear();
     if (toolpaths) { toolpaths.geometry.dispose(); toolpaths = null; }
+    adhGroup.visible = !pv; // les couches montrent la vraie jupe / bordure
     if (!pv) { objGroup.visible = true; render(); return; }
     const n = pv.kind.length;
     const col = new Float32Array(n * 6);
@@ -215,7 +260,8 @@ export function createViewer(canvas, { onSelect, onMove } = {}) {
     cam.position.set(c.x + dist * 0.45, c.y - dist * 0.75, c.z + dist * 0.5);
     cam.lookAt(c);
     const rt = new THREE.WebGLRenderTarget(w, h);
-    const vis = [bedGroup.visible, pathGroup.visible, objGroup.visible, scene.background];
+    const vis = [bedGroup.visible, pathGroup.visible, objGroup.visible, scene.background, adhGroup.visible];
+    adhGroup.visible = false;
     bedGroup.visible = false; pathGroup.visible = false; objGroup.visible = true;
     scene.background = new THREE.Color(0x2b3640);
     renderer.setRenderTarget(rt);
@@ -223,7 +269,7 @@ export function createViewer(canvas, { onSelect, onMove } = {}) {
     const px = new Uint8Array(w * h * 4);
     renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
     renderer.setRenderTarget(null);
-    [bedGroup.visible, pathGroup.visible, objGroup.visible, scene.background] = vis;
+    [bedGroup.visible, pathGroup.visible, objGroup.visible, scene.background, adhGroup.visible] = vis;
     rt.dispose();
     const cv = document.createElement('canvas');
     cv.width = w; cv.height = h;
@@ -238,5 +284,5 @@ export function createViewer(canvas, { onSelect, onMove } = {}) {
   setBed(bed);
   resetCamera();
   resize();
-  return { setBed, setObjects, select, setToolpaths, setLayer, resetCamera, resize, render, thumbnail, get showingPaths() { return !!toolpaths; } };
+  return { setBed, setObjects, setAdhesion, select, setToolpaths, setLayer, resetCamera, resize, render, thumbnail, get showingPaths() { return !!toolpaths; } };
 }

@@ -10,6 +10,20 @@ export const QUALITY = {
 };
 export const INFILL_PATTERNS = { gyroid: 'Gyroïde (solide dans tous les sens)', cubic: 'Cubique', grid: 'Grille', lines: 'Lignes', triangles: 'Triangles' };
 
+// Première couche : débit et largeur de ligne augmentés pour l'écraser sur le plateau
+export const FIRST_LAYER = {
+  normal: { label: 'Normale', flow: 100, width: 100 },
+  squish: { label: 'Écrasée', flow: 110, width: 115 },
+  strong: { label: 'Très écrasée', flow: 118, width: 125 },
+};
+
+/** Adhérence réellement appliquée (« automatique » : bordure pour nylon et TPU, jupe sinon) et largeur de bordure. */
+export function resolveAdhesion(job, fils) {
+  let type = job.adhesion || 'auto';
+  if (type === 'auto') type = fils.some((f) => f.type === 'PA' || f.type === 'TPU') ? 'brim' : 'skirt';
+  return { type, brimWidth: Math.max(4, ...fils.map((f) => (f.type === 'PA' ? 6 : 4))), skirtGap: 3 };
+}
+
 export function defaultJob(printerId) {
   return {
     quality: 'strong',
@@ -18,6 +32,7 @@ export function defaultJob(printerId) {
     supportAngle: 50,
     supportBuildplateOnly: false,
     adhesion: 'auto', // auto | skirt | brim | none
+    firstLayer: 'squish', // normal | squish | strong
     orientMode: 'strength', // strength | supports
     primeTower: true,
     flushMultiplier: 1,
@@ -46,9 +61,11 @@ export function buildCura(job, tools, meshes, extra) {
   const fil0 = tools[0].fil;
   const multi = tools.length > 1;
   const anyType = (t) => tools.some((x) => x.fil.type === t);
-  let adhesion = job.adhesion;
-  if (adhesion === 'auto') adhesion = anyType('PA') || anyType('TPU') ? 'brim' : 'skirt';
-  const brimWidth = Math.max(4, ...tools.map((t) => (t.fil.type === 'PA' ? 6 : 4)));
+  const adh = resolveAdhesion(job, tools.map((t) => t.fil));
+  const adhesion = adh.type;
+  const brimWidth = adh.brimWidth;
+  const FL = FIRST_LAYER[job.firstLayer] || FIRST_LAYER.squish;
+  const w0 = LW * FL.width / 100;
 
   const g = { // réglages communs
     machine_width: P.bed.x, machine_depth: P.bed.y, machine_height: P.bed.z,
@@ -56,6 +73,7 @@ export function buildCura(job, tools, meshes, extra) {
     relative_extrusion: true,
     machine_extruder_count: tools.length,
     layer_height: h, layer_height_0: h0,
+    initial_layer_line_width_factor: FL.width,
     line_width: LW, wall_line_width_0: LW, wall_line_width_x: 0.45, infill_line_width: 0.45, skin_line_width: 0.42,
     wall_line_count: job.walls, top_layers: job.topLayers, bottom_layers: job.bottomLayers,
     infill_sparse_density: job.infill, infill_pattern: job.pattern,
@@ -80,7 +98,7 @@ export function buildCura(job, tools, meshes, extra) {
     support_interface_height: Math.max(0.6, 3 * h), support_interface_density: 80, support_interface_pattern: 'lines',
     support_tree_angle: 45, support_tree_branch_diameter: 3, support_tree_branch_distance: 1,
     support_extruder_nr: 0,
-    adhesion_type: adhesion, skirt_line_count: 1, skirt_gap: 3, brim_width: brimWidth, brim_outside_only: true,
+    adhesion_type: adhesion, skirt_line_count: 1, skirt_gap: adh.skirtGap, brim_width: brimWidth, brim_outside_only: true,
     prime_tower_enable: multi && job.primeTower, prime_tower_size: 25, prime_tower_min_volume: 15,
     prime_tower_position_x: extra.primeTowerPos ? extra.primeTowerPos.x : P.bed.x - 20,
     prime_tower_position_y: extra.primeTowerPos ? extra.primeTowerPos.y : P.bed.y - 20,
@@ -106,6 +124,7 @@ export function buildCura(job, tools, meshes, extra) {
       material_final_print_temperature: f.nozzle,
       material_standby_temperature: f.nozzle,
       material_flow: Math.round(f.flow * 100),
+      material_flow_layer_0: Math.round(f.flow * FL.flow),
       retraction_enable: true,
       retraction_amount: f.retractLength,
       retraction_speed: f.retractSpeed, retraction_retract_speed: f.retractSpeed, retraction_prime_speed: f.retractSpeed,
@@ -122,10 +141,10 @@ export function buildCura(job, tools, meshes, extra) {
       speed_support: cap(S.support ?? Math.round(sp.infill * 0.7), f, h),
       speed_support_interface: cap(Math.round((S.outerWall ?? sp.outerWall) * 0.5), f, h),
       speed_prime_tower: cap(Math.round((S.outerWall ?? sp.outerWall) * 0.6), f, h),
-      speed_layer_0: cap(S.firstLayer ?? sp.firstLayer, f, h0), speed_print_layer_0: cap(S.firstLayer ?? sp.firstLayer, f, h0),
+      speed_layer_0: cap(S.firstLayer ?? sp.firstLayer, f, h0, w0), speed_print_layer_0: cap(S.firstLayer ?? sp.firstLayer, f, h0, w0),
       speed_travel: S.travel ?? (f.speedCap ? Math.min(sp.travel, 250) : sp.travel),
       speed_travel_layer_0: Math.min(150, S.travel ?? 150),
-      skirt_brim_speed: cap(S.firstLayer ?? sp.firstLayer, f, h0),
+      skirt_brim_speed: cap(S.firstLayer ?? sp.firstLayer, f, h0, w0),
       machine_extruder_start_code: '', machine_extruder_end_code: '',
       machine_nozzle_offset_x: 0, machine_nozzle_offset_y: 0,
     };

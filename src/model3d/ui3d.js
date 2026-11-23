@@ -7,7 +7,7 @@ import { materialPicker } from '../core/matpicker.js';
 import { readModelFile, SUPPORTED } from './mesh.js';
 import { autoOrient, arrange, m3mul, rotAxis } from './orient.js';
 import { makeObject, worldParts, objectSize, prepareSlice } from './job.js';
-import { defaultJob, QUALITY } from './settings.js';
+import { defaultJob, QUALITY, resolveAdhesion } from './settings.js';
 import { postProcess, parsePreview, KINDS } from './post.js';
 import { createViewer } from './viewer.js';
 
@@ -103,6 +103,21 @@ export function initModel3D(ctx) {
       return { id: o.id, parts: o.parts.map((p, k) => ({ positions: w.parts[k], color: colorOf(p.tool) })) };
     }), { overhangAngle: $('#m3Over').checked ? st.job.supportAngle : null });
     viewer.select(selected);
+    // Aperçu de la jupe / bordure : contour de la 1re couche de chaque pièce
+    const adh = resolveAdhesion(st.job, usedFils());
+    viewer.setAdhesion({
+      ...adh,
+      footprints: objects.map((o) => {
+        const pts = [];
+        for (const a of worldParts(o).parts) for (let i = 0; i < a.length; i += 3) if (a[i + 2] < 0.35) pts.push([a[i], a[i + 1]]);
+        return pts;
+      }),
+    });
+    $('#m3AdhInfo').textContent = {
+      skirt: `Jupe : une ligne à ${adh.skirtGap} mm autour des pièces, pour amorcer la buse`,
+      brim: `Bordure de ${adh.brimWidth} mm collée aux pièces, contre le décollement`,
+      none: 'Aucune : la pièce seule touche le plateau',
+    }[adh.type] + (st.job.adhesion === 'auto' ? ' (choix automatique selon le filament)' : '') + '. Aperçu en bleu sur le plateau.';
     $('#m3Empty').hidden = objects.length > 0;
     $('#m3Slice').disabled = !objects.length || busy;
     updateDims();
@@ -225,6 +240,7 @@ export function initModel3D(ctx) {
 
   // ---------- Placement ----------
   function reservedTower() { return canvasOn() && st.job.primeTower && usedTools().length > 1 ? { w: 40 } : null; }
+  function usedFils() { return (canvasOn() ? usedTools() : [0]).map((t) => slotFil(Math.min(t, slotCount() - 1))); }
   function usedTools() { return [...new Set(objects.flatMap((o) => o.parts.map((p) => (canvasOn() ? p.tool : 0))))]; }
   // Résultat visible même sur téléphone : la vue 3D est au-dessus des réglages, on la ramène à l'écran
   function showResult(msg, cls = 'ok') {
@@ -309,7 +325,7 @@ export function initModel3D(ctx) {
       const sel = document.createElement('div');
       materialPicker(sel, {
         value: st.slots[i].mat, printer, compact: true, canvas: canvasOn(),
-        onChange: (id) => { st.slots[i].mat = id; save(); invalidate(); renderWarnings(); },
+        onChange: (id) => { st.slots[i].mat = id; save(); invalidate(); renderWarnings(); if (st.job.adhesion === 'auto') refreshView(); },
       });
       const col = document.createElement('input');
       col.type = 'color'; col.value = st.slots[i].color;
@@ -382,7 +398,7 @@ export function initModel3D(ctx) {
     st.job[el.dataset.j] = v;
     if (['layerHeight', 'walls', 'infill', 'pattern', 'topLayers', 'bottomLayers'].includes(el.dataset.j)) st.job.quality = 'custom';
     save(); fillJob(); invalidate();
-    if (['support', 'supportAngle'].includes(el.dataset.j)) refreshView();
+    if (['support', 'supportAngle', 'adhesion'].includes(el.dataset.j)) refreshView();
   });
   $('#m3Quality').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
