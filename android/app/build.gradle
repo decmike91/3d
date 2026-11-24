@@ -66,6 +66,10 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
     implementation 'androidx.core:core-ktx:1.17.0'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    // Caméras Tapo : lecture RTSP
+    implementation 'androidx.media3:media3-exoplayer:1.5.1'
+    implementation 'androidx.media3:media3-exoplayer-rtsp:1.5.1'
+    implementation 'androidx.media3:media3-ui:1.5.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

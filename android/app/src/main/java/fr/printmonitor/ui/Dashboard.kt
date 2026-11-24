@@ -48,14 +48,17 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Dashboard(onSettings: () -> Unit, onBack: (() -> Unit)? = null) {
+fun Dashboard(onSettings: () -> Unit, onBack: (() -> Unit)? = null, onCameras: (() -> Unit)? = null) {
     val cfg by MonitorHub.config.collectAsStateWithLifecycle()
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Surveillance") },
                 navigationIcon = { if (onBack != null) TextButton(onClick = onBack) { Text("‹ Retour") } },
-                actions = { TextButton(onClick = onSettings) { Text("Réglages") } },
+                actions = {
+                    if (onCameras != null) TextButton(onClick = onCameras) { Text("Caméras") }
+                    TextButton(onClick = onSettings) { Text("Réglages") }
+                },
             )
         }
     ) { pad ->

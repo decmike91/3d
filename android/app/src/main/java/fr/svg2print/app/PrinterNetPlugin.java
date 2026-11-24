@@ -41,6 +41,8 @@ public class PrinterNetPlugin extends Plugin {
     @PluginMethod
     public void openMonitor(final PluginCall call) {
         android.content.Intent i = new android.content.Intent(getContext(), fr.printmonitor.MonitorActivity.class);
+        // Ouverture directe sur les caméras Tapo
+        i.putExtra(fr.printmonitor.MonitorActivity.EXTRA_CAMERAS, Boolean.TRUE.equals(call.getBoolean("cameras", false)));
         getActivity().startActivity(i);
         call.resolve();
     }

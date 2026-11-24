@@ -489,6 +489,26 @@ ${warn('La surveillance à distance ne remplace pas un détecteur de fumée prè
 ${tip('Dans l’appli Tapo : Moi › Services tiers › Compatibilité tierce → activer. Sans cette option, les firmwares récents refusent les connexions locales.')}`,
   },
   {
+    id: 'mon-cam', title: 'Caméras Tapo (C210)', parent: 'mon',
+    keywords: ['caméra', 'Tapo', 'C210', 'C210P2', 'RTSP', 'ONVIF', 'position', 'orientation', 'preset', 'vidéo'],
+    html: `
+<p>L'onglet <b>Caméras</b> (Android) affiche jusqu'à <b>2 caméras Tapo</b> en direct, en local ou à distance par le VPN.</p>
+<h4>Préparer chaque caméra</h4>
+<ol>
+<li>Dans l'appli Tapo, ouvrez la caméra puis <b>Paramètres › Paramètres avancés › Compte de la caméra</b>. Créez un identifiant et un mot de passe : ils sont différents de votre compte TP-Link.</li>
+<li>Dans la box, donnez une <b>adresse IP fixe</b> à la caméra.</li>
+</ol>
+<h4>Configurer</h4>
+<p>Dans <b>Caméras › Configurer</b>, pour chacun des 2 emplacements, saisissez un nom, l'adresse IP, l'identifiant et le mot de passe du compte de la caméra. <b>Tester</b> vérifie la connexion. Le réglage <b>Haute définition</b> utilise le flux 1 (2K) ; désactivé, l'appli prend le flux 2, plus léger, conseillé à distance.</p>
+<h4>Visualiser et orienter</h4>
+<ul>
+<li>Chaque caméra s'affiche dans une carte. <b>Agrandir</b> n'affiche qu'elle, et <b>HD/SD</b> change la qualité.</li>
+<li>Les flèches ▲ ▼ ◀ ▶ orientent la C210 par petits pas.</li>
+<li><b>Mémoriser la position</b> enregistre l'orientation actuelle sous un nom, par exemple « Imprimante 1 ». Toucher ce nom ramène la caméra à cette position ; un appui long la supprime. Les positions sont enregistrées dans la caméra, comme celles de l'appli Tapo, qui apparaissent aussi ici.</li>
+</ul>
+${tip('Pas d’image : vérifiez l’adresse IP et le compte de la caméra (pas le compte TP-Link). Les caméras Tapo n’acceptent qu’un petit nombre de spectateurs en local à la fois : fermez l’image dans l’appli Tapo si besoin.')}`,
+  },
+  {
     id: 'mon-settings', title: 'Réglages de la surveillance', parent: 'mon',
     keywords: ['réglages', 'nom affiché', 'adresse IP', 'URL caméra', 'e-mail', 'mot de passe', 'arrière-plan', 'batterie'],
     html: `

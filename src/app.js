@@ -685,6 +685,7 @@ $('[data-help-topic="canvas"]').addEventListener('click', () => help.openTopic('
 const TAB_STORE = 'svg2print.tab';
 function showTab(t) {
   if (t === 'monitor') { openMonitor(); return; }
+  if (t === 'cameras') { openMonitor(true); return; }
   $$('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === t));
   $('#vectorView').hidden = t !== 'vector';
   $('#printView').hidden = t !== 'print';
@@ -699,10 +700,10 @@ function showTab(t) {
   if (t === 'print') requestAnimationFrame(draw);
   try { localStorage.setItem(TAB_STORE, t); } catch {}
 }
-async function openMonitor() {
+async function openMonitor(cameras = false) {
   // L'aperçu 3D des couches occupe beaucoup de mémoire : on le libère pour qu'Android ne décharge pas l'appli
   try { if (m3) m3.releaseMemory(); } catch {}
-  try { await globalThis.Capacitor.Plugins.PrinterNet.openMonitor(); }
+  try { await globalThis.Capacitor.Plugins.PrinterNet.openMonitor({ cameras }); }
   catch (e) { log(`Surveillance indisponible : ${e.message}`, 'err'); }
 }
 let curTab = 'print';
@@ -710,6 +711,7 @@ const help = initHelp({ showTab: (t) => showTab(t), currentTab: () => curTab });
 globalThis.__help = help;
 $$('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
 $('#monitorTab').hidden = platform() !== 'android';
+$('#camerasTab').hidden = platform() !== 'android';
 $('#toVectorBtn').addEventListener('click', () => showTab('vector'));
 
 // Messages venant de l'outil de vectorisation (cadre vector.html)

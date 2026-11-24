@@ -19,8 +19,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import fr.printmonitor.ui.Dashboard
 import fr.printmonitor.ui.SettingsScreen
+import fr.printmonitor.camera.CamerasScreen
+import fr.printmonitor.camera.CameraSetupScreen
 
 class MonitorActivity : ComponentActivity() {
+    companion object { const val EXTRA_CAMERAS = "cameras" }
+    private val wanted = mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        wanted.value = if (intent.getBooleanExtra(EXTRA_CAMERAS, false)) "cams" else "dash"
+    }
 
     private val notifPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -38,10 +48,17 @@ class MonitorActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
-                var settings by remember { mutableStateOf(MonitorHub.config.value.isEmpty) }
-                BackHandler(enabled = settings) { settings = false }
-                if (settings) SettingsScreen(onDone = { settings = false })
-                else Dashboard(onSettings = { settings = true }, onBack = { backToApp() })
+                // Écrans : tableau de bord, réglages, caméras Tapo et leur configuration
+                var screen by remember { mutableStateOf(if (intent?.getBooleanExtra(EXTRA_CAMERAS, false) == true) "cams" else if (MonitorHub.config.value.isEmpty) "settings" else "dash") }
+                val req by wanted
+                androidx.compose.runtime.LaunchedEffect(req) { if (req != null) { screen = req!!; wanted.value = null } }
+                BackHandler(enabled = screen != "dash") { screen = if (screen == "camsetup") "cams" else "dash" }
+                when (screen) {
+                    "settings" -> SettingsScreen(onDone = { screen = "dash" })
+                    "cams" -> CamerasScreen(onBack = { screen = "dash" }, onSetup = { screen = "camsetup" })
+                    "camsetup" -> CameraSetupScreen(onDone = { screen = "cams" })
+                    else -> Dashboard(onSettings = { screen = "settings" }, onBack = { backToApp() }, onCameras = { screen = "cams" })
+                }
             }
         }
     }
