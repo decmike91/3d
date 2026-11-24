@@ -427,6 +427,27 @@ ${fig('filaments', 'Onglet Filaments, mode rapide : la vitesse choisie donne le 
 <p>Toute modification est enregistrée aussitôt et prise en compte au prochain tranchage. <b>Dupliquer</b> sert à décliner un réglage, <b>Revenir aux réglages de départ</b> à repartir de zéro en mode expert.</p>
 ${tip('En mode expert, une vitesse dont le débit dépasse le « débit volumique max » est réduite au tranchage : augmentez ce débit seulement si le filament le supporte (souvent indiqué « jusqu’à N mm³/s » ou par une vitesse max sur la bobine).')}`,
   },
+  {
+    id: 'canvas', title: 'Mes CANVAS : bobines et secours', parent: 'fil',
+    keywords: ['CANVAS', 'bobine', 'plateau', 'couleur', 'retirer', 'supprimer', 'modifier', 'secours', 'fin de filament', 'recharge automatique', 'auto refill', 'deux CANVAS'],
+    html: `
+<p>Dans l'onglet <b>Filaments</b>, la rubrique <b>Mes CANVAS</b> affiche une fiche par Centauri Carbon de « Mes imprimantes » ou de Surveiller. Chaque imprimante a donc son propre CANVAS, avec ses 4 bobines.</p>
+<ul>
+<li><b>CANVAS installé</b> : décochez-le pour une Centauri sans CANVAS. Le multifilament est alors désactivé quand on la choisit dans Modèle 3D.</li>
+<li><b>Lire le CANVAS</b> : reprend la matière et la couleur de chaque bobine chargée, ainsi que l'état de la recharge automatique.</li>
+<li><b>Modifier</b> une bobine (filament, couleur, nom) : la modification est gardée en mémoire et reste prioritaire sur une nouvelle lecture, ce qui est utile pour une bobine sans puce. <b>Valeurs de l'imprimante</b> annule la modification.</li>
+<li><b>Retirer</b> une bobine : elle n'est plus utilisée à l'envoi. Si des objets lui sont affectés, une bobine compatible chargée la remplace (voir ci-dessous), sinon l'envoi est refusé. <b>Remettre</b> la réactive.</li>
+</ul>
+<p>Dans Modèle 3D, les bobines affichées sont celles du CANVAS de l'imprimante choisie. Une couleur changée dans Modèle 3D est enregistrée dans la fiche de cette imprimante.</p>
+<h4>Secours en fin de bobine</h4>
+<p>Le réglage <b>Fin de bobine pendant l'impression</b> définit ce qui est « compatible » : même matière (une autre couleur convient), même matière et même couleur, ou pas de secours.</p>
+<ul>
+<li><b>À l'envoi</b> : si une bobine prévue est vide ou retirée, l'application lit le CANVAS et prend à sa place une bobine compatible chargée. Le journal indique aussi les bobines de secours disponibles pour chaque filament.</li>
+<li><b>Pendant l'impression</b> : c'est l'imprimante qui enchaîne seule sur une bobine identique, à condition que la <b>recharge automatique</b> soit activée sur son écran (réglages du CANVAS). Le protocole réseau de la Centauri ne permet pas à l'application de changer de bobine en cours d'impression.</li>
+<li><b>Si l'impression se met en pause</b> : Surveiller lit le CANVAS, indique la bobine en cause et les bobines compatibles chargées, et envoie une notification. Choisissez la bobine sur l'écran de l'imprimante, puis touchez <b>Reprendre</b>.</li>
+</ul>
+${tip('Pour que la recharge automatique de l’imprimante accepte une autre bobine de la même matière, déclarez-la sur l’écran de l’imprimante avec la même matière et la même couleur que la bobine principale.')}`,
+  },
 
   // ===================================================================== 6
   {

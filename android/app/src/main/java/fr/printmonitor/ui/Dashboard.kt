@@ -240,6 +240,7 @@ private fun PrinterCard(id: PrinterId) {
             }
 
             s.message?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            s.canvasHint?.let { Text(it, color = Color(0xFFB26A00), style = MaterialTheme.typography.bodyMedium) }
 
             if (plug.configured) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -331,3 +331,25 @@ button:disabled { opacity: .45; cursor: default; }
 .m3-result.warn { color: var(--warn); }
 @keyframes m3flash { 0% { box-shadow: 0 0 0 3px var(--fil); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .m3-wrap.flash { animation: m3flash 1.2s ease-out; }
+
+/* Mes CANVAS (onglet Filaments) */
+.canvas-mgr { margin-top: 18px; }
+.cv-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-top: 10px; }
+.cv-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.cv-head small { color: var(--ink-2); }
+.cv-has { margin-left: auto; }
+.cv-actions { margin: 10px 0 6px; align-items: center; gap: 10px; }
+.cv-msg { color: var(--ink-2); }
+.cv-trays { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cv-tray { border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.cv-tray.removed { opacity: .6; border-style: dashed; }
+.cv-row { display: flex; align-items: center; gap: 8px; }
+.cv-row .cv-mat { flex: 1; min-width: 0; }
+.cv-n { width: 1.4em; text-align: center; }
+.cv-col { width: 40px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; flex: none; }
+.cv-row2 { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px 2em; }
+.cv-name { flex: 1; min-width: 120px; }
+.cv-info { display: block; margin-left: 2.4em; color: var(--ink-2); }
+.cv-backup { margin-top: 10px; }
+.cv-ar .ok { color: var(--ok); } .cv-ar .warn { color: var(--warn); }
+.slot.removed { opacity: .55; }

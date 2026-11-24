@@ -8,6 +8,7 @@ import { readModelFile, SUPPORTED } from './mesh.js';
 import { autoOrient, arrange, m3mul, rotAxis } from './orient.js';
 import { makeObject, worldParts, objectSize, prepareSlice } from './job.js';
 import { defaultJob, QUALITY, resolveAdhesion } from './settings.js';
+import { canvasOf, knownCanvas, updateCanvas, editTray, applyRead, onCanvasChange, backupsFor } from '../core/canvasstore.js';
 import { postProcess, parsePreview, KINDS } from './post.js';
 import { createViewer } from './viewer.js';
 
@@ -44,6 +45,31 @@ export function initModel3D(ctx) {
   const slotCount = () => (canvasOn() ? 4 : 1);
   const slotFil = (i) => materialProfile(st.slots[i].mat, printer());
   const colorOf = (tool) => st.slots[canvasOn() ? Math.min(3, tool) : 0].color;
+  // CANVAS de l'imprimante choisie : les bobines (filament, couleur) sont mémorisées par imprimante
+  const ccHost = () => (printer() === 'cc' ? state.net.cc.host : '');
+  let syncedHost = null;
+  function syncFromCanvas() {
+    const h = ccHost();
+    if (!h) { syncedHost = null; return; }
+    if (!knownCanvas(h)) {
+      // Première fois : la fiche de cette imprimante part des bobines actuelles de l'onglet
+      updateCanvas(h, (p) => { p.trays.forEach((t, i) => { t.mat = st.slots[i].mat; t.color = st.slots[i].color; }); });
+    }
+    const p = canvasOf(h);
+    st.slots = p.trays.map((t) => ({ mat: t.mat, color: t.color }));
+    if (p.has === false && st.canvas && syncedHost !== h) {
+      st.canvas = false;
+      log(`${h} : pas de CANVAS (onglet Filaments › Mes CANVAS) — multifilament désactivé.`);
+    }
+    syncedHost = h;
+    save();
+  }
+  const trayOf = (i) => { const h = ccHost(); return h && canvasOn() ? canvasOf(h).trays[i] : null; };
+  const setSlot = (i, patch) => {
+    Object.assign(st.slots[i], patch);
+    const h = ccHost();
+    if (h && canvasOn()) editTray(h, i, patch); else save();
+  };
 
   // ---------- Journal ----------
   function log(msg, cls) {
@@ -325,17 +351,23 @@ export function initModel3D(ctx) {
       const sel = document.createElement('div');
       materialPicker(sel, {
         value: st.slots[i].mat, printer, compact: true, canvas: canvasOn(),
-        onChange: (id) => { st.slots[i].mat = id; save(); invalidate(); renderWarnings(); if (st.job.adhesion === 'auto') refreshView(); },
+        onChange: (id) => { setSlot(i, { mat: id }); invalidate(); renderWarnings(); if (st.job.adhesion === 'auto') refreshView(); },
       });
       const col = document.createElement('input');
       col.type = 'color'; col.value = st.slots[i].color;
       col.title = 'Couleur du filament';
-      col.addEventListener('input', () => { st.slots[i].color = col.value.toUpperCase(); save(); invalidate(); renderList(); refreshView(); });
+      // « change » aussi : certains sélecteurs de couleur Android ne déclenchent que cet évènement
+      const setCol = () => { setSlot(i, { color: col.value.toUpperCase() }); invalidate(); renderList(); refreshView(); };
+      col.addEventListener('input', setCol);
+      col.addEventListener('change', setCol);
       row.append(b, sel, col);
       const info = document.createElement('small');
-      const tray = canvasRead && canvasRead[i];
-      info.textContent = tray ? `CANVAS : ${tray.loaded ? `${tray.brand} ${tray.type || tray.name}`.trim() : 'emplacement vide'}` : '';
-      info.hidden = !tray;
+      const mem = trayOf(i);
+      const tray = (mem && mem.printer) || (canvasRead && canvasRead[i]);
+      if (mem && mem.removed) row.classList.add('removed');
+      info.textContent = mem && mem.removed ? 'Bobine retirée (onglet Filaments › Mes CANVAS) : non utilisée'
+        : tray ? `CANVAS : ${tray.loaded ? `${tray.brand || ''} ${tray.type || tray.name || ''}`.trim() : 'emplacement vide'}${mem && mem.name ? ` · ${mem.name}` : ''}${mem && mem.edited ? ' · modifiée' : ''}` : '';
+      info.hidden = !info.textContent;
       row.append(info);
       box.append(row);
     }
@@ -354,6 +386,16 @@ export function initModel3D(ctx) {
     if (canvasOn() && used.some((t) => materialInfo(st.slots[t].mat).canvas === false)) {
       const li = document.createElement('li'); li.textContent = 'Le TPU ne passe pas dans le CANVAS : choisissez une autre matière pour ces objets.'; w.append(li);
     }
+    if (canvasOn() && ccHost()) {
+      const p = canvasOf(ccHost());
+      for (const t of used) {
+        if (!p.trays[t] || !p.trays[t].removed) continue;
+        const b = backupsFor(p, t);
+        const li = document.createElement('li');
+        li.textContent = b.length ? `Bobine ${t + 1} retirée : la bobine ${b[0] + 1} (même matière) sera utilisée à l’envoi.` : `Bobine ${t + 1} retirée et sans bobine compatible : choisissez une autre bobine pour ces objets.`;
+        w.append(li);
+      }
+    }
     if (printer() === 'k1' && st.canvas) {
       const li = document.createElement('li'); li.textContent = 'Le multifilament CANVAS n’existe que sur les Elegoo : impression en un seul filament sur la K1.'; w.append(li);
     }
@@ -367,14 +409,12 @@ export function initModel3D(ctx) {
       if (r.mainboard && !net.mainboardId) { net.mainboardId = r.mainboard; ctx.save(); }
       if (!r.trays.length) { log('Aucun CANVAS connecté à cette imprimante.', 'err'); canvasRead = null; renderSlots(); return; }
       canvasRead = [0, 1, 2, 3].map((i) => r.trays.find((t) => t.slot === i) || null);
-      canvasRead.forEach((t, i) => {
-        if (!t || !t.loaded) return;
-        if (t.color) st.slots[i].color = t.color.toUpperCase();
-        const m = MAT_OF_TYPE(`${t.type} ${t.name}`, st.slots[i].mat);
-        if (m) st.slots[i].mat = m;
-      });
-      save(); invalidate(); renderSlots(); renderList(); refreshView();
-      log(`CANVAS lu : ${canvasRead.filter((t) => t.loaded).length} emplacement(s) chargé(s). Couleurs et matières reprises.`, 'ok');
+      // Les bobines modifiées dans l'appli gardent leur filament et leur couleur
+      const p = applyRead(net.host, r);
+      syncFromCanvas();
+      invalidate(); renderSlots(); renderList(); refreshView();
+      const kept = p.trays.filter((t) => t.edited).length;
+      log(`CANVAS lu : ${canvasRead.filter((t) => t.loaded).length} bobine(s) chargée(s). Couleurs et matières reprises${kept ? ` (${kept} bobine(s) modifiée(s) dans l’appli conservée(s))` : ''}.`, 'ok');
     } catch (e) { log(`Lecture du CANVAS impossible : ${e.message}`, 'err'); }
   }
 
@@ -573,8 +613,21 @@ export function initModel3D(ctx) {
     }
     log(`Envoi de ${job.file} en arrière-plan. Impression suivante : « Nouveau plateau », ouvrez le modèle, choisissez l’autre imprimante, puis tranchez et envoyez.`);
     // Correspondance filament → plateau du CANVAS : toujours envoyée, sinon l'imprimante prend le dernier filament utilisé
-    ctx.queueSend(job, log, async (jlog) => (job.canvas ? ctx.canvasSlotMap(job.host, job.mainboardId, job.uses, (m) => jlog(m)) : []));
+    ctx.queueSend(job, log, async (jlog) => (job.canvas ? ctx.canvasSlotMap(job.host, job.mainboardId, job.uses, (m) => jlog(m), ctx.canvasOpts(job.host)) : []));
   });
+
+  // Fiche CANVAS modifiée (onglet Filaments) ou autre imprimante saisie : bobines à jour
+  onCanvasChange(() => {
+    if (!ccHost()) return;
+    syncFromCanvas();
+    const a = document.activeElement;
+    if (a && $('#m3Slots').contains(a)) return; // sélecteur de couleur ouvert : pas de reconstruction
+    invalidate(); renderSlots(); renderList(); refreshView();
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target && e.target.dataset && e.target.dataset.k === 'host' && printer() === 'cc') { syncFromCanvas(); renderSlots(); renderList(); refreshView(); }
+  });
+  syncFromCanvas();
 
   // ---------- API pour l'application ----------
   fillJob();
@@ -590,6 +643,7 @@ export function initModel3D(ctx) {
       }
     },
     onPrinterChange() {
+      syncFromCanvas();
       fillJob(); renderSlots(); invalidate();
       if (viewer) { viewer.setBed(P().bed); viewer.resetCamera(); }
       for (const o of objects) clampOnBed(o);

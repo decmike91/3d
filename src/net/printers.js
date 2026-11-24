@@ -233,7 +233,8 @@ export async function ccCanvas(host, mainboardHint, log) {
         });
       });
     });
-    return { mainboard: s.mainboard, trays, active: { canvas: d.active_canvas_id, tray: d.active_tray_id } };
+    const ar = d.auto_refill;
+    return { mainboard: s.mainboard, trays, active: { canvas: d.active_canvas_id, tray: d.active_tray_id }, autoRefill: ar == null ? null : !!ar };
   } finally { s.close(); }
 }
 
@@ -245,25 +246,52 @@ const familyOf = (t) => (/TPU/i.test(t) ? 'TPU' : /PA|NYLON/i.test(t) ? 'PA' : /
  * Lit le CANVAS ; refuse un emplacement vide ; signale une matière différente.
  * Sans réponse du CANVAS : correspondance directe (outil n → plateau n du premier CANVAS).
  */
-export async function canvasSlotMap(host, mainboardId, uses, log) {
+export async function canvasSlotMap(host, mainboardId, uses, log, opts = {}) {
   let trays = null;
+  let read = null;
   try {
-    const r = await ccCanvas(host, mainboardId, log);
-    trays = r.trays;
+    read = await ccCanvas(host, mainboardId, log);
+    trays = read.trays;
+    if (opts.onRead) opts.onRead(read);
   } catch (e) {
     log && log(`Lecture du CANVAS impossible (${e.message}) : emplacements pris tels quels.`);
   }
   if (trays && !trays.length) throw new Error('Aucun CANVAS connecté à cette imprimante : décochez « Multifilament CANVAS » ou vérifiez le CANVAS.');
+  const prof = opts.profile || null; // mémoire de l'application (bobines retirées, secours)
+  const loadedOnPrinter = (i) => { const t = trays && trays.find((x) => x.slot === i); return trays ? !!(t && t.loaded) : true; };
+  const usable = (i) => !(prof && prof.trays[i] && prof.trays[i].removed) && loadedOnPrinter(i);
+  const desc = (i) => {
+    const t = trays && trays.find((x) => x.slot === i);
+    const c = prof && prof.trays[i];
+    return `bobine ${i + 1}${t && t.loaded ? ` (${`${t.brand} ${t.type} ${(c && c.color) || t.color}`.replace(/\s+/g, ' ').trim()})` : ''}`;
+  };
   const map = [];
+  const taken = new Set();
   for (const u of uses) {
-    const tray = trays ? trays.find((x) => x.slot === u.t) : null;
-    if (trays && !tray) throw new Error(`L'emplacement ${u.t + 1} n'existe pas sur ce CANVAS.`);
-    if (tray && !tray.loaded) throw new Error(`L'emplacement ${u.t + 1} du CANVAS est vide : chargez-y le filament ou choisissez un autre emplacement.`);
-    if (tray && u.type && tray.type && familyOf(tray.type) !== familyOf(u.type)) {
-      log && log(`Attention : emplacement ${u.t + 1} chargé en ${tray.type}, tranché pour du ${u.type}.`);
+    let slot = u.t;
+    if (trays && !trays.find((x) => x.slot === slot)) throw new Error(`L'emplacement ${slot + 1} n'existe pas sur ce CANVAS.`);
+    if (!usable(slot)) {
+      const why = prof && prof.trays[slot] && prof.trays[slot].removed ? 'retirée dans l’application' : 'vide';
+      // Bobine vide ou retirée : on prend une bobine compatible chargée, si le secours est activé
+      const alt = (opts.backups ? opts.backups(slot) : []).find((j) => usable(j) && !taken.has(j));
+      if (alt == null) throw new Error(`La bobine ${slot + 1} du CANVAS est ${why} et aucune bobine compatible n'est chargée : chargez-la ou choisissez une autre bobine.`);
+      log && log(`Bobine ${slot + 1} ${why} : ${desc(alt)} utilisée à la place (filament compatible).`);
+      slot = alt;
     }
-    map.push({ t: u.t, canvas_id: tray ? tray.canvas_id : 0, tray_id: tray ? tray.tray_id : u.t });
-    log && log(`Filament ${u.t + 1} → CANVAS ${tray ? `${tray.brand} ${tray.type} ${tray.color}`.replace(/\s+/g, ' ').trim() : `plateau ${u.t + 1}`}`);
+    taken.add(slot);
+    const tray = trays ? trays.find((x) => x.slot === slot) : null;
+    if (tray && u.type && tray.type && familyOf(tray.type) !== familyOf(u.type)) {
+      log && log(`Attention : bobine ${slot + 1} chargée en ${tray.type}, tranché pour du ${u.type}.`);
+    }
+    map.push({ t: u.t, canvas_id: tray ? tray.canvas_id : 0, tray_id: tray ? tray.tray_id : slot });
+    log && log(`Filament ${u.t + 1} → CANVAS ${desc(slot)}`);
+    // Secours pendant l'impression : c'est l'imprimante qui enchaîne (recharge automatique)
+    if (opts.backups) {
+      const b = opts.backups(slot).filter((j) => usable(j));
+      if (b.length) {
+        log && log(`Secours en fin de bobine ${slot + 1} : ${b.map((j) => j + 1).join(', ')}${read && read.autoRefill === false ? ' — activez « Recharge automatique » du CANVAS sur l’écran de l’imprimante' : ''}.`);
+      }
+    }
   }
   return map;
 }

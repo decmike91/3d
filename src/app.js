@@ -4,6 +4,8 @@ import { slice as sliceSync, fmtTime } from './core/gcode.js';
 import { PRINTERS, defaultFilament, defaultPrint } from './core/profiles.js';
 import { sendToPrinter, testPrinter, ccCanvas, canvasSlotMap } from './net/printers.js';
 import { createSendQueue } from './core/sendjobs.js';
+import { initCanvasUI } from './core/canvas-ui.js';
+import { canvasOf, backupsFor, applyRead } from './core/canvasstore.js';
 import { MATERIALS, MATERIAL_IDS, materialProfile, materialInfo, flushVolume } from './core/materials.js';
 import { materialPicker } from './core/matpicker.js';
 import { initFilaments } from './core/filaments-ui.js';
@@ -437,7 +439,7 @@ $('#sendBtn').addEventListener('click', async () => {
     if (!job.canvas) return [];
     const cs = job.canvas;
     const typeOf = (t) => (t === cs.reliefSlot && job.stats.tools.length > 1 ? materialProfile(cs.reliefMat, 'cc').type : job.filType);
-    return canvasSlotMap(job.host, job.mainboardId, job.stats.tools.map((t) => ({ t, type: typeOf(t) })), (m) => jlog(m));
+    return canvasSlotMap(job.host, job.mainboardId, job.stats.tools.map((t) => ({ t, type: typeOf(t) })), (m) => jlog(m), canvasOpts(job.host));
   });
 });
 
@@ -571,6 +573,11 @@ const printerLabel = (host) => {
   const e = myPrinters && myPrinters.entries().find((x) => x.ip === host);
   return e ? e.name : host;
 };
+// Bobines retirées, secours compatibles et mémorisation de la lecture du CANVAS pour l'envoi
+function canvasOpts(host) {
+  const prof = canvasOf(host);
+  return { profile: prof, backups: (i) => backupsFor(prof, i), onRead: (r) => { if (r.trays.length) applyRead(host, r); } };
+}
 // Refuse d'envoyer deux fois vers la même imprimante, ou vers une imprimante qui imprime déjà
 function checkFree(job, logFn) {
   const name = printerLabel(job.host);
@@ -641,7 +648,7 @@ function setPrinter(p) {
   state.printer = p; save(); fillForm(); rebuild();
   if (m3) m3.onPrinterChange();
 }
-m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart, noteSentJob, checkFree, queueSend });
+m3 = initModel3D({ state, save, saveText, sendToPrinter, testPrinter, ccCanvas, canvasSlotMap, setPrinter, armPowerOffAfterStart, noteSentJob, checkFree, queueSend, canvasOpts });
 globalThis.__m3 = m3;
 // Bibliothèque de filaments : un changement met à jour les choix des autres onglets
 const filUi = initFilaments({
@@ -659,6 +666,20 @@ const filUi = initFilaments({
 $('[data-help-topic="fil"]').addEventListener('click', () => help.openTopic('fil'));
 const myPrinters = initMyPrinters({ state, save, setPrinter, platform });
 globalThis.__myPrinters = myPrinters;
+// « Mes CANVAS » (onglet Filaments) : une fiche par Centauri Carbon
+const mbOf = (ip) => (state.mbByIp && state.mbByIp[ip]) || (state.net.cc.host === ip ? state.net.cc.mainboardId : '');
+const canvasUi = initCanvasUI({
+  printers: () => {
+    const seen = new Set();
+    return myPrinters.entries().filter((e) => !seen.has(e.ip) && seen.add(e.ip));
+  },
+  read: async (ip) => {
+    const r = await ccCanvas(ip, mbOf(ip));
+    if (r.mainboard) { state.mbByIp = state.mbByIp || {}; state.mbByIp[ip] = r.mainboard; save(); }
+    return r;
+  },
+});
+$('[data-help-topic="canvas"]').addEventListener('click', () => help.openTopic('canvas'));
 
 // ---------------- Onglets : Vectoriser / Imprimer / Surveiller ----------------
 const TAB_STORE = 'svg2print.tab';
@@ -670,7 +691,7 @@ function showTab(t) {
   $('#modelView').hidden = t !== 'model';
   $('#helpView').hidden = t !== 'help';
   $('#filView').hidden = t !== 'filaments';
-  if (t === 'filaments') filUi.show();
+  if (t === 'filaments') { filUi.show(); canvasUi.render(); }
   if (t === 'model') m3.show();
   if (t === 'help') help.show();
   curTab = t;

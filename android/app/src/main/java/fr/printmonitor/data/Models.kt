@@ -42,6 +42,8 @@ data class PrinterState(
     val lightOn: Boolean? = null,
     /** true = fin de filament détectée ; null = capteur non exposé par l'imprimante */
     val filamentRunout: Boolean? = null,
+    /** Impression en pause avec un CANVAS : bobine en cause et bobines compatibles chargées */
+    val canvasHint: String? = null,
 )
 
 data class PlugState(

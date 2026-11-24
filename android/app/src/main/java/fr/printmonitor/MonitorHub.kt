@@ -178,11 +178,16 @@ object MonitorHub {
     private fun watchTransitions(id: PrinterId) = scope.launch {
         var prev: PrintStatus? = null
         var prevRunout: Boolean? = null
+        var prevHint: String? = null
         printerFlows.getValue(id).collect { s ->
             if (s.filamentRunout == true && prevRunout == false) {
                 Notifier.alert(appContext, id, "${s.name} : fin de filament", "Recharger le filament puis reprendre l'impression")
             }
             prevRunout = s.filamentRunout
+            if (s.canvasHint != null && s.canvasHint != prevHint && s.status == PrintStatus.PAUSED) {
+                Notifier.alert(appContext, id, "${s.name} : fin de bobine ?", s.canvasHint)
+            }
+            prevHint = s.canvasHint
             val p = prev
             prev = s.status
             if (p == null || p == s.status) return@collect

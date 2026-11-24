@@ -82,6 +82,14 @@ class ElegooSdcpClient(
             return
         }
 
+        // Réponse à la lecture du CANVAS (Cmd 324), demandée quand l'impression passe en pause
+        val inner = o.optJSONObject("Data")
+        if (inner != null && inner.optInt("Cmd", -1) == CMD_CANVAS) {
+            val hint = canvasHint(inner)
+            target.update { it.copy(canvasHint = if (it.status == PrintStatus.PAUSED) hint else null) }
+            return
+        }
+
         val st = o.optJSONObject("Status") ?: return
         val cur = st.optJSONArray("CurrentStatus")?.let { a -> (0 until a.length()).map { a.optInt(it) } }
             ?: listOf(st.optInt("CurrentStatus", 0))
@@ -96,6 +104,10 @@ class ElegooSdcpClient(
             piStatus == 7 || piStatus == 8 -> PrintStatus.STOPPED
             else -> PrintStatus.IDLE
         }
+
+        // Passage en pause : fin de bobine probable, on lit le CANVAS pour proposer une bobine compatible
+        if (status == PrintStatus.PAUSED && lastStatus != PrintStatus.PAUSED) sendCmd(CMD_CANVAS)
+        lastStatus = status
 
         target.update { s ->
             val cur0 = pi?.lng("CurrentTicks")
@@ -129,11 +141,60 @@ class ElegooSdcpClient(
                     else -> null
                 },
                 message = if (status == PrintStatus.ERROR) s.message else null,
+                canvasHint = if (status == PrintStatus.PAUSED) s.canvasHint else null,
             )
         }
     }
 
+    @Volatile private var lastStatus: PrintStatus? = null
+
+    /** Texte d'aide : bobine active (vide ?) et bobines chargées de même matière. null sans CANVAS. */
+    private fun canvasHint(inner: JSONObject): String? {
+        fun find(o: Any?, depth: Int = 0): JSONObject? {
+            if (depth > 5) return null
+            return when (o) {
+                is JSONObject -> if (o.has("canvas_list")) o else o.keys().asSequence().firstNotNullOfOrNull { find(o.opt(it), depth + 1) }
+                else -> null
+            }
+        }
+        val d = find(inner) ?: return null
+        data class Tray(val n: Int, val canvas: Int, val tray: Int, val type: String, val color: String, val loaded: Boolean)
+        val trays = mutableListOf<Tray>()
+        val list = d.optJSONArray("canvas_list") ?: return null
+        for (u in 0 until list.length()) {
+            val cv = list.optJSONObject(u) ?: continue
+            if (cv.optInt("connected", 1) == 0) continue
+            val tl = cv.optJSONArray("tray_list") ?: continue
+            for (k in 0 until tl.length()) {
+                val t = tl.optJSONObject(k) ?: continue
+                val tid = t.optInt("tray_id", k)
+                trays += Tray(u * 4 + tid + 1, cv.optInt("canvas_id", u), tid,
+                    "${t.optString("brand")} ${t.optString("filament_type")}".trim(),
+                    t.optString("filament_color").removePrefix("#").take(6).uppercase(), t.optInt("status", 0) > 0)
+            }
+        }
+        if (trays.isEmpty()) return null
+        fun fam(s: String) = when {
+            Regex("TPU", RegexOption.IGNORE_CASE).containsMatchIn(s) -> "TPU"
+            Regex("PA|NYLON", RegexOption.IGNORE_CASE).containsMatchIn(s) -> "PA"
+            Regex("PETG|PET", RegexOption.IGNORE_CASE).containsMatchIn(s) -> "PETG"
+            Regex("PLA", RegexOption.IGNORE_CASE).containsMatchIn(s) -> "PLA"
+            else -> s.uppercase()
+        }
+        val active = trays.firstOrNull { it.canvas == d.optInt("active_canvas_id", -1) && it.tray == d.optInt("active_tray_id", -1) }
+            ?: return "CANVAS : ${trays.count { it.loaded }} bobine(s) chargée(s). Si c'est une fin de bobine, chargez-en une autre depuis l'écran puis Reprendre."
+        val ok = trays.filter { it != active && it.loaded && fam(it.type) == fam(active.type) }
+            .sortedBy { if (it.color == active.color) 0 else 1 }
+        val etat = if (active.loaded) "en pause" else "vide"
+        val alt = if (ok.isEmpty()) "aucune autre bobine de ${fam(active.type)} chargée : rechargez la bobine ${active.n}"
+            else "compatible : " + ok.joinToString(", ") { "bobine ${it.n} (${it.type} #${it.color}${if (it.color == active.color) ", même couleur" else ""})" } +
+                " — choisissez-la sur l'écran de l'imprimante puis Reprendre"
+        val ar = if (d.optBoolean("auto_refill", false)) "" else " (la recharge automatique du CANVAS est désactivée)"
+        return "Bobine ${active.n} (${active.type} #${active.color}) $etat. $alt$ar."
+    }
+
     private companion object {
+        const val CMD_CANVAS = 324
         const val CMD_STATUS = 0
         const val CMD_ATTRIBUTES = 1
         const val CMD_PAUSE = 129
