@@ -52,7 +52,8 @@ object Notifier {
     fun serviceNotification(ctx: Context): Notification =
         NotificationCompat.Builder(ctx, CH_SERVICE)
             .setSmallIcon(android.R.drawable.ic_menu_view)
-            .setContentTitle("Surveillance des imprimantes active")
+            .setContentTitle("SVG2Print : impression en cours")
+            .setContentText("Surveillance jusqu'à la fin de l'impression, puis arrêt automatique")
             .setContentIntent(openApp(ctx))
             .setOngoing(true)
             .build()

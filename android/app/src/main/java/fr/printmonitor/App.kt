@@ -21,6 +21,17 @@ class App : Application() {
 class MonitorService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onCreate() {
+        super.onCreate()
+        MonitorHub.acquire("service")
+    }
+
+    override fun onDestroy() {
+        MonitorHub.serviceStopped()
+        MonitorHub.release("service")
+        super.onDestroy()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val n = Notifier.serviceNotification(this)
         if (Build.VERSION.SDK_INT >= 34) {
@@ -28,6 +39,7 @@ class MonitorService : Service() {
         } else {
             startForeground(Notifier.SERVICE_ID, n)
         }
+        MonitorHub.serviceStarted()
         return START_STICKY
     }
 

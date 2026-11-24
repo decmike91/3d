@@ -26,6 +26,10 @@ class MonitorActivity : ComponentActivity() {
     companion object { const val EXTRA_CAMERAS = "cameras" }
     private val wanted = mutableStateOf<String?>(null)
 
+    // Connexions aux imprimantes seulement pendant que l'écran est visible (ou pendant une impression)
+    override fun onStart() { super.onStart(); MonitorHub.acquire("monitor") }
+    override fun onStop() { MonitorHub.release("monitor"); super.onStop() }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -38,8 +42,6 @@ class MonitorActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= 33) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
 
-        val cfg = MonitorHub.config.value
-        if (cfg.backgroundMonitoring && !cfg.isEmpty) MonitorService.update(this, true)
 
         // Retour système : revenir à l'application (et non la fermer)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {

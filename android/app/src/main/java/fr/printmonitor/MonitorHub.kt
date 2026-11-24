@@ -63,10 +63,8 @@ object MonitorHub {
     /** Arme (ou désarme) la coupure de la prise à la fin de l'impression en cours. */
     fun armPowerOff(id: PrinterId, on: Boolean) {
         _powerOffOnce.update { if (on) it + id else it - id }
-        val ctx = appContextOrNull() ?: return
-        // Le service au premier plan garde la surveillance active écran éteint jusqu'à la fin
-        if (on) MonitorService.update(ctx, true)
-        else if (_powerOffOnce.value.isEmpty() && !_config.value.backgroundMonitoring) MonitorService.update(ctx, false)
+        // Le service au premier plan garde la surveillance active écran éteint jusqu'à la coupure
+        refreshService()
     }
     /** Fichier envoyé par l'application : nombre de couches et durée estimée, connus au tranchage.
      *  Sert quand l'imprimante ne les donne pas (TotalLayer = 0, TotalTicks = 0). */
@@ -100,22 +98,58 @@ object MonitorHub {
             watching = true
             PrinterId.entries.forEach { watchTransitions(it) }
         }
-        apply(cfg)
+        apply(cfg) // configuration seulement : les connexions attendent qu'un écran ou le service les demande
+    }
+
+    // ------------------------------------------------------------------ Connexions à la demande
+    // Les imprimantes ne sont contactées que si quelqu'un en a besoin : un écran de l'application
+    // ouvert, ou le service d'arrière-plan pendant une impression. Application quittée sans
+    // impression en cours : plus aucune connexion, plus rien ne tourne.
+    private val users = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+    @Volatile private var running = false
+    private var stopJob: Job? = null
+
+    /** Un écran ou le service a besoin des imprimantes. */
+    @Synchronized
+    fun acquire(tag: String) {
+        users += tag
+        stopJob?.cancel(); stopJob = null
+        if (!running) startClients()
+    }
+
+    /** Plus besoin : connexions coupées quelques secondes plus tard s'il n'y a plus personne. */
+    @Synchronized
+    fun release(tag: String) {
+        users -= tag
+        if (users.isEmpty()) {
+            stopJob?.cancel()
+            stopJob = scope.launch {
+                delay(5_000) // passage d'un écran à l'autre : on ne coupe pas
+                synchronized(this@MonitorHub) { if (users.isEmpty()) stopClients() }
+            }
+        }
     }
 
     @Synchronized
     fun apply(cfg: AppConfig) {
         _config.value = cfg
-        clients.values.forEach { it.stop() }
-        clients.clear()
-        plugClients.clear()
-        plugPoll?.cancel()
+        PrinterId.entries.forEach { id -> printerFlows.getValue(id).update { it.copy(name = cfg.displayName(id)) } }
+        if (running) { stopClients(); startClients() }
+        else PrinterId.entries.forEach { id ->
+            val pc = cfg.printer(id)
+            plugFlows.getValue(id).value = PlugState(configured = cfg.tapoEmail.isNotBlank() && cfg.tapoPassword.isNotBlank() && pc.plugIp.isNotBlank())
+        }
+        refreshService()
+    }
 
+    @Synchronized
+    private fun startClients() {
+        val cfg = _config.value
+        running = true
         val tapoOk = cfg.tapoEmail.isNotBlank() && cfg.tapoPassword.isNotBlank()
         PrinterId.entries.forEach { id ->
             val pc = cfg.printer(id)
             val flow = printerFlows.getValue(id)
-            flow.update { it.copy(name = cfg.displayName(id)) }
             if (pc.ip.isNotBlank()) clients[id] = when (id.type) {
                 PrinterType.ELEGOO_CC -> ElegooSdcpClient(pc.ip, pc.cameraUrl, flow, wsHttp, scope)
                 PrinterType.CREALITY_K1 -> CrealityK1Client(pc.ip, pc.cameraUrl, flow, wsHttp, scope)
@@ -134,6 +168,58 @@ object MonitorHub {
             }
         }
     }
+
+    @Synchronized
+    private fun stopClients() {
+        running = false
+        clients.values.forEach { it.stop() }
+        clients.clear()
+        plugClients.clear()
+        plugPoll?.cancel(); plugPoll = null
+    }
+
+    // ------------------------------------------------------------------ Service d'arrière-plan
+    // Il ne tourne que pendant une impression (ou une extinction automatique en attente),
+    // puis s'arrête seul : plus de notification permanente ni de recherche des imprimantes.
+    @Volatile private var serviceOn = false
+    private var serviceCheck: Job? = null
+    @Volatile private var graceUntil = 0L
+
+    private fun printing() = PrinterId.entries.any {
+        val st = printerFlows.getValue(it).value.status
+        st == PrintStatus.PRINTING || st == PrintStatus.PAUSED
+    }
+    private fun serviceNeeded() = _config.value.backgroundMonitoring &&
+        (printing() || _powerOffOnce.value.isNotEmpty() || autoOffJobs.values.any { it.isActive } || System.currentTimeMillis() < graceUntil)
+
+    /** Une impression vient d'être lancée depuis l'application : surveillance jusqu'à la fin. */
+    fun printLaunched() {
+        graceUntil = System.currentTimeMillis() + 5 * 60_000L // le temps que l'imprimante passe « en impression »
+        refreshService()
+    }
+
+    /** Démarre ou arrête le service selon les impressions en cours. */
+    fun refreshService() {
+        val ctx = appContextOrNull() ?: return
+        if (serviceNeeded()) {
+            if (!serviceOn) {
+                serviceOn = true
+                try { MonitorService.update(ctx, true) } catch (_: Exception) { serviceOn = false } // démarrage refusé en arrière-plan
+            }
+        } else if (serviceOn) {
+            serviceOn = false
+            try { MonitorService.update(ctx, false) } catch (_: Exception) { }
+        }
+    }
+
+    /** Appelé par le service : vérifie chaque minute s'il est encore utile. */
+    internal fun serviceStarted() {
+        serviceOn = true
+        if (graceUntil < System.currentTimeMillis()) graceUntil = System.currentTimeMillis() + 2 * 60_000L // relancé par Android : le temps de relire l'état
+        serviceCheck?.cancel()
+        serviceCheck = scope.launch { while (isActive) { delay(60_000); refreshService() } }
+    }
+    internal fun serviceStopped() { serviceOn = false; serviceCheck?.cancel(); serviceCheck = null }
 
     fun pause(id: PrinterId) = clients[id]?.pause()
     fun resume(id: PrinterId) = clients[id]?.resume()
@@ -210,6 +296,7 @@ object MonitorHub {
                 PrintStatus.PRINTING -> autoOffJobs.remove(id)?.cancel()
                 else -> Unit
             }
+            refreshService() // impression commencée ou finie (extinction en attente comprise) : service démarré / arrêté
         }
     }
 
@@ -238,6 +325,8 @@ object MonitorHub {
                 Notifier.alert(appContext, id, "${cooled.name} : coupure impossible", "La prise Tapo n'a pas répondu : éteignez l'imprimante à la main")
             }
             if (id in _powerOffOnce.value) armPowerOff(id, false)
+            autoOffJobs.remove(id)
+            refreshService()
         }
     }
 }

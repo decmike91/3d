@@ -49,7 +49,6 @@ object MonitorBridge {
         val next = cfg.with(free, cfg.printer(free).copy(ip = clean, name = name.trim()))
         ConfigStore.save(ctx, next)
         MonitorHub.apply(next)
-        if (next.backgroundMonitoring) MonitorService.update(ctx, true)
         return next.displayName(free)
     }
 }

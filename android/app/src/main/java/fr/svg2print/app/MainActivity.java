@@ -26,4 +26,18 @@ public class MainActivity extends BridgeActivity {
             });
         }
     }
+
+    // L'application affiche l'état des imprimantes (libre / en impression) : connexions seulement
+    // tant qu'elle est à l'écran. Quittée, plus rien ne tourne, sauf pendant une impression.
+    @Override
+    public void onStart() {
+        super.onStart();
+        fr.printmonitor.MonitorHub.INSTANCE.acquire("app");
+    }
+
+    @Override
+    public void onStop() {
+        fr.printmonitor.MonitorHub.INSTANCE.release("app");
+        super.onStop();
+    }
 }

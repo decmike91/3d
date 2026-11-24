@@ -97,7 +97,7 @@ fun SettingsScreen(onDone: () -> Unit) {
             )
 
             Section("Notifications")
-            Toggle("Surveillance en arrière-plan (alertes écran éteint)", c.backgroundMonitoring) {
+            Toggle("Pendant une impression, continuer la surveillance en arrière-plan (alertes, extinction). Arrêt automatique à la fin.", c.backgroundMonitoring) {
                 c = c.copy(backgroundMonitoring = it)
             }
 
@@ -105,7 +105,6 @@ fun SettingsScreen(onDone: () -> Unit) {
                 onClick = {
                     ConfigStore.save(ctx, c)
                     MonitorHub.apply(ConfigStore.load(ctx))
-                    MonitorService.update(ctx, c.backgroundMonitoring && !c.isEmpty)
                     onDone()
                 },
                 modifier = Modifier.fillMaxWidth(),

@@ -131,6 +131,8 @@ public class PrinterNetPlugin extends Plugin {
         String ip = call.getString("ip", "").replaceAll("[\\s\\p{Z}\\p{Cf}]", "");
         fr.printmonitor.MonitorHub.INSTANCE.noteSentJob(getContext(), ip, call.getString("file", ""),
             call.getInt("layers", 0), (long) Math.round(call.getDouble("seconds", 0.0)));
+        // Impression lancée depuis l'appli : surveillance en arrière-plan jusqu'à la fin, puis arrêt
+        fr.printmonitor.MonitorHub.INSTANCE.printLaunched();
         call.resolve();
     }
 

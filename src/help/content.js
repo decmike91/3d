@@ -520,7 +520,7 @@ ${tip('Pas d’image : vérifiez l’adresse IP et le compte de la caméra (pas 
 <tr><td>Extinction automatique</td><td>Voir <a href="#mon-tapo" data-topic="mon-tapo">@@mon-tapo@@</a>.</td></tr>
 <tr><td>URL caméra</td><td>À remplir seulement si l'adresse par défaut ne fonctionne pas (ex. K1 rootée : <code>http://IP:4408/webcam/?action=stream</code>).</td></tr>
 <tr><td>E-mail / mot de passe Tapo</td><td>Identifiants du compte Tapo, gardés sur le téléphone uniquement.</td></tr>
-<tr><td>Surveillance en arrière-plan</td><td>Garde les connexions ouvertes écran éteint pour recevoir les alertes.</td></tr>
+<tr><td>Surveillance en arrière-plan</td><td>Pendant une impression lancée depuis l'application (ou vue en cours dans Surveiller), garde la liaison avec l'imprimante écran éteint pour les alertes et l'extinction automatique. Une notification « SVG2Print : impression en cours » l'indique ; elle s'arrête seule à la fin de l'impression et après l'extinction. Application quittée sans impression en cours : plus aucune connexion aux imprimantes.</td></tr>
 </table>
 ${tip('Pour les alertes écran éteint : Paramètres Android › Applis › SVG2Print › Batterie → Non restreinte.')}`,
   },
