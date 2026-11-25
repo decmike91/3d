@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Fabrique Guides3D.html : un seul fichier, images incluses (réduites), à ouvrir dans n'importe quel navigateur.
-Usage : python3 tools/single.py web/index.html Guides3D.html   (après « node build.mjs » ; nécessite Pillow)
+Usage (dans fiches-3d/) : python3 guides/tools/single.py web/guides/index.html Guides3D.html   (après « node build.mjs » ; nécessite Pillow)
 """
 import base64, glob, io, json, os, sys
 from PIL import Image

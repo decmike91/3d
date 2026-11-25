@@ -1,6 +1,6 @@
-# Guides 3D : lecture, sommaires et recherche
+# Guides illustrés (rubrique 7 des Fiches 3D)
 
-Les trois guides PDF réunis dans une appli de consultation **sans connexion** :
+Les trois guides PDF, consultables **sans connexion** dans l'appli Fiches 3D (menu, rubrique 7, ou lien sur la page d'accueil) :
 
 | Guide | Pages | Sommaire |
 |---|---|---|
@@ -15,11 +15,11 @@ Les trois guides PDF réunis dans une appli de consultation **sans connexion** :
 
 ## Télécharger
 
-Page **Releases** du dépôt, version « Guides 3D » (tag `guides-3d`), mise à jour à chaque modification :
+Page **Releases** du dépôt, version « Fiches impression 3D » (tag `fiches-3d`) :
 
-- `Guides3D-android.apk` : appli Android (Android 7 et plus, aucune permission).
-- `Guides3D.html` : un seul fichier à ouvrir dans n'importe quel navigateur (images incluses, environ 55 Mo).
-- `Guides3D-site.zip` : site complet installable (PWA) à héberger, par exemple sur GitHub Pages.
+- `Fiches3D-android.apk` : l'appli Fiches 3D, guides compris.
+- `Guides3D.html` : les 3 guides en un seul fichier à ouvrir dans n'importe quel navigateur (images incluses, environ 55 Mo).
+- `Fiches3D-site.zip` : fiches et guides, en site installable (PWA).
 
 ## Comment c'est fait
 
@@ -29,30 +29,27 @@ Les PDF sont des pages en image. Chaque page a été convertie en WebP (`data/pa
 |---|---|
 | `data/` | Images des pages, texte reconnu, sommaires |
 | `src/index.html` | Application (mise en page, lecteur, recherche) |
-| `build.mjs` | Construit `web/` (site + manifeste + service worker), sans dépendance |
+| `build.mjs` | Construit `../web/guides/`, sans dépendance (appelé par `../build.mjs`) |
 | `tools/single.py` | Fabrique `Guides3D.html` (fichier unique) |
 | `tools/ocr.sh`, `tools/prepare.py` | Régénèrent `data/` à partir des PDF |
-| `android/` | Appli Android (WebView sur le site embarqué), id `fr.guides3d.app` |
 
 ## Construire
 
 ```bash
-cd guides-3d
-node build.mjs                                       # → web/ (ouvrir web/index.html)
-python3 tools/single.py web/index.html Guides3D.html # fichier unique (Pillow)
-cd android && ./gradlew assembleRelease              # APK (JDK 17+, SDK Android API 36)
+cd fiches-3d
+node build.mjs                                                          # fiches + guides → web/ (ouvrir web/guides/index.html)
+python3 guides/tools/single.py web/guides/index.html Guides3D.html      # fichier unique (Pillow)
 ```
 
-Pousser sur `main` relance la compilation GitHub (`.github/workflows/guides-3d.yml`) : site, fichier unique et APK signé, publiés dans Releases.
-L'APK est signé avec la clé fixe `android/guides3d.keystore` (mot de passe `guides3d`), pour que chaque version s'installe par-dessus la précédente. Pour une autre clé : variables `GUIDES_KEYSTORE_FILE`, `GUIDES_KEYSTORE_PASSWORD`, `GUIDES_KEY_ALIAS`, `GUIDES_KEY_PASSWORD`.
+L'APK et la release sont produits par `.github/workflows/fiches-3d.yml`, comme pour les fiches.
 
 ## Mettre à jour un guide
 
 Remplacer un PDF demande de refaire les images et l'OCR (Tesseract avec la langue `fra`, poppler-utils, Pillow) :
 
 ```bash
-for p in $(seq 1 200); do OCR_DIR=/tmp/ocr tools/ocr.sh gi Guide_impression_3D_complet_A5.pdf $p; done   # idem cp et fc
-python3 tools/prepare.py --pdf-dir <dossier des PDF> --ocr-dir /tmp/ocr --pages
+for p in $(seq 1 200); do OCR_DIR=/tmp/ocr guides/tools/ocr.sh gi Guide_impression_3D_complet_A5.pdf $p; done   # idem cp et fc
+python3 guides/tools/prepare.py --pdf-dir <dossier des PDF> --ocr-dir /tmp/ocr --pages
 ```
 
-Les titres de page et les sections se corrigent dans `tools/prepare.py`.
+Les titres de page et les sections se corrigent dans `guides/tools/prepare.py`.

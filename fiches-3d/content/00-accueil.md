@@ -19,6 +19,14 @@ Ces fiches couvrent les deux trancheurs (« slicers ») actuels des marques Crea
 
 **Règle d'or du débutant** : partez toujours du profil fourni par le logiciel pour votre imprimante et votre filament, ne changez qu'**un seul** paramètre à la fois, et notez ce que vous avez changé.
 
+## Guides illustrés
+
+Trois guides en pages illustrées complètent ces fiches, avec leur sommaire et une recherche dans tout le texte : **[ouvrir les guides illustrés](guides/index.html)** (rubrique 7 du menu).
+
+- **Creality Print en fiches** : 80 fiches classées par tâche (préparer, régler, supports, première couche, multicolore, diagnostic).
+- **FreeCAD pas à pas** : 100 fiches visuelles, de la première esquisse à l'export pour l'impression, plus les bonus.
+- **Guide impression 3D complet** : réglages de l'imprimante, 20 filaments, 50 projets, 26 erreurs, supports et checklists.
+
 ## Vocabulaire de base
 
 Ces mots reviennent dans toutes les fiches. Gardez ce tableau sous la main.

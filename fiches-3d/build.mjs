@@ -82,3 +82,6 @@ self.addEventListener('fetch', (e) => {
 });
 `);
 console.log(`web/ construit (version ${version}, ${(page.length / 1024).toFixed(0)} Kio)`);
+
+// Guides illustrés (3 guides PDF : lecture, sommaires, recherche) → web/guides/
+await import('./guides/build.mjs');
