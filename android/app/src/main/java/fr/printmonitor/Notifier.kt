@@ -18,6 +18,8 @@ object Notifier {
     const val CH_ALERTS = "alerts"
     const val CH_SERVICE = "service"
     const val SERVICE_ID = 1
+    /** Numéro unique par alerte : deux alertes ne se remplacent plus (ex. « terminée » puis « prise coupée »). */
+    private val nextId = java.util.concurrent.atomic.AtomicInteger(1000)
 
     fun createChannels(ctx: Context) {
         val nm = ctx.getSystemService(NotificationManager::class.java)
@@ -46,7 +48,7 @@ object Notifier {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
-        NotificationManagerCompat.from(ctx).notify(100 + id.ordinal * 10 + (System.currentTimeMillis() % 10).toInt(), n)
+        NotificationManagerCompat.from(ctx).notify(nextId.getAndIncrement(), n)
     }
 
     fun serviceNotification(ctx: Context): Notification =

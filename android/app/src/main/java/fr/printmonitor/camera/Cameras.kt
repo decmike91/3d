@@ -47,12 +47,14 @@ object CameraStore {
                 val pa = o.optJSONArray("presets") ?: JSONArray()
                 TapoCam(
                     name = o.optString("name"), ip = o.optString("ip"), user = o.optString("user"),
-                    password = o.optString("password"), hd = o.optBoolean("hd", false),
+                    password = fr.printmonitor.data.SecretBox.decrypt(o.optString("password")), hd = o.optBoolean("hd", false),
                     presets = List(pa.length()) { k -> pa.getJSONObject(k).let { Preset(it.optString("token"), it.optString("name")) } },
                 )
             }
         } catch (_: Exception) { List(SLOTS) { TapoCam() } }
         _cams.value = list
+        // Ancienne version : mots de passe en clair → réenregistrés chiffrés
+        if (raw != null && Regex("\"password\":\"(?!enc1:)[^\"]+\"").containsMatchIn(raw)) save(ctx, list)
         return list
     }
 
@@ -60,8 +62,8 @@ object CameraStore {
         val a = JSONArray()
         list.take(SLOTS).forEach { c ->
             a.put(JSONObject().apply {
-                put("name", c.name.trim()); put("ip", c.ip.trim()); put("user", c.user.trim())
-                put("password", c.password); put("hd", c.hd)
+                put("name", c.name.trim()); put("ip", fr.printmonitor.data.sanitizeHost(c.ip)); put("user", c.user.trim())
+                put("password", fr.printmonitor.data.SecretBox.encrypt(c.password)); put("hd", c.hd)
                 put("presets", JSONArray().apply { c.presets.forEach { p -> put(JSONObject().put("token", p.token).put("name", p.name)) } })
             })
         }

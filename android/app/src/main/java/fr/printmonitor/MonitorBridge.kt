@@ -41,7 +41,8 @@ object MonitorBridge {
      */
     @JvmStatic
     fun ensurePrinter(ctx: Context, ip: String, modelKey: String, name: String): String? {
-        val clean = ip.trim()
+        val clean = fr.printmonitor.data.sanitizeHost(ip)
+        if (clean.isEmpty()) return null
         MonitorHub.findByIp(clean)?.let { return MonitorHub.config.value.displayName(it) }
         val type = if (modelKey == "k1") PrinterType.CREALITY_K1 else PrinterType.ELEGOO_CC
         val cfg = ConfigStore.load(ctx)

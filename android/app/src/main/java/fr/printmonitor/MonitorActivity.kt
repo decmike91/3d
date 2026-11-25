@@ -40,7 +40,10 @@ class MonitorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (Build.VERSION.SDK_INT >= 33) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (savedInstanceState == null && Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) notifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
 
 
         // Retour système : revenir à l'application (et non la fermer)
