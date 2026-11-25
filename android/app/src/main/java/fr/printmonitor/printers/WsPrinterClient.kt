@@ -43,6 +43,7 @@ abstract class WsPrinterClient(
     protected open fun keepAlive() {}
 
     @Volatile private var ws: WebSocket? = null
+    @Volatile private var currentAlive: AtomicBoolean? = null
     private var job: Job? = null
 
     override fun start() {
@@ -52,15 +53,29 @@ abstract class WsPrinterClient(
             while (isActive) {
                 val closed = CompletableDeferred<Unit>()
                 val opened = AtomicBoolean(false)
+                val alive = AtomicBoolean(true) // false après arrêt : trames tardives ignorées
+                currentAlive = alive
+                // Adresse invalide (ex. « 192.168.1.50:3030 ») : message à l'écran au lieu d'un plantage
+                val request = try {
+                    Request.Builder().url(url).build()
+                } catch (e: IllegalArgumentException) {
+                    target.update { it.copy(status = PrintStatus.OFFLINE, message = "Adresse de l'imprimante invalide : vérifiez-la dans Réglages") }
+                    return@launch
+                }
                 val socket = http.newWebSocket(
-                    Request.Builder().url(url).build(),
+                    request,
                     object : WebSocketListener() {
                         override fun onOpen(webSocket: WebSocket, response: Response) {
+                            if (!alive.get()) return
                             opened.set(true)
-                            target.update { if (it.status == PrintStatus.OFFLINE) it.copy(status = PrintStatus.IDLE, message = null) else it }
+                            // L'état reste « Hors ligne » jusqu'au premier statut réel de l'imprimante :
+                            // un faux « Inactive » ferait croire que l'impression n'était plus en cours
+                            // (fin d'impression manquée après une coupure réseau).
+                            target.update { it.copy(message = null) }
                             onOpened()
                         }
                         override fun onMessage(webSocket: WebSocket, text: String) {
+                            if (!alive.get()) return
                             try { onText(text) } catch (_: Exception) { /* trame inattendue : ignorée */ }
                         }
                         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -76,11 +91,17 @@ abstract class WsPrinterClient(
                     })
                 ws = socket
                 val ka = launch {
-                    while (isActive) { delay(10_000); keepAlive() }
+                    var ticks = 0
+                    while (isActive) {
+                        delay(10_000); keepAlive(); ticks++
+                        // Connectée mais aucun statut reçu au bout de 20 s : joignable, état inconnu
+                        if (ticks == 2 && opened.get()) target.update { if (it.status == PrintStatus.OFFLINE) it.copy(status = PrintStatus.IDLE) else it }
+                    }
                 }
                 try {
                     closed.await()
                 } finally {
+                    alive.set(false)
                     ka.cancel()
                     socket.cancel()
                     ws = null
@@ -94,10 +115,13 @@ abstract class WsPrinterClient(
     }
 
     override fun stop() {
+        currentAlive?.set(false)
         job?.cancel()
         job = null
         ws?.close(1000, null)
         ws = null
+        // Plus de connexion : l'état affiché ne doit pas rester figé (« Impression » périmée)
+        target.update { it.copy(status = PrintStatus.OFFLINE) }
     }
 
     protected fun send(text: String): Boolean = ws?.send(text) ?: false

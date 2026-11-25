@@ -78,7 +78,7 @@ public class PrinterNetPlugin extends Plugin {
                     OutputStream os = conn.getOutputStream();
                     int off = 0;
                     while (off < body.length) {
-                        if (!reqId.isEmpty() && CANCELLED.remove(reqId)) throw new java.io.IOException("annulé");
+                        if (!reqId.isEmpty() && CANCELLED.remove(reqId) != null) throw new java.io.IOException("annulé");
                         int n = Math.min(64 * 1024, body.length - off);
                         os.write(body, off, n);
                         off += n;
@@ -113,13 +113,17 @@ public class PrinterNetPlugin extends Plugin {
     }
 
     private static final java.util.concurrent.ConcurrentHashMap<String, HttpURLConnection> INFLIGHT = new java.util.concurrent.ConcurrentHashMap<>();
-    private static final java.util.Set<String> CANCELLED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** Annulations demandées (identifiant → heure). Purgées après une minute : une annulation qui arrive
+     *  après la fin de la requête ne reste plus en mémoire indéfiniment. */
+    private static final java.util.concurrent.ConcurrentHashMap<String, Long> CANCELLED = new java.util.concurrent.ConcurrentHashMap<>();
 
     /** Annule une requête en cours (envoi vers l'imprimante interrompu par l'utilisateur). */
     @PluginMethod
     public void cancelRequest(final PluginCall call) {
         final String id = call.getString("id", "");
-        CANCELLED.add(id);
+        final long now = System.currentTimeMillis();
+        CANCELLED.values().removeIf(t -> now - t > 60_000L);
+        if (!id.isEmpty()) CANCELLED.put(id, now);
         final HttpURLConnection c = INFLIGHT.get(id);
         if (c != null) new Thread(() -> { try { c.disconnect(); } catch (Exception ignored) { } }).start();
         call.resolve();
