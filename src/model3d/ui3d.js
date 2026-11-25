@@ -537,6 +537,7 @@ export function initModel3D(ctx) {
       sliced = { gcode: post.gcode, stats: post.stats, tools: prep.tools, preview: pv, printer: printer() };
       const s = post.stats;
       $('#m3Layers').textContent = `${s.layers} · ${st.job.layerHeight} mm`;
+      if (pv.simplified) log(`Aperçu allégé (modèle très détaillé) : toutes les couches sont affichées, avec une partie du remplissage seulement. Le G-code, lui, est complet (${s.layers} couches).`);
       $('#m3Time').textContent = fmtTime(s.timeSec);
       $('#m3Fil').textContent = `${s.grams.toFixed(0)} g`;
       if (s.perTool.length > 1) {

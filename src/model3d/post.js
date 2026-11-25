@@ -111,6 +111,10 @@ export function postProcess(raw, ctx) {
   const grams = lenMM.map((l, k) => (l * filArea * tools[k].fil.density) / 1000);
   const totalLen = lenMM.reduce((a, b) => a + b, 0);
   const totalG = grams.reduce((a, b) => a + b, 0);
+  // Sécurité : un G-code coupé (mémoire insuffisante pendant le tranchage…) n'est jamais envoyé
+  if (layerCount && layer + 1 < layerCount - 2) {
+    throw new Error(`Tranchage incomplet : ${layer + 1} couches produites sur ${layerCount}. Fermez les autres applications ou réduisez le modèle, puis tranchez à nouveau.`);
+  }
   const layers = layerCount || layer + 1;
 
   const head = [];
@@ -201,40 +205,65 @@ const flushLength = (vol) => vol / (Math.PI * 0.875 * 0.875);
 export const KINDS = { 'WALL-OUTER': 1, 'WALL-INNER': 2, FILL: 3, SKIN: 4, SUPPORT: 5, 'SUPPORT-INTERFACE': 6, SKIRT: 7, 'PRIME-TOWER': 8 };
 export function parsePreview(gcode, maxSegments = 2500000) {
   const lines = gcode.split('\n');
-  let x = 0, y = 0, z = 0, kind = 0, tool = 0, inPrint = false;
-  const pos = [], kinds = [], tls = [], layers = [];
+  const isMove = (l) => l.charCodeAt(0) === 71 && l[1] === '1' && l[2] === ' ' && l.indexOf(' E') > 0;
+  // 1er passage : nombre de segments par couche. Un grand modèle (des millions de segments)
+  // garde ainsi TOUTES ses couches dans l'aperçu, simplement allégées, au lieu d'être coupé.
+  const outer = [], other = [];
+  let t1 = 0;
+  for (const l of lines) {
+    if (l.charCodeAt(0) === 59) {
+      if (l.startsWith(';LAYER:')) { outer.push(0); other.push(0); } else if (l.startsWith(';TYPE:')) t1 = KINDS[l.slice(6).trim()] || 0;
+    } else if (outer.length && isMove(l)) {
+      if (t1 === 1) outer[outer.length - 1]++; else other[other.length - 1]++;
+    }
+  }
+  const L = Math.max(1, outer.length);
+  const outerTotal = outer.reduce((a, b) => a + b, 0);
+  const total = outerTotal + other.reduce((a, b) => a + b, 0);
+  // Parois externes toujours gardées ; le reste réparti également entre les couches
+  const budget = Math.max(200, Math.floor((maxSegments - outerTotal) / L));
+  const strides = other.map((m) => (total <= maxSegments ? 1 : Math.max(1, Math.ceil(m / budget))));
+  const cap = outer.reduce((a, o, i) => a + o + Math.ceil(other[i] / strides[i]), 0) + 16;
+  const pos = new Float32Array(cap * 6), kind = new Uint8Array(cap), tool8 = new Uint8Array(cap);
+  let n = 0;
+  let x = 0, y = 0, z = 0, k = 0, tool = 0, inPrint = false, li = -1, seg = 0, stride = 1;
+  const layers = [];
   let cur = null;
-  const toolOfSlot = new Map();
-  for (const raw of lines) {
-    const l = raw;
+  for (const l of lines) {
     const c = l.charCodeAt(0);
     if (c === 59) { // ';'
       if (l.startsWith(';LAYER:')) {
         inPrint = true;
-        cur = { z, start: kinds.length, count: 0 };
+        li++; seg = 0; stride = strides[li] || 1;
+        cur = { z, start: n, count: 0 };
         layers.push(cur);
-      } else if (l.startsWith(';TYPE:')) kind = KINDS[l.slice(6).trim()] || 0;
+      } else if (l.startsWith(';TYPE:')) k = KINDS[l.slice(6).trim()] || 0;
       continue;
     }
-    if (c === 84 /* T */ && /^T\d+$/.test(l.trim())) {
-      const s = +l.trim().slice(1);
-      if (!toolOfSlot.has(s)) toolOfSlot.set(s, toolOfSlot.size);
-      tool = s; continue;
-    }
+    if (c === 84 /* T */ && /^T\d+$/.test(l.trim())) { tool = +l.trim().slice(1); continue; }
     if (c !== 71 /* G */ || (l[1] !== '0' && l[1] !== '1') || l[2] !== ' ') continue;
     let nx = x, ny = y, nz = z, e = 0;
     const parts = l.split(' ');
-    for (let k = 1; k < parts.length; k++) {
-      const p = parts[k], ch = p.charCodeAt(0);
+    for (let q = 1; q < parts.length; q++) {
+      const p = parts[q], ch = p.charCodeAt(0);
       if (ch === 88) nx = +p.slice(1); else if (ch === 89) ny = +p.slice(1); else if (ch === 90) nz = +p.slice(1); else if (ch === 69) e = +p.slice(1); else if (ch === 59) break;
     }
-    if (inPrint && l[1] === '1' && e > 0 && (nx !== x || ny !== y) && kinds.length < maxSegments) {
-      pos.push(x, y, nz, nx, ny, nz);
-      kinds.push(kind);
-      tls.push(tool);
-      if (cur) { cur.count++; if (nz > cur.z) cur.z = nz; }
+    if (inPrint && l[1] === '1' && e > 0 && (nx !== x || ny !== y) && n < cap) {
+      // Allègement : parois externes toujours gardées, le reste un segment sur « stride »
+      const keep = k === 1 || stride === 1 || seg % stride === 0;
+      if (k !== 1) seg++;
+      if (keep) {
+        const o = n * 6;
+        pos[o] = x; pos[o + 1] = y; pos[o + 2] = nz; pos[o + 3] = nx; pos[o + 4] = ny; pos[o + 5] = nz;
+        kind[n] = k; tool8[n] = tool; n++;
+        if (cur) { cur.count++; if (nz > cur.z) cur.z = nz; }
+      }
     }
     x = nx; y = ny; z = nz;
   }
-  return { layers: layers.filter((L) => L.count > 0), pos: new Float32Array(pos), kind: Uint8Array.from(kinds), tool: Uint8Array.from(tls) };
+  return {
+    layers: layers.filter((L) => L.count > 0),
+    pos: pos.subarray(0, n * 6), kind: kind.subarray(0, n), tool: tool8.subarray(0, n),
+    simplified: total > maxSegments,
+  };
 }

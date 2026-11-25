@@ -103,6 +103,11 @@ function box(x0, y0, z0, x1, y1, z1) {
     }
     const pv = parsePreview(g);
     check(pv.layers.length > 50 && pv.pos.length > 1000, `${printerId} : aperçu ${pv.layers.length} couches, ${pv.kind.length} segments`);
+    // Très gros modèle : l'aperçu est allégé mais garde toutes les couches (avant : coupé à mi-hauteur)
+    const small = parsePreview(g, Math.floor(pv.kind.length / 4));
+    const maxZ = (p) => p.layers[p.layers.length - 1].z;
+    check(small.simplified && small.layers.length === pv.layers.length && maxZ(small) === maxZ(pv) && small.kind.length < pv.kind.length,
+      `${printerId} : aperçu allégé, toutes les couches (${small.layers.length}/${pv.layers.length}, ${small.kind.length} segments)`);
   }
   {
     const P = PRINTERS.cc;
