@@ -58,10 +58,16 @@ fun CameraView(url: String, fallbackUrl: String?, modifier: Modifier = Modifier)
     }
 }
 
-/** Une URL qui n'a pas l'air d'un flux MJPEG est traitée comme une page web (ex. http://IP:8000/). */
+/**
+ * Page web (ex. http://IP:8000/) : adresse sans chemin, ou se terminant par .html/.htm.
+ * Tout le reste est lu comme un flux MJPEG (auparavant, une adresse sans « stream » ni « video »
+ * était prise à tort pour une page web).
+ */
 private fun isWebPage(url: String): Boolean {
-    val u = url.lowercase()
-    return !(u.contains("action=stream") || u.contains("/video") || u.contains("mjpg") || u.contains("mjpeg") || u.contains("stream"))
+    val u = url.lowercase().substringBefore('#')
+    val path = u.substringAfter("://").substringAfter('/', "").substringBefore('?')
+    val hasQuery = u.contains('?')
+    return (path.isEmpty() && !hasQuery) || path.endsWith(".html") || path.endsWith(".htm")
 }
 
 @android.annotation.SuppressLint("SetJavaScriptEnabled")
@@ -96,13 +102,16 @@ fun MjpegView(url: String, modifier: Modifier = Modifier, onFirstFailure: (() ->
 
     LaunchedEffect(url) {
         withContext(Dispatchers.IO) {
+            var failures = 0
             while (isActive) {
                 try {
-                    readStream(url) { frame = it; error = null }
+                    readStream(url) { frame = it; error = null; failures = 0 }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    if (frame == null && onFirstFailure != null) {
+                    failures++
+                    // Bascule sur la page de secours après 3 échecs sans image (et non au premier incident réseau)
+                    if (frame == null && onFirstFailure != null && failures >= 3) {
                         withContext(Dispatchers.Main) { onFirstFailure() }
                         return@withContext
                     }
@@ -131,28 +140,37 @@ fun MjpegView(url: String, modifier: Modifier = Modifier, onFirstFailure: (() ->
     }
 }
 
+/** Taille maximale d'une image : au-delà, flux corrompu (pas de marqueur de fin) → image abandonnée. */
+private const val MAX_FRAME_BYTES = 4 * 1024 * 1024
+
 private suspend fun readStream(url: String, onFrame: (ImageBitmap) -> Unit) {
     val ctx = currentCoroutineContext()
     MonitorHub.streamHttp.newCall(Request.Builder().url(url).build()).execute().use { resp ->
         if (!resp.isSuccessful) throw IllegalStateException("HTTP ${resp.code}")
-        val input = resp.body!!.byteStream().buffered(64 * 1024)
+        val input = resp.body!!.byteStream()
+        val chunk = ByteArray(32 * 1024)
         val buf = ByteArrayOutputStream(256 * 1024)
         var inFrame = false
         var prev = -1
         var lastEmit = 0L
         while (true) {
-            val b = input.read()
-            if (b < 0) break
-            if (!inFrame) {
-                if (prev == 0xFF && b == 0xD8) {
-                    inFrame = true
-                    buf.reset(); buf.write(0xFF); buf.write(0xD8)
-                }
-            } else {
-                buf.write(b)
-                if (prev == 0xFF && b == 0xD9) {
+            ctx.ensureActive()
+            val n = input.read(chunk)
+            if (n < 0) break
+            // Lecture par blocs (et non octet par octet) : bien moins de calcul pour le téléphone
+            var frameStart = if (inFrame) 0 else -1
+            for (i in 0 until n) {
+                val b = chunk[i].toInt() and 0xFF
+                if (!inFrame) {
+                    if (prev == 0xFF && b == 0xD8) {
+                        inFrame = true
+                        buf.reset(); buf.write(0xFF)
+                        frameStart = i
+                    }
+                } else if (prev == 0xFF && b == 0xD9) {
+                    buf.write(chunk, frameStart, i + 1 - frameStart)
                     inFrame = false
-                    ctx.ensureActive()
+                    frameStart = -1
                     val now = System.currentTimeMillis()
                     if (now - lastEmit >= 80) { // ~12 i/s max pour ménager la batterie
                         lastEmit = now
@@ -160,8 +178,12 @@ private suspend fun readStream(url: String, onFrame: (ImageBitmap) -> Unit) {
                         BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { onFrame(it.asImageBitmap()) }
                     }
                 }
+                prev = b
             }
-            prev = b
+            if (inFrame && frameStart >= 0) {
+                buf.write(chunk, frameStart, n - frameStart)
+                if (buf.size() > MAX_FRAME_BYTES) { inFrame = false; buf.reset() }
+            }
         }
     }
 }

@@ -76,7 +76,7 @@ fun SettingsScreen(onDone: () -> Unit) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 )
                 Ip("Adresse IP de la prise Tapo", pc.plugIp) { set(pc.copy(plugIp = it)) }
-                Toggle("Couper la prise après chaque impression (buse < 80 °C)", pc.autoOff) { set(pc.copy(autoOff = it)) }
+                Toggle("Couper la prise après chaque impression (buse < 80 °C). La surveillance continue alors en arrière-plan jusqu'à la coupure.", pc.autoOff) { set(pc.copy(autoOff = it)) }
             }
 
             Section("Compte Tapo")
@@ -97,7 +97,7 @@ fun SettingsScreen(onDone: () -> Unit) {
             )
 
             Section("Notifications")
-            Toggle("Pendant une impression, continuer la surveillance en arrière-plan (alertes, extinction). Arrêt automatique à la fin.", c.backgroundMonitoring) {
+            Toggle("Pendant une impression, continuer la surveillance en arrière-plan (alertes). Arrêt automatique à la fin. Toujours actif quand une extinction de prise est prévue.", c.backgroundMonitoring) {
                 c = c.copy(backgroundMonitoring = it)
             }
 
@@ -116,9 +116,12 @@ fun SettingsScreen(onDone: () -> Unit) {
 @Composable private fun Section(title: String) =
     Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
 
+/** Adresse seule (IP ou nom d'hôte) : ni « http:// », ni port, ni espace — sinon la connexion échouait. */
 @Composable private fun Ip(label: String, value: String, onChange: (String) -> Unit) =
     OutlinedTextField(
-        value, onChange, label = { Text(label) }, placeholder = { Text("192.168.1.50") },
+        value, { v -> onChange(v.filter { it.isLetterOrDigit() && it.code < 128 || it == '.' || it == '-' }) },
+        label = { Text(label) }, placeholder = { Text("192.168.1.50") },
+        supportingText = { Text("Adresse seule, sans http:// ni numéro de port") },
         singleLine = true, modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
     )

@@ -11,6 +11,7 @@ import fr.printmonitor.printers.CrealityK1Client
 import fr.printmonitor.printers.ElegooSdcpClient
 import fr.printmonitor.printers.PrinterClient
 import fr.printmonitor.tapo.TapoKlapClient
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,7 +31,10 @@ import java.util.concurrent.TimeUnit
 
 /** Point central : connexions imprimantes, prises Tapo, alertes et extinction automatique. */
 object MonitorHub {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    // Une erreur imprévue dans une connexion est journalisée au lieu de faire planter l'application
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineExceptionHandler { _, e ->
+        android.util.Log.e("PrintMonitor", "Erreur dans la surveillance", e)
+    })
     private lateinit var appContext: Context
 
     val wsHttp: OkHttpClient = OkHttpClient.Builder()
@@ -107,6 +111,8 @@ object MonitorHub {
     // impression en cours : plus aucune connexion, plus rien ne tourne.
     private val users = java.util.Collections.synchronizedSet(mutableSetOf<String>())
     @Volatile private var running = false
+    /** Arrêt volontaire des connexions : le passage « Hors ligne » qui suit n'est pas une panne. */
+    @Volatile private var stoppedAt = 0L
     private var stopJob: Job? = null
 
     /** Un écran ou le service a besoin des imprimantes. */
@@ -134,7 +140,11 @@ object MonitorHub {
     fun apply(cfg: AppConfig) {
         _config.value = cfg
         PrinterId.entries.forEach { id -> printerFlows.getValue(id).update { it.copy(name = cfg.displayName(id)) } }
-        if (running) { stopClients(); startClients() }
+        if (running) {
+            // Redémarrage des connexions pendant une impression : le service d'arrière-plan reste actif
+            if (printing()) graceUntil = maxOf(graceUntil, System.currentTimeMillis() + 2 * 60_000L)
+            stopClients(); startClients()
+        }
         else PrinterId.entries.forEach { id ->
             val pc = cfg.printer(id)
             plugFlows.getValue(id).value = PlugState(configured = cfg.tapoEmail.isNotBlank() && cfg.tapoPassword.isNotBlank() && pc.plugIp.isNotBlank())
@@ -172,6 +182,7 @@ object MonitorHub {
     @Synchronized
     private fun stopClients() {
         running = false
+        stoppedAt = System.currentTimeMillis()
         clients.values.forEach { it.stop() }
         clients.clear()
         plugClients.clear()
@@ -189,8 +200,23 @@ object MonitorHub {
         val st = printerFlows.getValue(it).value.status
         st == PrintStatus.PRINTING || st == PrintStatus.PAUSED
     }
-    private fun serviceNeeded() = _config.value.backgroundMonitoring &&
-        (printing() || _powerOffOnce.value.isNotEmpty() || autoOffJobs.values.any { it.isActive } || System.currentTimeMillis() < graceUntil)
+    /** Une coupure de prise est attendue : il faut suivre l'imprimante jusqu'au bout, même application quittée. */
+    private fun powerOffPending() = _powerOffOnce.value.isNotEmpty() || autoOffJobs.values.any { it.isActive } ||
+        PrinterId.entries.any {
+            val st = printerFlows.getValue(it).value.status
+            (st == PrintStatus.PRINTING || st == PrintStatus.PAUSED) && _config.value.printer(it).autoOff && plugClients.containsKey(it)
+        }
+
+    // L'extinction automatique force la surveillance en arrière-plan, même si l'option est désactivée :
+    // sans elle, la coupure demandée échouerait sans prévenir une fois l'application quittée.
+    private fun serviceNeeded(): Boolean {
+        val cfg = _config.value
+        val autoOffConfigured = PrinterId.entries.any { cfg.printer(it).autoOff && cfg.printer(it).plugIp.isNotBlank() }
+        val inGrace = System.currentTimeMillis() < graceUntil
+        return powerOffPending() ||
+            (cfg.backgroundMonitoring && printing()) ||
+            (inGrace && (cfg.backgroundMonitoring || autoOffConfigured))
+    }
 
     /** Une impression vient d'être lancée depuis l'application : surveillance jusqu'à la fin. */
     fun printLaunched() {
@@ -198,9 +224,15 @@ object MonitorHub {
         refreshService()
     }
 
+    private val serviceLock = Any()
+
     /** Démarre ou arrête le service selon les impressions en cours. */
     fun refreshService() {
         val ctx = appContextOrNull() ?: return
+        synchronized(serviceLock) { refreshServiceLocked(ctx) }
+    }
+
+    private fun refreshServiceLocked(ctx: Context) {
         if (serviceNeeded()) {
             if (!serviceOn) {
                 serviceOn = true
@@ -213,13 +245,13 @@ object MonitorHub {
     }
 
     /** Appelé par le service : vérifie chaque minute s'il est encore utile. */
-    internal fun serviceStarted() {
+    internal fun serviceStarted() = synchronized(serviceLock) {
         serviceOn = true
         if (graceUntil < System.currentTimeMillis()) graceUntil = System.currentTimeMillis() + 2 * 60_000L // relancé par Android : le temps de relire l'état
         serviceCheck?.cancel()
         serviceCheck = scope.launch { while (isActive) { delay(60_000); refreshService() } }
     }
-    internal fun serviceStopped() { serviceOn = false; serviceCheck?.cancel(); serviceCheck = null }
+    internal fun serviceStopped() = synchronized(serviceLock) { serviceOn = false; serviceCheck?.cancel(); serviceCheck = null }
 
     fun pause(id: PrinterId) = clients[id]?.pause()
     fun resume(id: PrinterId) = clients[id]?.resume()
@@ -265,6 +297,9 @@ object MonitorHub {
         var prev: PrintStatus? = null
         var prevRunout: Boolean? = null
         var prevHint: String? = null
+        // Impression en cours au moment où la connexion a été perdue : si l'imprimante revient
+        // « terminée », c'est bien la fin de CETTE impression (alerte et extinction quand même).
+        var activeBeforeOffline = false
         printerFlows.getValue(id).collect { s ->
             if (s.filamentRunout == true && prevRunout == false) {
                 Notifier.alert(appContext, id, "${s.name} : fin de filament", "Recharger le filament puis reprendre l'impression")
@@ -277,7 +312,9 @@ object MonitorHub {
             val p = prev
             prev = s.status
             if (p == null || p == s.status) return@collect
-            val wasActive = p == PrintStatus.PRINTING || p == PrintStatus.PAUSED
+            val wasActive = p == PrintStatus.PRINTING || p == PrintStatus.PAUSED ||
+                (p == PrintStatus.OFFLINE && activeBeforeOffline)
+            activeBeforeOffline = s.status == PrintStatus.OFFLINE && wasActive
             when (s.status) {
                 PrintStatus.FINISHED -> if (wasActive) {
                     Notifier.alert(appContext, id, "${s.name} : impression terminée", s.fileName ?: "")
@@ -291,7 +328,7 @@ object MonitorHub {
                     // Impression annulée : on ne coupe pas, l'utilisateur intervient sans doute
                     if (id in _powerOffOnce.value) armPowerOff(id, false)
                 }
-                PrintStatus.OFFLINE -> if (wasActive)
+                PrintStatus.OFFLINE -> if (wasActive && System.currentTimeMillis() - stoppedAt > 3_000)
                     Notifier.alert(appContext, id, "${s.name} : connexion perdue", "Pendant une impression — vérifier l'imprimante")
                 PrintStatus.PRINTING -> autoOffJobs.remove(id)?.cancel()
                 else -> Unit
