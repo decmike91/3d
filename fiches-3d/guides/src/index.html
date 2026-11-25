@@ -186,6 +186,7 @@ body.reading .reader{display:flex}
 </svg>
 
 <header class="top">
+  <a class="ib" id="toFiches" href="../index.html#/accueil" aria-label="Retour aux Fiches 3D" title="Retour aux Fiches 3D"><svg><use href="#i-back"/></svg></a>
   <a class="home" href="#/" aria-label="Accueil : les 3 guides"><svg class="logo"><use href="#logo"/></svg><b>Guides 3D</b></a>
   <form class="q" role="search" id="qform">
     <label class="sr" for="qin">Rechercher dans les guides</label>
@@ -603,8 +604,9 @@ addEventListener('keydown', (e) => {
   else if (e.key === '-') setZoom(R.zoom / 1.4);
 });
 
+if (IMG) byId('toFiches').remove();   // fichier unique Guides3D.html : pas de Fiches 3D à côté
 render();
-if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !IMG) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Hors connexion (site) : le service worker des Fiches 3D, enregistré par leur page d'accueil, couvre aussi ce dossier.
 </script>
 </body>
 </html>

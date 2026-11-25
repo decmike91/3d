@@ -17,9 +17,13 @@ jobs:
         with: { node-version: 22, cache: npm, cache-dependency-path: fiches-3d/package-lock.json }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
       - run: npm ci
-      - name: Construire le site HTML (web/)
+      - name: Construire le site HTML (web/, avec les guides illustrés dans web/guides/)
         run: node build.mjs
+      - name: Guides illustrés en fichier HTML unique (images incluses)
+        run: pip install --quiet pillow && python guides/tools/single.py web/guides/index.html Guides3D.html
       - name: Compiler l'APK
         working-directory: fiches-3d/android
         run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
@@ -27,6 +31,7 @@ jobs:
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk Fiches3D-android.apk
           cp web/index.html Fiches3D.html
+          ls -la Fiches3D-android.apk Guides3D.html
           (cd web && zip -qr ../Fiches3D-site.zip .)
           "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs Fiches3D-android.apk | head -3
       - uses: actions/upload-artifact@v4
@@ -35,6 +40,7 @@ jobs:
           path: |
             fiches-3d/Fiches3D-android.apk
             fiches-3d/Fiches3D.html
+            fiches-3d/Guides3D.html
             fiches-3d/Fiches3D-site.zip
       # Page « Releases » : téléchargement direct depuis le téléphone
       - name: Publier (release fiches-3d)
@@ -48,8 +54,10 @@ jobs:
           body: |
             Compilée automatiquement depuis la branche main (${{ github.sha }}).
             - **Android** : installer `Fiches3D-android.apk` (autoriser l'installation d'applications inconnues). Fonctionne sans connexion.
-            - **HTML** : `Fiches3D.html` s'ouvre directement dans un navigateur (fichier unique). `Fiches3D-site.zip` contient la version installable (PWA) à héberger.
+            - **Android** : les guides illustrés (Creality Print en fiches, FreeCAD pas à pas, Guide impression 3D complet) sont dans l'appli : menu, rubrique 7.
+            - **HTML** : `Fiches3D.html` s'ouvre directement dans un navigateur (fichier unique, fiches seules). `Guides3D.html` : les 3 guides illustrés en un seul fichier (environ 55 Mo). `Fiches3D-site.zip` contient tout (fiches + guides), en version installable (PWA) à héberger.
           files: |
             fiches-3d/Fiches3D-android.apk
             fiches-3d/Fiches3D.html
+            fiches-3d/Guides3D.html
             fiches-3d/Fiches3D-site.zip
