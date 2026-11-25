@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guides 3D</title>
+<meta name="description" content="Creality Print en fiches, FreeCAD pas à pas et le Guide impression 3D complet : lecture, sommaires et recherche, sans connexion.">
+<meta name="theme-color" content="#232a31">
+<!--HEAD-->
+<style>
+:root{
+  --bg:#e9ecef; --paper:#f7f8f9; --raise:#ffffff; --ink:#1b2127; --muted:#5d6771; --line:#cfd5db;
+  --bar:#232a31; --bar-ink:#eef1f4; --gold:#c8962e; --mark:rgba(232,176,48,.42); --mark-line:#b07d12;
+  --bk:#3c4a57; --shadow:0 1px 2px rgba(20,28,36,.08),0 6px 18px rgba(20,28,36,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#14181c; --paper:#1b2026; --raise:#222930; --ink:#e7ebef; --muted:#9aa5b0; --line:#323b44;
+  --bar:#0f1317; --bar-ink:#e7ebef; --mark:rgba(232,176,48,.38); --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.35);
+}}
+:root[data-theme=dark]{
+  --bg:#14181c; --paper:#1b2026; --raise:#222930; --ink:#e7ebef; --muted:#9aa5b0; --line:#323b44;
+  --bar:#0f1317; --bar-ink:#e7ebef; --mark:rgba(232,176,48,.38); --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Barre du haut */
+.top{position:sticky;top:0;z-index:20;background:var(--bar);color:var(--bar-ink);
+  display:flex;align-items:center;gap:6px;padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top))}
+.ib{background:none;border:0;width:42px;height:42px;border-radius:10px;display:inline-grid;place-items:center;cursor:pointer;flex:none}
+.ib:hover{background:rgba(255,255,255,.1)}
+.ib svg{width:22px;height:22px}
+.home{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:750;letter-spacing:-.01em;white-space:nowrap;padding-right:6px}
+.home .logo{width:30px;height:30px}
+.home b{display:none}
+@media(min-width:620px){.home b{display:inline}}
+.q{flex:1;min-width:0;position:relative}
+.q input{width:100%;height:40px;border:0;border-radius:10px;background:rgba(255,255,255,.1);color:var(--bar-ink);
+  font-size:16px;padding:0 36px 0 38px}
+.q input::placeholder{color:rgba(238,241,244,.55)}
+.q input:focus{background:rgba(255,255,255,.16);outline:none;box-shadow:0 0 0 2px var(--gold)}
+.q .lens{position:absolute;left:10px;top:10px;width:20px;height:20px;opacity:.65;pointer-events:none}
+.q .clr{position:absolute;right:2px;top:2px;width:36px;height:36px;display:none}
+.q.has .clr{display:grid}
+
+main{max-width:1100px;margin:0 auto;padding:18px 16px 110px}
+h1,h2,h3{line-height:1.2;letter-spacing:-.015em;margin:0}
+
+/* Accueil */
+.intro{padding:12px 0 6px}
+.intro h1{font-size:clamp(1.7rem,4.6vw,2.6rem);font-weight:800;max-width:20ch}
+.intro p{color:var(--muted);margin:.5rem 0 0;max-width:62ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}
+.chip{border:1px solid var(--line);background:var(--raise);border-radius:999px;padding:6px 13px;font-size:.92rem;cursor:pointer}
+.chip:hover{border-color:var(--gold)}
+.shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,3vw,28px);margin:26px 0 8px;
+  padding:22px clamp(10px,3vw,28px) 0;border-radius:16px;
+  background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(127,140,152,.09) 5px 6px),var(--paper);
+  border:1px solid var(--line)}
+.book{text-decoration:none;display:flex;flex-direction:column;gap:10px;min-width:0}
+.book .cov{aspect-ratio:1061/1505;border-radius:4px 8px 8px 4px;overflow:hidden;background:var(--line);box-shadow:var(--shadow);
+  border-left:6px solid var(--bk);transition:transform .18s ease}
+.book:hover .cov{transform:translateY(-4px)}
+.book img{width:100%;height:100%;object-fit:cover;display:block}
+.book .meta{padding:0 2px 18px}
+.book h2{font-size:clamp(.95rem,2.4vw,1.2rem);font-weight:750}
+.book small{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
+.book .resume{display:inline-block;margin-top:6px;font-size:.85rem;font-weight:650;color:var(--bk)}
+:root[data-theme=dark] .book .resume{filter:brightness(1.6)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .book .resume{filter:brightness(1.6)}}
+@media(max-width:520px){.shelf{grid-template-columns:1fr;padding-top:14px}.book{flex-direction:row;align-items:center}
+  .book .cov{width:86px;flex:none}.book .meta{padding:0}}
+.blk{margin-top:30px}
+.blk h3{font-size:1.05rem;margin-bottom:10px}
+.empty{color:var(--muted);margin:0}
+
+/* Listes de pages (sommaire, repères, résultats) */
+.rows{list-style:none;margin:0;padding:0}
+.row{display:flex;gap:12px;align-items:center;padding:8px 10px;border-radius:10px;text-decoration:none;min-height:52px}
+.row:hover,.row:focus-visible{background:var(--raise)}
+.row .n{flex:none;width:2.6em;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:.9rem}
+.row .t{flex:1;min-width:0}
+.row .t small{display:block;color:var(--muted);font-size:.82rem}
+.row.cur{background:var(--raise);box-shadow:inset 3px 0 0 var(--bk)}
+.row img{width:40px;height:57px;object-fit:cover;border-radius:3px;flex:none;background:var(--line)}
+
+/* Sommaire d'un livre */
+.bhead{display:flex;gap:18px;align-items:flex-end;margin:6px 0 18px}
+.bhead img{width:96px;border-radius:3px 6px 6px 3px;border-left:5px solid var(--bk);box-shadow:var(--shadow)}
+.bhead h1{font-size:clamp(1.4rem,4vw,2rem);font-weight:800}
+.bhead p{margin:.3rem 0 .7rem;color:var(--muted);max-width:60ch}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;background:var(--bk);color:#fff;border-radius:10px;
+  padding:9px 15px;font-weight:650;text-decoration:none;cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 12px}
+.seg button{border:0;background:none;padding:7px 14px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--bk);color:#fff}
+details.sec{border-top:1px solid var(--line)}
+details.sec>summary{list-style:none;cursor:pointer;padding:12px 4px;display:flex;gap:10px;align-items:baseline;font-weight:700}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);
+  transform:rotate(-45deg);flex:none;transition:transform .15s;position:relative;top:-1px}
+details.sec[open]>summary::before{transform:rotate(45deg)}
+details.sec>summary span{flex:1}
+details.sec>summary small{color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:14px}
+.grid a{text-decoration:none;font-size:.8rem;color:var(--muted)}
+.grid img{width:100%;aspect-ratio:1061/1505;object-fit:cover;border-radius:4px;background:var(--line);box-shadow:var(--shadow);display:block;margin-bottom:4px}
+.grid a.cur img{outline:3px solid var(--bk);outline-offset:2px}
+
+/* Résultats */
+.rhead{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:10px}
+.rhead h1{font-size:1.3rem;font-weight:750;margin-right:auto}
+.filt{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.filt button{border:1px solid var(--line);background:var(--raise);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:.9rem}
+.filt button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.res{display:flex;gap:12px;padding:10px;border-radius:12px;text-decoration:none;align-items:flex-start}
+.res:hover,.res:focus-visible{background:var(--raise)}
+.res img{width:58px;aspect-ratio:1061/1505;object-fit:cover;border-radius:3px;flex:none;background:var(--line);border-left:3px solid var(--bk)}
+.res b{display:block;font-weight:680}
+.res small{color:var(--muted);font-size:.82rem}
+.res p{margin:4px 0 0;font-size:.9rem;color:var(--muted);overflow-wrap:anywhere}
+mark{background:var(--mark);color:inherit;border-radius:2px;padding:0 1px}
+.more{margin:8px 0 0 10px}
+.note{font-size:.82rem;color:var(--muted);margin-top:18px}
+
+/* Lecteur */
+body.reading main,body.reading .top{display:none}
+.reader{display:none;position:fixed;inset:0;z-index:15;flex-direction:column;background:var(--bg)}
+body.reading .reader{display:flex}
+.rtop{background:var(--bar);color:var(--bar-ink);display:flex;align-items:center;gap:4px;padding:6px 6px;padding-top:max(6px,env(safe-area-inset-top))}
+.rtop .ttl{flex:1;min-width:0;line-height:1.25}
+.rtop .ttl b{display:block;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rtop .ttl small{display:block;font-size:.78rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rtop .ib.on{color:var(--gold)}
+.stage{flex:1;overflow:auto;touch-action:pan-x pan-y;overscroll-behavior:contain;position:relative}
+.sheet{position:relative;margin:12px auto;background:#fff;box-shadow:var(--shadow)}
+.sheet img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.hl{position:absolute;background:var(--mark);outline:2px solid var(--mark-line);border-radius:2px;pointer-events:none;mix-blend-mode:multiply}
+.rbar{background:var(--paper);border-top:1px solid var(--line);display:flex;align-items:center;gap:4px;
+  padding:6px 8px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.rbar input[type=range]{flex:1;min-width:60px;accent-color:var(--bk)}
+.rbar .pg{font-variant-numeric:tabular-nums;font-size:.9rem;white-space:nowrap;padding:0 4px;background:none;border:0;cursor:pointer}
+.rbar .ib:hover{background:var(--raise)}
+.rbar .ib:disabled{opacity:.3}
+.zoomv{font-size:.8rem;width:3.2em;text-align:center;color:var(--muted)}
+@media(max-width:480px){.zoomgrp{display:none}}
+.panel{position:fixed;z-index:30;background:var(--paper);box-shadow:var(--shadow);display:none;flex-direction:column}
+.panel.open{display:flex}
+.panel header{display:flex;align-items:center;gap:8px;padding:10px 10px 8px 16px;border-bottom:1px solid var(--line)}
+.panel header h2{font-size:1rem;flex:1}
+.panel .body{overflow:auto;padding:8px 10px 24px}
+#toc{left:0;top:0;bottom:0;width:min(92vw,400px)}
+#txt{left:0;right:0;bottom:0;max-height:55vh;border-radius:14px 14px 0 0}
+#txt .body{padding:8px 16px 28px;font-size:.95rem}
+#txt .body p{margin:0 0 .25em}
+.scrim{display:none;position:fixed;inset:0;z-index:25;background:rgba(10,14,18,.45)}
+.scrim.open{display:block}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;
+  border-radius:10px;font-size:.9rem;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></g></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-toc" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M9 19h6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-star-f" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.8z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-theme" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></g></symbol>
+  <symbol id="i-hl" viewBox="0 0 24 24"><path d="M4 20h7M14.5 4.5l5 5L11 18H6v-5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="logo" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#c8962e"/><path d="M7 9.5 16 6l9 3.5v11L16 26l-9-5.5z" fill="#232a31"/><path d="M7 9.5 16 13l9-3.5M16 13v13" fill="none" stroke="#c8962e" stroke-width="1.6"/><path d="M9.5 15.5l4 2M9.5 18.5l4 2" stroke="#c8962e" stroke-width="1.3" stroke-linecap="round"/></symbol>
+</svg>
+
+<header class="top">
+  <a class="home" href="#/" aria-label="Accueil : les 3 guides"><svg class="logo"><use href="#logo"/></svg><b>Guides 3D</b></a>
+  <form class="q" role="search" id="qform">
+    <label class="sr" for="qin">Rechercher dans les guides</label>
+    <svg class="lens"><use href="#i-search"/></svg>
+    <input id="qin" type="search" autocomplete="off" enterkeyhint="search" placeholder="Rechercher : warping, PETG, esquisse…">
+    <button class="ib clr" type="button" id="qclr" aria-label="Effacer la recherche"><svg><use href="#i-x"/></svg></button>
+  </form>
+  <button class="ib" id="themeBtn" aria-label="Thème clair ou sombre" title="Thème clair ou sombre"><svg><use href="#i-theme"/></svg></button>
+</header>
+
+<main id="view" tabindex="-1"></main>
+
+<section class="reader" id="reader" aria-label="Lecture">
+  <div class="rtop">
+    <a class="ib" id="rBack" href="#/" aria-label="Retour au sommaire"><svg><use href="#i-back"/></svg></a>
+    <div class="ttl"><b id="rTitle"></b><small id="rBook"></small></div>
+    <button class="ib" id="rSearch" aria-label="Rechercher" title="Rechercher"><svg><use href="#i-search"/></svg></button>
+    <button class="ib" id="rHl" aria-label="Afficher le surlignage de la recherche" title="Surlignage"><svg><use href="#i-hl"/></svg></button>
+    <button class="ib" id="rStar" aria-label="Ajouter un repère" title="Repère"><svg><use href="#i-star"/></svg></button>
+    <button class="ib" id="rTxt" aria-label="Texte de la page" title="Texte de la page"><svg><use href="#i-text"/></svg></button>
+    <button class="ib" id="rToc" aria-label="Sommaire du guide" title="Sommaire"><svg><use href="#i-toc"/></svg></button>
+  </div>
+  <div class="stage" id="stage"><div class="sheet" id="sheet"><img id="pimg" alt=""></div></div>
+  <div class="rbar">
+    <button class="ib" id="rPrev" aria-label="Page précédente"><svg><use href="#i-back"/></svg></button>
+    <button class="pg" id="rPg" aria-label="Aller à la page…"></button>
+    <input type="range" id="rRange" min="1" value="1" aria-label="Position dans le guide">
+    <span class="zoomgrp" style="display:contents">
+      <button class="ib" id="zOut" aria-label="Réduire"><svg><use href="#i-minus"/></svg></button>
+      <span class="zoomv" id="zVal">100 %</span>
+      <button class="ib" id="zIn" aria-label="Agrandir"><svg><use href="#i-plus"/></svg></button>
+    </span>
+    <button class="ib" id="rNext" aria-label="Page suivante"><svg><use href="#i-next"/></svg></button>
+  </div>
+</section>
+
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="toc" aria-label="Sommaire"><header><h2 id="tocTitle">Sommaire</h2><button class="ib" data-close aria-label="Fermer"><svg><use href="#i-x"/></svg></button></header><div class="body" id="tocBody"></div></aside>
+<aside class="panel" id="txt" aria-label="Texte de la page"><header><h2>Texte de la page</h2><button class="ib" data-close aria-label="Fermer"><svg><use href="#i-x"/></svg></button></header><div class="body" id="txtBody"></div></aside>
+<div class="toast" id="toast" role="status"></div>
+
+<!--DATA-->
+<script>
+'use strict';
+const BOOKS = window.G3D_BOOKS, TEXT = (window.G3D_TEXT = window.G3D_TEXT || {}), IMG = window.G3D_IMG || null;
+const byId = (id) => document.getElementById(id);
+const BK = Object.fromEntries(BOOKS.map((b) => [b.id, b]));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pad = (n) => String(n).padStart(3, '0');
+const src = (k, p, thumb) => IMG ? IMG[k][thumb ? 't' : 'p'][p - 1] : `pages/${k}/${thumb ? 't/' : ''}${pad(p)}.webp`;
+
+/* ---------- Mémoire locale (thème, dernière page, repères) ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('g3d.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('g3d.' + k, JSON.stringify(v)); } catch (e) { /* mode privé */ } },
+};
+const theme = store.get('theme', null);
+if (theme) document.documentElement.dataset.theme = theme;
+byId('themeBtn').onclick = () => {
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const cur = document.documentElement.dataset.theme || (dark ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next; store.set('theme', next);
+};
+let marks = store.get('marks', []);            // [[livre, page], …]
+const isMarked = (k, p) => marks.some((m) => m[0] === k && m[1] === p);
+
+/* ---------- Texte reconnu (OCR) et recherche ---------- */
+// Normalisation caractère par caractère : la longueur est conservée, pour surligner au bon endroit.
+const nch = (c) => { const d = c.normalize('NFD')[0].toLowerCase(); return d === '’' || d === '`' ? "'" : d.length === 1 ? d : c; };
+const norm = (s) => Array.from(s, nch).join('');
+const loading = {};
+function loadText(k) {
+  if (TEXT[k]) return Promise.resolve(TEXT[k]);
+  return loading[k] || (loading[k] = new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = `data/text-${k}.js`; s.onload = () => ok(TEXT[k]); s.onerror = ko;
+    document.head.appendChild(s);
+  }));
+}
+const loadAll = () => Promise.all(BOOKS.map((b) => loadText(b.id)));
+const IDX = {};
+function index(k) {   // pages → lignes de texte + mots normalisés
+  if (IDX[k]) return IDX[k];
+  return (IDX[k] = TEXT[k].map((ws) => {
+    const lines = [], words = []; let cur = [];
+    for (const w of ws) {
+      if (w === 0) { if (cur.length) lines.push(cur.join(' ')); cur = []; continue; }
+      cur.push(w[0]); words.push({ n: norm(w[0]), b: w });
+    }
+    if (cur.length) lines.push(cur.join(' '));
+    return { lines, words, n: norm(lines.join(' \n ')) };
+  }));
+}
+const termsOf = (q) => [...new Set(norm(q).split(/[^\p{L}\p{N}'+-]+/u).map((t) => t.replace(/^['-]+|['-]+$/g, '')).filter((t) => t.length > 1 || /\d/.test(t)))];
+const count = (hay, t) => { let n = 0, i = -1; while ((i = hay.indexOf(t, i + 1)) !== -1) n++; return n; };
+function search(q) {
+  const terms = termsOf(q), out = [];
+  if (!terms.length) return { terms, out };
+  const phrase = norm(q.trim());
+  for (const b of BOOKS) {
+    const pages = index(b.id);
+    pages.forEach((pg, i) => {
+      const title = norm(b.titles[i]), sec = norm(sectionOf(b, i + 1)?.t || '');
+      let score = 0;
+      for (const t of terms) {
+        const inT = count(title, t), inS = count(sec, t), inX = count(pg.n, t);
+        if (!inT && !inX && !inS) return;
+        score += inT * 30 + inS * 6 + Math.min(inX, 12);
+      }
+      if (terms.length > 1 && (pg.n.includes(phrase) || title.includes(phrase))) score += 25;
+      out.push({ k: b.id, p: i + 1, score });
+    });
+  }
+  out.sort((a, b) => b.score - a.score || (a.k === b.k ? a.p - b.p : 0));
+  return { terms, out };
+}
+function highlight(text, terms) {   // texte d'origine, termes normalisés
+  const n = norm(text), hits = [];
+  for (const t of terms) { let i = -1; while ((i = n.indexOf(t, i + 1)) !== -1) hits.push([i, i + t.length]); }
+  hits.sort((a, b) => a[0] - b[0]);
+  let html = '', at = 0;
+  for (const [a, b] of hits) { if (a < at) continue; html += esc(text.slice(at, a)) + '<mark>' + esc(text.slice(a, b)) + '</mark>'; at = b; }
+  return html + esc(text.slice(at));
+}
+function snippet(k, p, terms) {
+  const lines = index(k)[p - 1].lines;
+  let best = -1, bs = 0;
+  lines.forEach((l, i) => { const n = norm(l); const s = terms.reduce((a, t) => a + (n.includes(t) ? 1 : 0), 0); if (s > bs) { bs = s; best = i; } });
+  if (best < 0) return '';
+  let s = lines[best];
+  if (s.length < 70 && lines[best + 1]) s += ' · ' + lines[best + 1];
+  if (s.length > 170) { const i = Math.max(0, norm(s).indexOf(terms.find((t) => norm(s).includes(t)) || '') - 50); s = (i ? '…' : '') + s.slice(i, i + 170) + '…'; }
+  return highlight(s, terms);
+}
+const sectionOf = (b, p) => { let r = null; for (const s of b.sections) if (p >= s.a && p <= s.b) r = s; return r; };
+
+/* ---------- Navigation ---------- */
+const view = byId('view');
+const route = () => {
+  const [path, qs] = location.hash.slice(1).split('?');
+  return { parts: (path || '/').split('/').filter(Boolean), params: new URLSearchParams(qs || '') };
+};
+function setBookColor(k) { document.documentElement.style.setProperty('--bk', k ? BK[k].color : '#3c4a57'); }
+function render() {
+  const { parts, params } = route();
+  closePanels();
+  if (parts[0] === 'r' && BK[parts[1]]) return openReader(parts[1], +parts[2] || 1, params.get('q') || '');
+  document.body.classList.remove('reading');
+  if (parts[0] === 'b' && BK[parts[1]]) renderBook(parts[1], params.get('v') || 'toc');
+  else if (parts[0] === 's') renderSearch(params.get('q') || '', params.get('b') || '');
+  else renderHome();
+  if (parts[0] !== 's') setQuery('');
+}
+addEventListener('hashchange', render);
+
+function renderHome() {
+  setBookColor(null);
+  document.title = 'Guides 3D';
+  const last = store.get('last', {});
+  const recent = Object.entries(last).sort((a, b) => b[1].t - a[1].t).slice(0, 3);
+  view.innerHTML = `
+  <section class="intro">
+    <h1>Trois guides d'impression 3D, consultables partout.</h1>
+    <p>Creality Print, FreeCAD et la configuration complète de l'impression 3D : ${BOOKS.reduce((a, b) => a + b.pages, 0)} pages, avec leurs sommaires et une recherche dans tout le texte.</p>
+    <div class="chips" aria-label="Exemples de recherche">${['première couche', 'warping', 'PETG', 'supports arbre', 'esquisse', 'Z-offset', 'lissage', 'K1C'].map((s) => `<button class="chip" data-q="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+  </section>
+  <section class="shelf" aria-label="Les guides">${BOOKS.map((b) => `
+    <a class="book" href="#/b/${b.id}" style="--bk:${b.color}">
+      <div class="cov"><img src="${src(b.id, 1, true)}" alt=""></div>
+      <div class="meta"><h2>${esc(b.title)}</h2><small>${b.pages} pages</small>
+      ${last[b.id] ? `<span class="resume">Reprendre page ${last[b.id].p}</span>` : ''}</div>
+    </a>`).join('')}
+  </section>
+  ${recent.length ? `<section class="blk"><h3>Reprendre la lecture</h3><ul class="rows">${recent.map(([k, v]) => rowHTML(k, v.p, true)).join('')}</ul></section>` : ''}
+  <section class="blk"><h3>Mes repères</h3>${marks.length ? `<ul class="rows">${marks.map(([k, p]) => rowHTML(k, p, true)).join('')}</ul>`
+    : '<p class="empty">Touchez l\'étoile en lisant une page pour la retrouver ici.</p>'}</section>`;
+  view.querySelectorAll('.chip').forEach((c) => (c.onclick = () => go(`#/s?q=${encodeURIComponent(c.dataset.q)}`)));
+}
+function rowHTML(k, p, withBook, cur) {
+  const b = BK[k];
+  return `<li><a class="row${cur ? ' cur' : ''}" href="#/r/${k}/${p}" style="--bk:${b.color}"${cur ? ' aria-current="page"' : ''}>
+    ${withBook ? `<img src="${src(k, p, true)}" alt="" loading="lazy">` : `<span class="n">${p}</span>`}
+    <span class="t">${esc(b.titles[p - 1])}${withBook ? `<small>${esc(b.title)} · page ${p}</small>` : ''}</span></a></li>`;
+}
+
+function renderBook(k, mode) {
+  const b = BK[k], last = store.get('last', {})[k];
+  setBookColor(k);
+  document.title = b.title + ' · Guides 3D';
+  const cur = last ? last.p : 0;
+  const tocHTML = b.sections.map((s) => {
+    const open = cur ? cur >= s.a && cur <= s.b : false;
+    const rows = []; for (let p = s.a; p <= s.b; p++) rows.push(rowHTML(k, p, false, p === cur));
+    return `<details class="sec"${open ? ' open' : ''}><summary><span>${esc(s.t)}</span><small>p. ${s.a}${s.b > s.a ? '–' + s.b : ''}</small></summary><ul class="rows">${rows.join('')}</ul></details>`;
+  }).join('');
+  const gridHTML = `<div class="grid">${b.titles.map((t, i) => `<a href="#/r/${k}/${i + 1}" title="${esc(t)}"${i + 1 === cur ? ' class="cur"' : ''}><img src="${src(k, i + 1, true)}" alt="" loading="lazy">p. ${i + 1}</a>`).join('')}</div>`;
+  view.innerHTML = `
+  <section class="bhead"><img src="${src(k, 1, true)}" alt="">
+    <div><h1>${esc(b.title)}</h1><p>${esc(b.subtitle)} · ${b.pages} pages</p>
+    <a class="btn" href="#/r/${k}/${cur || 1}">${cur ? 'Reprendre page ' + cur : 'Commencer la lecture'}</a>
+    ${cur ? ` <a class="btn alt" href="#/r/${k}/1">Depuis le début</a>` : ''}</div></section>
+  <div class="seg" role="group" aria-label="Affichage"><button data-v="toc" aria-pressed="${mode !== 'grid'}">Sommaire</button><button data-v="grid" aria-pressed="${mode === 'grid'}">Vignettes</button></div>
+  ${mode === 'grid' ? gridHTML : tocHTML}`;
+  view.querySelectorAll('.seg button').forEach((x) => (x.onclick = () => history.replaceState(null, '', `#/b/${k}?v=${x.dataset.v}`) || renderBook(k, x.dataset.v)));
+  const c = view.querySelector('.row.cur, .grid a.cur'); if (c) c.scrollIntoView({ block: 'center' });
+  else scrollTo(0, 0);
+}
+
+let searchTimer;
+async function renderSearch(q, only) {
+  setBookColor(null);
+  setQuery(q);
+  document.title = (q ? q + ' · ' : '') + 'Recherche · Guides 3D';
+  if (!q.trim()) { view.innerHTML = '<p class="empty">Tapez un mot dans la barre de recherche : un réglage, un défaut, un matériau, un outil…</p>'; return; }
+  if (BOOKS.some((b) => !TEXT[b.id])) { view.innerHTML = '<p class="empty">Chargement du texte des guides…</p>'; await loadAll(); }
+  const { terms, out } = search(q);
+  const per = Object.fromEntries(BOOKS.map((b) => [b.id, 0])); out.forEach((r) => per[r.k]++);
+  const list = only ? out.filter((r) => r.k === only) : out;
+  const LIMIT = 80;
+  const enc = encodeURIComponent(q);
+  view.innerHTML = `
+  <div class="rhead"><h1>${out.length ? `${out.length} page${out.length > 1 ? 's' : ''} pour « ${esc(q)} »` : `Aucune page pour « ${esc(q)} »`}</h1></div>
+  ${out.length ? `<div class="filt" role="group" aria-label="Filtrer par guide">
+    <button data-b="" aria-pressed="${!only}">Tous (${out.length})</button>
+    ${BOOKS.filter((b) => per[b.id]).map((b) => `<button data-b="${b.id}" aria-pressed="${only === b.id}">${esc(b.title)} (${per[b.id]})</button>`).join('')}</div>` :
+    '<p class="empty">Essayez un mot plus court, sans accent ou au singulier (par exemple « support » plutôt que « supports organiques »).</p>'}
+  <div id="rl">${list.slice(0, LIMIT).map((r) => resHTML(r, terms, enc)).join('')}</div>
+  ${list.length > LIMIT ? `<button class="btn alt more" id="moreBtn">Afficher les ${list.length - LIMIT} autres pages</button>` : ''}
+  ${out.length ? '<p class="note">Le texte des pages a été reconnu automatiquement à partir des images : un mot peut parfois manquer ou être mal lu.</p>' : ''}`;
+  view.querySelectorAll('.filt button').forEach((x) => (x.onclick = () => go(`#/s?q=${enc}${x.dataset.b ? '&b=' + x.dataset.b : ''}`, true)));
+  const mb = byId('moreBtn'); if (mb) mb.onclick = () => { byId('rl').insertAdjacentHTML('beforeend', list.slice(LIMIT).map((r) => resHTML(r, terms, enc)).join('')); mb.remove(); };
+}
+function resHTML(r, terms, enc) {
+  const b = BK[r.k], sec = sectionOf(b, r.p);
+  return `<a class="res" href="#/r/${r.k}/${r.p}?q=${enc}" style="--bk:${b.color}"><img src="${src(r.k, r.p, true)}" alt="" loading="lazy">
+    <span><b>${highlight(b.titles[r.p - 1], terms)}</b><small>${esc(b.title)} · page ${r.p}${sec ? ' · ' + esc(sec.t) : ''}</small>
+    <p>${snippet(r.k, r.p, terms)}</p></span></a>`;
+}
+function go(h, replace) { if (replace) { history.replaceState(null, '', h); render(); } else location.hash = h; }
+
+/* Barre de recherche */
+const qin = byId('qin'), qform = byId('qform');
+function setQuery(q) { if (document.activeElement !== qin) qin.value = q; qform.classList.toggle('has', !!qin.value); }
+qin.addEventListener('input', () => {
+  qform.classList.toggle('has', !!qin.value);
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    const v = qin.value.trim(); if (!v) return;
+    const h = `#/s?q=${encodeURIComponent(v)}`;
+    if (route().parts[0] === 's') go(h, true); else location.hash = h;
+  }, 250);
+});
+qform.addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(searchTimer); const v = qin.value.trim(); if (v) go(`#/s?q=${encodeURIComponent(v)}`, route().parts[0] === 's'); qin.blur(); });
+byId('qclr').onclick = () => { qin.value = ''; qform.classList.remove('has'); qin.focus(); };
+loadAll().catch(() => {});  // le texte se charge en arrière-plan
+
+/* ---------- Lecteur ---------- */
+const R = { k: null, p: 1, q: '', zoom: 1, hl: true };
+const stage = byId('stage'), sheet = byId('sheet'), pimg = byId('pimg');
+function fitWidth() {   // largeur de la page à 100 % : toute la page visible sur grand écran, pleine largeur sur téléphone
+  const w = stage.clientWidth - 24, h = stage.clientHeight - 24;
+  return Math.max(200, Math.min(w, Math.max(h * 1061 / 1505, Math.min(w, 760))));
+}
+function applyZoom(keepX, keepY) {
+  const fx = keepX == null ? 0.5 : keepX, fy = keepY == null ? 0 : keepY;
+  const rx = (stage.scrollLeft + stage.clientWidth * fx) / (sheet.offsetWidth || 1);
+  const ry = (stage.scrollTop + stage.clientHeight * fy) / (sheet.offsetHeight || 1);
+  sheet.style.width = Math.round(fitWidth() * R.zoom) + 'px';
+  byId('zVal').textContent = Math.round(R.zoom * 100) + ' %';
+  if (keepX != null) { stage.scrollLeft = rx * sheet.offsetWidth - stage.clientWidth * fx; stage.scrollTop = ry * sheet.offsetHeight - stage.clientHeight * fy; }
+}
+function setZoom(z, fx, fy) { R.zoom = Math.min(4, Math.max(1, z)); applyZoom(fx == null ? 0.5 : fx, fy == null ? 0.5 : fy); }
+addEventListener('resize', () => { if (document.body.classList.contains('reading')) applyZoom(); });
+
+function openReader(k, p, q) {
+  const b = BK[k];
+  p = Math.min(b.pages, Math.max(1, p));
+  const changed = R.k !== k || R.p !== p;
+  Object.assign(R, { k, p, q });
+  setBookColor(k);
+  document.body.classList.add('reading');
+  document.title = `${b.titles[p - 1]} · ${b.title}`;
+  byId('rTitle').textContent = b.titles[p - 1];
+  const sec = sectionOf(b, p);
+  byId('rBook').textContent = `${b.title} · page ${p} / ${b.pages}${sec ? ' · ' + sec.t : ''}`;
+  byId('rBack').href = `#/b/${k}`;
+  byId('rPg').textContent = `${p} / ${b.pages}`;
+  const rr = byId('rRange'); rr.max = b.pages; rr.value = p;
+  byId('rPrev').disabled = p <= 1; byId('rNext').disabled = p >= b.pages;
+  byId('rHl').style.display = q ? '' : 'none';
+  byId('rHl').classList.toggle('on', R.hl);
+  starBtn();
+  if (changed || !pimg.src) {
+    pimg.alt = `${b.title}, page ${p} : ${b.titles[p - 1]}`;
+    pimg.src = src(k, p);
+    R.zoom = 1; applyZoom(); stage.scrollTo(0, 0);
+    [p + 1, p - 1].forEach((n) => { if (n >= 1 && n <= b.pages) new Image().src = src(k, n); });
+    const last = store.get('last', {}); last[k] = { p, t: Date.now() }; store.set('last', last);
+  } else applyZoom();
+  drawHL();
+  if (byId('txt').classList.contains('open')) fillText();
+}
+async function drawHL() {
+  sheet.querySelectorAll('.hl').forEach((e) => e.remove());
+  if (!R.q || !R.hl) return;
+  const k = R.k, p = R.p; await loadText(k);
+  if (k !== R.k || p !== R.p) return;
+  const terms = termsOf(R.q); let first = null;
+  for (const w of index(k)[p - 1].words) {
+    if (!terms.some((t) => w.n.includes(t))) continue;
+    const [, x, y, ww, hh] = w.b, d = document.createElement('div');
+    d.className = 'hl';
+    d.style.cssText = `left:${x / 100 - .3}%;top:${y / 100 - .2}%;width:${ww / 100 + .6}%;height:${hh / 100 + .4}%`;
+    sheet.appendChild(d); if (!first || y < first) first = y;
+  }
+}
+function starBtn() {
+  const on = isMarked(R.k, R.p), b = byId('rStar');
+  b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+  b.querySelector('use').setAttribute('href', on ? '#i-star-f' : '#i-star');
+  b.setAttribute('aria-label', on ? 'Retirer le repère' : 'Ajouter un repère');
+}
+const pageTo = (p) => { const b = BK[R.k]; if (p < 1 || p > b.pages) return; go(`#/r/${R.k}/${p}${R.q ? '?q=' + encodeURIComponent(R.q) : ''}`, true); };
+byId('rPrev').onclick = () => pageTo(R.p - 1);
+byId('rNext').onclick = () => pageTo(R.p + 1);
+byId('rRange').oninput = (e) => { byId('rPg').textContent = `${e.target.value} / ${BK[R.k].pages}`; byId('rTitle').textContent = BK[R.k].titles[e.target.value - 1]; };
+byId('rRange').onchange = (e) => pageTo(+e.target.value);
+byId('rPg').onclick = () => { const v = prompt(`Aller à la page (1 à ${BK[R.k].pages}) :`, R.p); if (v && +v) pageTo(+v); };
+byId('zIn').onclick = () => setZoom(R.zoom * 1.4);
+byId('zOut').onclick = () => setZoom(R.zoom / 1.4);
+byId('rHl').onclick = () => { R.hl = !R.hl; byId('rHl').classList.toggle('on', R.hl); drawHL(); };
+byId('rStar').onclick = () => {
+  if (isMarked(R.k, R.p)) { marks = marks.filter((m) => !(m[0] === R.k && m[1] === R.p)); toast('Repère retiré'); }
+  else { marks.unshift([R.k, R.p]); toast('Page ajoutée à vos repères'); }
+  store.set('marks', marks); starBtn();
+};
+function toast(t) { const e = byId('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('show'), 1600); }
+
+/* Panneaux : sommaire et texte */
+const scrim = byId('scrim');
+function openPanel(id) { byId(id).classList.add('open'); scrim.classList.add('open'); const f = byId(id).querySelector('.cur,[data-close]'); if (f) f.focus(); }
+function closePanels() { document.querySelectorAll('.panel.open').forEach((e) => e.classList.remove('open')); scrim.classList.remove('open'); }
+scrim.onclick = closePanels;
+document.querySelectorAll('[data-close]').forEach((b) => (b.onclick = closePanels));
+byId('rToc').onclick = () => {
+  const b = BK[R.k];
+  byId('tocTitle').textContent = b.title;
+  byId('tocBody').innerHTML = b.sections.map((s) => {
+    const rows = []; for (let p = s.a; p <= s.b; p++) rows.push(rowHTML(R.k, p, false, p === R.p));
+    return `<details class="sec"${R.p >= s.a && R.p <= s.b ? ' open' : ''}><summary><span>${esc(s.t)}</span><small>p. ${s.a}</small></summary><ul class="rows">${rows.join('')}</ul></details>`;
+  }).join('');
+  byId('tocBody').querySelectorAll('a.row').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); go(a.getAttribute('href'), true); }));
+  openPanel('toc');
+  const c = byId('tocBody').querySelector('.row.cur'); if (c) c.scrollIntoView({ block: 'center' });
+};
+async function fillText() {
+  const k = R.k, p = R.p; await loadText(k);
+  const terms = R.q ? termsOf(R.q) : [];
+  const lines = index(k)[p - 1].lines;
+  byId('txtBody').innerHTML = lines.length
+    ? lines.map((l) => `<p>${terms.length ? highlight(l, terms) : esc(l)}</p>`).join('') + '<p class="note">Texte reconnu automatiquement à partir de l\'image de la page.</p>'
+    : '<p class="empty">Cette page ne contient presque que des images.</p>';
+}
+byId('rSearch').onclick = () => { go(R.q ? `#/s?q=${encodeURIComponent(R.q)}` : '#/s'); setTimeout(() => { qin.focus(); qin.select(); }, 50); };
+byId('rTxt').onclick = () => { fillText(); openPanel('txt'); };
+
+/* Gestes : glisser pour tourner la page, pincer ou double-toucher pour zoomer */
+let tp = null, pinch = null, lastTap = 0;
+stage.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    const [a, b] = e.touches, r = stage.getBoundingClientRect();
+    pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), z: R.zoom,
+      fx: ((a.clientX + b.clientX) / 2 - r.left) / r.width, fy: ((a.clientY + b.clientY) / 2 - r.top) / r.height };
+    tp = null;
+  } else if (e.touches.length === 1) {
+    const t = e.touches[0]; tp = { x: t.clientX, y: t.clientY, t: Date.now(), sl: stage.scrollLeft };
+  }
+}, { passive: true });
+stage.addEventListener('touchmove', (e) => {
+  if (pinch && e.touches.length === 2) {
+    e.preventDefault();
+    const [a, b] = e.touches;
+    setZoom(pinch.z * Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) / pinch.d, pinch.fx, pinch.fy);
+  }
+}, { passive: false });
+stage.addEventListener('touchend', (e) => {
+  if (pinch) { if (e.touches.length < 2) pinch = null; return; }
+  if (!tp || e.changedTouches.length !== 1) return;
+  const t = e.changedTouches[0], dx = t.clientX - tp.x, dy = t.clientY - tp.y, dt = Date.now() - tp.t;
+  const r = stage.getBoundingClientRect();
+  if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 300) {           // toucher
+    if (Date.now() - lastTap < 320) { setZoom(R.zoom > 1.05 ? 1 : 2.2, (t.clientX - r.left) / r.width, (t.clientY - r.top) / r.height); lastTap = 0; }
+    else lastTap = Date.now();
+    return;
+  }
+  const atEdge = R.zoom <= 1.02 || (dx < 0 ? stage.scrollLeft + stage.clientWidth >= stage.scrollWidth - 2 && tp.sl + stage.clientWidth >= stage.scrollWidth - 2 : stage.scrollLeft <= 0 && tp.sl <= 0);
+  if (atEdge && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6 && dt < 700) pageTo(R.p + (dx < 0 ? 1 : -1));
+  tp = null;
+});
+stage.addEventListener('dblclick', (e) => { const r = stage.getBoundingClientRect(); setZoom(R.zoom > 1.05 ? 1 : 2.2, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); });
+stage.addEventListener('wheel', (e) => { if (!e.ctrlKey) return; e.preventDefault(); const r = stage.getBoundingClientRect(); setZoom(R.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); }, { passive: false });
+
+/* Clavier */
+addEventListener('keydown', (e) => {
+  if (e.target.matches('input,textarea') && e.key !== 'Escape') return;
+  if (e.key === 'Escape') { if (document.querySelector('.panel.open')) return closePanels(); if (e.target === qin) return qin.blur(); }
+  if (e.key === '/' ) { e.preventDefault(); qin.focus(); qin.select(); return; }
+  if (!document.body.classList.contains('reading')) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); pageTo(R.p + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); pageTo(R.p - 1); }
+  else if (e.key === 'Home') pageTo(1);
+  else if (e.key === 'End') pageTo(BK[R.k].pages);
+  else if (e.key === '+' || e.key === '=') setZoom(R.zoom * 1.4);
+  else if (e.key === '-') setZoom(R.zoom / 1.4);
+});
+
+render();
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !IMG) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
