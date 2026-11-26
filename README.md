@@ -9,6 +9,8 @@ Application unique qui réunit trois outils, organisés en onglets :
 | **Modèle 3D** | Fichiers STL, 3MF, OBJ : orientation « solidité », supports automatiques, PLA/PETG/TPU/nylon, multifilament CANVAS, tranchage et envoi | Android, Windows |
 | **Surveiller** | *PrintMonitor* : état des 2 Centauri Carbon et de la K1, caméras, prises Tapo, alertes de fin d'impression | Android |
 
+Le dépôt contient aussi deux projets indépendants : [`fiches-3d/`](fiches-3d/) (fiches pratiques d'impression 3D) et [`stl2step/`](stl2step/) (conversion STL → STEP pour la CAO, appli Android et appli Python).
+
 La surveillance est un écran Android natif (Kotlin/Compose) qui garde son service en arrière-plan et ses notifications.
 Elle se règle dans son propre écran *Réglages* (IP des imprimantes, prises Tapo) ; le plan d'adresses et la configuration Livebox sont dans [docs/GUIDE-surveillance.md](docs/GUIDE-surveillance.md).
 
