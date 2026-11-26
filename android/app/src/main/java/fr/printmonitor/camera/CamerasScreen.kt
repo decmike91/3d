@@ -226,7 +226,10 @@ fun RtspPlayer(url: String, modifier: Modifier = Modifier) {
     val ctx = LocalContext.current
     var error by remember(url) { mutableStateOf<String?>(null) }
     var retry by remember(url) { mutableStateOf(0) }
-    val player = remember(url, retry) {
+    // Reconnexion automatique : toutes les 5 s après une erreur, et aussitôt quand le réseau revient
+    val epoch by fr.printmonitor.MonitorHub.networkEpoch.collectAsStateWithLifecycle()
+    LaunchedEffect(error) { if (error != null) { kotlinx.coroutines.delay(5_000); retry++ } }
+    val player = remember(url, retry, epoch) {
         ExoPlayer.Builder(ctx).build().apply {
             setMediaSource(RtspMediaSource.Factory().setForceUseRtpTcp(true).setTimeoutMs(8000).createMediaSource(MediaItem.fromUri(url)))
             volume = 0f
@@ -271,7 +274,8 @@ fun RtspPlayer(url: String, modifier: Modifier = Modifier) {
         error?.let {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
                 Text(it, color = Color.White, style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { error = null; retry++ }) { Text("Réessayer") }
+                Text("Nouvel essai automatique…", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = { error = null; retry++ }) { Text("Réessayer maintenant") }
             }
         }
     }

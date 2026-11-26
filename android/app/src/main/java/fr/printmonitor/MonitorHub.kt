@@ -103,6 +103,35 @@ object MonitorHub {
             PrinterId.entries.forEach { watchTransitions(it) }
         }
         apply(cfg) // configuration seulement : les connexions attendent qu'un écran ou le service les demande
+        watchNetwork()
+    }
+
+    // ------------------------------------------------------------------ Retour du réseau
+    /** Change à chaque retour du réseau : les vues caméra s'en servent pour se relancer. */
+    private val _networkEpoch = MutableStateFlow(0)
+    val networkEpoch: StateFlow<Int> = _networkEpoch
+    private var netWatching = false
+
+    /** Wi-Fi coupé puis rallumé : imprimantes, prises et caméras se reconnectent aussitôt. */
+    private fun watchNetwork() {
+        if (netWatching) return
+        val cm = appContext.getSystemService(android.net.ConnectivityManager::class.java) ?: return
+        netWatching = true
+        try {
+            cm.registerDefaultNetworkCallback(object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) { scope.launch { delay(1_500); networkBack() } }
+                override fun onLost(network: android.net.Network) { _networkEpoch.value++ }
+            })
+        } catch (_: Exception) { netWatching = false }
+    }
+
+    private fun networkBack() {
+        wsHttp.connectionPool.evictAll() // connexions de l'ancien réseau inutilisables
+        _networkEpoch.value++
+        val (cl, pl) = synchronized(this) { clients.values.toList() to plugClients.toMap() }
+        cl.forEach { it.kick() }
+        pl.values.forEach { it.resetSession() }
+        if (pl.isNotEmpty()) scope.launch { pl.keys.forEach { refreshPlug(it) } }
     }
 
     // ------------------------------------------------------------------ Connexions à la demande

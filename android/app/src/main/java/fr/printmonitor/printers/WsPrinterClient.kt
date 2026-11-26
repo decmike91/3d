@@ -25,10 +25,12 @@ interface PrinterClient {
     fun resume()
     fun cancel()
     fun setLight(on: Boolean)
+    /** Réseau revenu (Wi-Fi rallumé…) : abandonner la connexion en cours et se reconnecter tout de suite. */
+    fun kick() {}
 }
 
 /**
- * Connexion WebSocket persistante avec reconnexion automatique (backoff 2 s → 30 s)
+ * Connexion WebSocket persistante avec reconnexion automatique (backoff 2 s → 15 s, immédiate au retour du réseau)
  * et keep-alive applicatif toutes les 10 s.
  */
 abstract class WsPrinterClient(
@@ -44,7 +46,16 @@ abstract class WsPrinterClient(
 
     @Volatile private var ws: WebSocket? = null
     @Volatile private var currentAlive: AtomicBoolean? = null
+    @Volatile private var currentClosed: CompletableDeferred<Unit>? = null
+    @Volatile private var lastRx = 0L
+    /** Réveil de l'attente entre deux tentatives (réseau revenu). */
+    private val wake = kotlinx.coroutines.channels.Channel<Unit>(kotlinx.coroutines.channels.Channel.CONFLATED)
     private var job: Job? = null
+
+    override fun kick() {
+        currentClosed?.complete(Unit) // connexion en cours (peut-être morte) abandonnée
+        wake.trySend(Unit)            // et pas d'attente avant la nouvelle tentative
+    }
 
     override fun start() {
         if (job?.isActive == true) return
@@ -52,6 +63,8 @@ abstract class WsPrinterClient(
             var backoff = 2_000L
             while (isActive) {
                 val closed = CompletableDeferred<Unit>()
+                currentClosed = closed
+                while (wake.tryReceive().isSuccess) { /* réveils anciens ignorés */ }
                 val opened = AtomicBoolean(false)
                 val alive = AtomicBoolean(true) // false après arrêt : trames tardives ignorées
                 currentAlive = alive
@@ -68,6 +81,7 @@ abstract class WsPrinterClient(
                         override fun onOpen(webSocket: WebSocket, response: Response) {
                             if (!alive.get()) return
                             opened.set(true)
+                            lastRx = System.currentTimeMillis()
                             // L'état reste « Hors ligne » jusqu'au premier statut réel de l'imprimante :
                             // un faux « Inactive » ferait croire que l'impression n'était plus en cours
                             // (fin d'impression manquée après une coupure réseau).
@@ -76,6 +90,7 @@ abstract class WsPrinterClient(
                         }
                         override fun onMessage(webSocket: WebSocket, text: String) {
                             if (!alive.get()) return
+                            lastRx = System.currentTimeMillis()
                             try { onText(text) } catch (_: Exception) { /* trame inattendue : ignorée */ }
                         }
                         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
@@ -94,6 +109,9 @@ abstract class WsPrinterClient(
                     var ticks = 0
                     while (isActive) {
                         delay(10_000); keepAlive(); ticks++
+                        // Chien de garde : Wi-Fi coupé, la connexion ne se ferme pas d'elle-même
+                        // (aucune erreur, plus aucune donnée). Rien reçu depuis 35 s : on la relance.
+                        if (opened.get() && System.currentTimeMillis() - lastRx > 35_000) { closed.complete(Unit); break }
                         // Connectée mais aucun statut reçu au bout de 20 s : joignable, état inconnu
                         if (ticks == 2 && opened.get()) target.update { if (it.status == PrintStatus.OFFLINE) it.copy(status = PrintStatus.IDLE) else it }
                     }
@@ -108,8 +126,9 @@ abstract class WsPrinterClient(
                 }
                 target.update { it.copy(status = PrintStatus.OFFLINE) }
                 if (opened.get()) backoff = 2_000L
-                delay(backoff)
-                backoff = (backoff * 2).coerceAtMost(30_000L)
+                // Attente avant la tentative suivante, interrompue dès que le réseau revient
+                val woken = kotlinx.coroutines.withTimeoutOrNull(backoff) { wake.receive() } != null
+                backoff = if (woken) 2_000L else (backoff * 2).coerceAtMost(15_000L)
             }
         }
     }

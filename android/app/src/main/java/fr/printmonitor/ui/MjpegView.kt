@@ -12,6 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,7 +48,9 @@ import java.io.ByteArrayOutputStream
  */
 @Composable
 fun CameraView(url: String, fallbackUrl: String?, modifier: Modifier = Modifier) {
-    var useFallback by remember(url, fallbackUrl) { mutableStateOf(false) }
+    // Retour du réseau : on retente le flux MJPEG même si on était passé sur la page de secours
+    val epoch by MonitorHub.networkEpoch.collectAsState()
+    var useFallback by remember(url, fallbackUrl, epoch) { mutableStateOf(false) }
     val pageUrl = when {
         isWebPage(url) -> url
         useFallback && fallbackUrl != null -> fallbackUrl
@@ -100,7 +105,8 @@ fun MjpegView(url: String, modifier: Modifier = Modifier, onFirstFailure: (() ->
     var frame by remember(url) { mutableStateOf<ImageBitmap?>(null) }
     var error by remember(url) { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(url) {
+    val epoch by MonitorHub.networkEpoch.collectAsState()
+    LaunchedEffect(url, epoch) { // relancé aussitôt quand le réseau revient
         withContext(Dispatchers.IO) {
             var failures = 0
             while (isActive) {
@@ -129,6 +135,12 @@ fun MjpegView(url: String, modifier: Modifier = Modifier, onFirstFailure: (() ->
         val f = frame
         if (f != null) {
             Image(f, contentDescription = "Caméra", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+            // Image figée pendant une coupure : on le signale au lieu de laisser croire qu'elle est en direct
+            if (error != null) Text(
+                "Reconnexion à la caméra…",
+                color = Color.White, style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.BottomCenter).background(Color(0x99000000)).padding(horizontal = 8.dp, vertical = 4.dp),
+            )
         } else {
             Text(
                 error ?: "Connexion à la caméra…",

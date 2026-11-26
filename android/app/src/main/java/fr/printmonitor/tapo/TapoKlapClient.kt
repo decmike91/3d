@@ -60,9 +60,15 @@ class TapoKlapClient(
                     session = null
                     doRequest(method, params)
                 } else throw e
+            } catch (e: java.io.IOException) {
+                session = null // réseau coupé / prise redémarrée : nouvelle poignée de main à la prochaine requête
+                throw e
             }
         }
     }
+
+    /** Réseau revenu : la session KLAP est refaite à la prochaine requête. */
+    fun resetSession() { session = null }
 
     private fun doRequest(method: String, params: JSONObject?): JSONObject {
         val s = session?.takeIf { System.currentTimeMillis() < it.expiresAt } ?: handshake().also { session = it }
