@@ -153,7 +153,7 @@ public final class Cutter {
         return c;
     }
 
-    private static void bridge(List<double[]> outer, List<double[]> outer3, double[][] hole, double[][] hole3) {
+    static void bridge(List<double[]> outer, List<double[]> outer3, double[][] hole, double[][] hole3) {
         int m = 0;
         for (int i = 1; i < hole.length; i++) if (hole[i][0] > hole[m][0]) m = i;
         double mx = hole[m][0], my = hole[m][1];

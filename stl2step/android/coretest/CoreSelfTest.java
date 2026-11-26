@@ -77,6 +77,31 @@ public class CoreSelfTest {
         check(count(dxf, "POLYLINE") == 6 && dxf.trim().endsWith("EOF"), "DXF");
         if (out != null) Files.write(out.resolve("sections_java.dxf"), dxf.getBytes("US-ASCII"));
 
+        // découpe en 2 pièces avec plots
+        for (int mode = 0; mode < 3; mode++) {
+            Splitter.Settings st = new Splitter.Settings();
+            st.mode = mode;
+            if (mode == Splitter.PINS) st.length = 10;
+            Splitter.Result sr = Splitter.split(box, 0, 30, st);
+            boolean closedParts = sr.low.openEdgeCount() == 0 && sr.high.openEdgeCount() == 0;
+            int expect = mode == Splitter.NONE ? 0 : 2;
+            check(closedParts && sr.centers.size() == expect && sr.warnings.isEmpty(),
+                    "découpe mode " + mode + " : " + sr.centers.size() + " plots, volumes "
+                            + Math.round(sr.low.volume()) + " / " + Math.round(sr.high.volume()));
+            if (mode == Splitter.MALE) {
+                check(sr.low.volume() > 24000 && sr.high.volume() < 24000 - 2 * Math.PI * 6.25 * 6, "plots et trous");
+                Converter cs = Converter.convert(sr.high, 0, "haute", true, true);
+                check(cs.seg.cylinders() == 2, "pièce haute convertie : 2 trous cylindriques");
+                if (out != null) Files.write(out.resolve("split_high_java.step"), cs.step.getBytes("US-ASCII"));
+            }
+            if (mode == Splitter.PINS) check(sr.pins != null && sr.pins.openEdgeCount() == 0, "goupilles fermées");
+        }
+        Splitter.Result s2 = Splitter.split(ph, 0, 30, new Splitter.Settings());
+        check(s2.centers.size() == 4, "deux zones de coupe : " + s2.centers.size() + " plots");
+        Splitter.Settings thin = new Splitter.Settings();
+        Splitter.Result s3 = Splitter.split(load(dir, "fillet_vert"), 2, 7.5, thin);
+        check(s3.centers.isEmpty() && !s3.warnings.isEmpty(), "matière trop fine détectée");
+
         Path big = dir.resolve("big.stl");
         if (Files.exists(big)) {
             long t0 = System.nanoTime();

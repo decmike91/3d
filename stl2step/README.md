@@ -9,7 +9,7 @@ Deux applications, même algorithme :
 | | Dossier | Plateforme |
 |---|---|---|
 | **Appli Android** (Java, OpenGL ES) | [`android/`](android/) | Android 7 et plus |
-| **Appli Python** (ligne de commande + fenêtre) | [`python/`](python/) | Windows, macOS, Linux |
+| **Appli Python** (fenêtre PyQt6 modifiable + ligne de commande) | [`python/`](python/) | Windows, macOS, Linux |
 
 ## Ce que ça fait
 
@@ -26,6 +26,18 @@ Deux applications, même algorithme :
 **Sections DXF** : coupe le STL en sections planes régulières (ou à des cotes précises), un calque par
 section, coordonnées dans le plan de coupe, à décalquer dans la CAO.
 
+**Découpe en 2 pièces avec plots de jonction** (pour imprimer une pièce trop grande pour le plateau) :
+
+- *plots mâles / trous femelles* : plots chanfreinés sur la pièce basse, trous ajustés (jeu radial, profondeur
+  en plus) dans la pièce haute ;
+- *trous + goupilles séparées* : trous dans les deux pièces et goupilles chanfreinées à imprimer debout ;
+- *sans plots* : découpe simple, faces de coupe rebouchées.
+
+Les plots sont placés automatiquement : écartés le plus possible, en retrait des bords, et seulement là où
+la matière est assez épaisse pour le trou et sa paroi (contrôle par lancer de rayons). Une section en plusieurs
+zones reçoit des plots dans chaque zone. On peut aussi imposer les centres. Les pièces restent des solides fermés,
+convertibles en STEP (plots et trous deviennent des cylindres).
+
 ## Télécharger
 
 Page **Releases** du dépôt, version « STL2STEP » (tag `stl2step`), recompilée à chaque modification sur `main` :
@@ -37,13 +49,30 @@ Page **Releases** du dépôt, version « STL2STEP » (tag `stl2step`), recompil�
 
 ```bash
 cd stl2step/python
-pip install .            # ou : pip install numpy matplotlib, puis python -m stl2step …
-stl2step                 # fenêtre (Tkinter + Matplotlib)
+pip install ".[qt]"      # numpy + PyQt6, pyqtgraph, PyOpenGL
+stl2step-qt piece.stl    # fenêtre PyQt6 (ou : stl2step gui ; sans PyQt6 : fenêtre Tkinter simple)
 stl2step convert piece.stl -o piece.step
 stl2step info piece.stl
 stl2step sections piece.stl --axis z --count 10        # ou --at 2.5,10,17.5 ; --split : un DXF par section
 stl2step cut piece.stl --plane z=12 --keep below -o piece_coupee.stl
+stl2step split piece.stl --plane z=40 --mode male --diameter 5 --length 6 --clearance 0.15
+stl2step split piece.stl --plane x=120 --mode pins --at "20,15;80,15"   # goupilles, centres imposés
 ```
+
+### Fenêtre PyQt6 modifiable
+
+- **Mise en page** : `stl2step/qt/main_window.ui`, au format **Qt Designer**. Boutons, panneaux, libellés,
+  raccourcis et valeurs par défaut s'y modifient sans toucher au code. Le code retrouve chaque élément
+  par son nom d'objet ; un élément supprimé est simplement ignoré.
+- **Apparence** : `stl2step/qt/style.qss` (feuille de style Qt). *Affichage › Recharger le style* (Ctrl+R)
+  l'applique sans redémarrer. Les couleurs de la vue 3D sont dans `COLORS` (`stl2step/qt/viewer.py`).
+- *Aide › Personnaliser l'interface* copie ces deux fichiers dans votre dossier de configuration, où ils
+  prennent le pas sur ceux du paquet. Pour revenir à l'interface d'origine, supprimez ces copies. Vous pouvez
+  aussi donner d'autres fichiers avec `stl2step-qt --ui ma_fenetre.ui --style mon_style.qss`.
+- **Disposition** : les panneaux (Paramètres, Infos, Coupe, Découpe en 2 pièces, Sections, Mesure) se
+  déplacent, s'empilent en onglets ou se détachent. La disposition et les réglages sont mémorisés.
+- Souris : clic gauche pour tourner, molette pour zoomer, clic milieu ou Ctrl+clic pour déplacer.
+  Raccourcis : 1 à 4 pour les vues, 0/7/8/9 pour les vues standard, F pour tout voir.
 
 Utilisation comme bibliothèque :
 
@@ -59,7 +88,9 @@ relus et contrôlés par OpenCascade : validité du solide et volume).
 ## Appli Android
 
 Boutons en haut de l'écran : *Ouvrir STL*, *Convertir*, *Enregistrer STEP*, *Vue*, *Mesurer*, *Couper*,
-*Sections DXF*, *Enregistrer STL*, *Infos*, *Annuler les modifs*. Un doigt pour tourner, deux doigts pour
+*Découper (plots)*, *Sections DXF*, *Enregistrer STL*, *Infos*, *Annuler les modifs*. La découpe montre
+les pièces écartées en couleur, puis les enregistre dans le dossier choisi (`_basse.stl`, `_haute.stl`,
+`_goupilles.stl`), ou continue avec l'une d'elles. Un doigt pour tourner, deux doigts pour
 zoomer et déplacer, double appui pour revenir à la vue initiale. Un STL peut aussi être ouvert depuis
 un gestionnaire de fichiers ou partagé vers l'appli.
 

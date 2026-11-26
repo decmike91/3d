@@ -56,10 +56,33 @@ def main(argv=None) -> int:
     k.add_argument("--no-cap", action="store_true")
     k.add_argument("-o", "--output")
 
-    sub.add_parser("gui", help="interface graphique")
+    d = sub.add_parser("split", help="découper en 2 pièces assemblables par plots de jonction")
+    d.add_argument("stl")
+    d.add_argument("--plane", required=True, help="plan de coupe, ex. z=10")
+    d.add_argument("--mode", choices=["male", "pins", "none"], default="male",
+                   help="male : plots/trous ; pins : trous des deux côtés + goupilles ; none : sans plots")
+    d.add_argument("--diameter", type=float, default=5.0, help="diamètre du plot ou de la goupille (mm)")
+    d.add_argument("--length", type=float, help="hauteur du plot (défaut 6) ou longueur de goupille (défaut 10)")
+    d.add_argument("--clearance", type=float, default=0.15, help="jeu radial du trou (mm)")
+    d.add_argument("--extra-depth", type=float, default=0.5, help="profondeur de trou en plus (mm)")
+    d.add_argument("--chamfer", type=float, default=0.5, help="chanfrein en bout de plot (mm)")
+    d.add_argument("--wall", type=float, default=1.2, help="matière minimale autour et au fond des trous (mm)")
+    d.add_argument("--per-zone", type=int, default=2, help="plots par zone de coupe")
+    d.add_argument("--at", help="centres imposés « u,v;u,v » (u, v : les deux autres axes)")
+    d.add_argument("-o", "--output", help="préfixe des fichiers (défaut : nom du STL)")
+
+    sub.add_parser("gui", help="interface graphique (PyQt6 si installé, sinon Tkinter)")
+    sub.add_parser("gui-tk", help="interface graphique simple (Tkinter + Matplotlib)")
 
     a = ap.parse_args(argv)
     if a.cmd is None or a.cmd == "gui":
+        try:
+            from .qt.app import main as qt_main
+        except ImportError:
+            print("PyQt6/pyqtgraph absents (pip install PyQt6 pyqtgraph PyOpenGL) : interface Tkinter.")
+        else:
+            return qt_main([])
+    if a.cmd in (None, "gui", "gui-tk"):
         from .gui import run
         run()
         return 0
@@ -86,6 +109,26 @@ def main(argv=None) -> int:
             with open(path, "w") as f:
                 f.write(dxf_text(secs, a.axis, not a.three_d))
             print("->", path, sum(len(p) for _, p in secs), "contour(s)")
+    elif a.cmd == "split":
+        from .split import PegSettings, split
+        p, _ = _plane(a.plane)
+        axis = AXES[a.plane.split("=")[0].strip().lower()]
+        at = [tuple(float(x) for x in c.split(",")) for c in a.at.split(";") if c.strip()] if a.at else None
+        st = PegSettings(mode=a.mode, diameter=a.diameter,
+                         length=a.length if a.length else (10.0 if a.mode == "pins" else 6.0),
+                         clearance=a.clearance, extra_depth=a.extra_depth, chamfer=a.chamfer, wall=a.wall,
+                         per_island=a.per_zone, positions=at)
+        r = split(read_stl(a.stl), axis, p[axis], st)
+        prefix = a.output or base
+        out = [(prefix + "_basse.stl", r.low), (prefix + "_haute.stl", r.high)]
+        if r.pins is not None:
+            out.append((prefix + "_goupilles.stl", r.pins))
+        for path, m in out:
+            write_stl(path, m)
+            print("->", path, len(m.faces), "triangles")
+        print(len(r.centers), "plot(s) :", "; ".join(f"{u:.2f},{v:.2f}" for u, v in r.centers))
+        for w in r.warnings:
+            print("Attention :", w)
     elif a.cmd == "cut":
         p, n = _plane(a.plane)
         m = cut(read_stl(a.stl), p, n, a.keep, not a.no_cap)

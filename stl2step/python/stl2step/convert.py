@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from .brep import Brep, build_brep
 from .mesh import MAX_TRIANGLES, Mesh, read_stl
-from .segment import Segmentation, segment
+from .segment import PLANE_ANGLE_DEG, SMOOTH_ANGLE_DEG, Segmentation, segment
 from .step import step_text
 
 
@@ -35,12 +35,13 @@ def safe_name(name: str) -> str:
 
 
 def convert_mesh(mesh: Mesh, tol: float | None = None, name: str = "piece",
-                 cylinders: bool = True, limit: bool = True) -> Result:
+                 cylinders: bool = True, limit: bool = True,
+                 plane_angle: float = PLANE_ANGLE_DEG, smooth_angle: float = SMOOTH_ANGLE_DEG) -> Result:
     if len(mesh.faces) == 0:
         raise ValueError("Maillage vide")
     if limit and len(mesh.faces) > MAX_TRIANGLES:
         raise ValueError(f"{len(mesh.faces)} triangles : la limite est {MAX_TRIANGLES}")
-    seg = segment(mesh, tol, cylinders=cylinders)
+    seg = segment(mesh, tol, cylinders=cylinders, plane_angle=plane_angle, smooth_angle=smooth_angle)
     brep = build_brep(seg)
     return Result(mesh, seg, brep, step_text(brep, safe_name(name)))
 

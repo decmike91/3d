@@ -19,9 +19,12 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - name: Dépendances Python (OpenCascade sert à valider les STEP produits)
-        run: pip install --quiet numpy pytest cadquery-ocp
+        run: |
+          sudo apt-get install -y -q libegl1 libxkbcommon0 > /dev/null
+          pip install --quiet numpy pytest cadquery-ocp PyQt6 pyqtgraph PyOpenGL
       - name: Tests de l'appli Python
         working-directory: stl2step/python
+        env: { QT_QPA_PLATFORM: offscreen }
         run: python -m pytest -q tests
       - name: Cœur Java de l'appli Android (sans Android)
         working-directory: stl2step/android

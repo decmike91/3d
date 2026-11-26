@@ -10,11 +10,16 @@ requires-python = ">=3.9"
 dependencies = ["numpy>=1.22"]
 
 [project.optional-dependencies]
+qt = ["PyQt6>=6.4", "pyqtgraph>=0.13", "PyOpenGL>=3.1"]
 gui = ["matplotlib>=3.5"]
 test = ["pytest"]
 
 [project.scripts]
 stl2step = "stl2step.cli:main"
+stl2step-qt = "stl2step.qt.app:main"
 
 [tool.setuptools]
-packages = ["stl2step"]
+packages = ["stl2step", "stl2step.qt"]
+
+[tool.setuptools.package-data]
+"stl2step.qt" = ["*.ui", "*.qss"]

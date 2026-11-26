@@ -17,7 +17,12 @@ final class SceneBuilder {
     static final float[] CYL = {0.96f, 0.56f, 0.16f};
     static final float[] FACET = {0.60f, 0.60f, 0.60f};
 
-    static MeshView.Scene build(Mesh m, Converter res) {
+    static final float[][] PARTS = {{0.30f, 0.58f, 0.95f}, {0.96f, 0.60f, 0.22f}, {0.55f, 0.85f, 0.45f}};
+
+    static MeshView.Scene build(Mesh m, Converter res) { return build(m, res, null); }
+
+    /** part : pièce d'origine de chaque triangle (aperçu de découpe, couleurs PARTS), ou null. */
+    static MeshView.Scene build(Mesh m, Converter res, int[] part) {
         MeshView.Scene s = new MeshView.Scene();
         int nt = m.nt();
         double[] n = m.normals();
@@ -37,6 +42,7 @@ final class SceneBuilder {
         int o = 0;
         for (int i = 0; i < nt; i++) {
             float[] mc = faceCol != null && fot[i] >= 0 ? faceCol[fot[i]] : BASE;
+            float[] bc = part != null ? PARTS[part[i] % PARTS.length] : BASE;
             for (int k = 0; k < 3; k++) {
                 int v = m.f[3 * i + k];
                 t[o++] = (float) m.v[3 * v];
@@ -45,9 +51,9 @@ final class SceneBuilder {
                 t[o++] = (float) n[3 * i];
                 t[o++] = (float) n[3 * i + 1];
                 t[o++] = (float) n[3 * i + 2];
-                t[o++] = BASE[0];
-                t[o++] = BASE[1];
-                t[o++] = BASE[2];
+                t[o++] = bc[0];
+                t[o++] = bc[1];
+                t[o++] = bc[2];
                 t[o++] = mc[0];
                 t[o++] = mc[1];
                 t[o++] = mc[2];

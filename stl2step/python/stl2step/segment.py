@@ -147,11 +147,11 @@ def fit_cylinder(normals: np.ndarray, centroids: np.ndarray, pts: np.ndarray,
 
 
 # ----------------------------------------------------------------- segmenter
-def plane_regions(mesh: Mesh, tol: float, nb: np.ndarray):
+def plane_regions(mesh: Mesh, tol: float, nb: np.ndarray, plane_angle: float = PLANE_ANGLE_DEG):
     n = mesh.face_normals
     F = mesh.faces
     V = mesh.vertices
-    cos_a = math.cos(math.radians(PLANE_ANGLE_DEG))
+    cos_a = math.cos(math.radians(plane_angle))
     label = -np.ones(len(F), dtype=np.int64)
     regions: list[np.ndarray] = []
     order = np.argsort(-mesh.face_areas, kind="stable")
@@ -181,11 +181,14 @@ def plane_regions(mesh: Mesh, tol: float, nb: np.ndarray):
     return label, regions
 
 
-def segment(mesh: Mesh, tol: float | None = None, cylinders: bool = True) -> Segmentation:
+def segment(mesh: Mesh, tol: float | None = None, cylinders: bool = True,
+            plane_angle: float = PLANE_ANGLE_DEG, smooth_angle: float = SMOOTH_ANGLE_DEG) -> Segmentation:
+    """plane_angle : écart max (°) entre triangles d'un même plan ;
+    smooth_angle : angle (°) au-delà duquel une arête est vive (pas de cylindre à travers)."""
     if tol is None:
         tol = default_tolerance(mesh)
     nb = triangle_neighbors(mesh)
-    label, regions = plane_regions(mesh, tol, nb)
+    label, regions = plane_regions(mesh, tol, nb, plane_angle)
     n = mesh.face_normals
     ar = mesh.face_areas
     F = mesh.faces
@@ -197,7 +200,7 @@ def segment(mesh: Mesh, tol: float | None = None, cylinders: bool = True) -> Seg
     seg = Segmentation(mesh, tol, nb, label, regions, rn)
 
     # Adjacence lisse entre régions
-    cos_s = math.cos(math.radians(SMOOTH_ANGLE_DEG))
+    cos_s = math.cos(math.radians(smooth_angle))
     t_idx = np.repeat(np.arange(len(F)), 3)
     o_idx = nb.reshape(-1)
     m = o_idx >= 0

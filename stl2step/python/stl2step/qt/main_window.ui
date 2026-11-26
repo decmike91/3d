@@ -1,0 +1,1363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Interface de STL2STEP au format Qt Designer : ouvrez ce fichier dans Qt Designer
+  (designer, ou « pyqt6-tools designer ») pour la modifier, puis relancez l'appli.
+  Le code retrouve les éléments par leur nom d'objet (objectName) : un élément
+  supprimé est simplement ignoré ; un élément renommé perd son action.
+  La zone « viewerHost » reçoit la vue 3D.
+-->
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1300</width>
+    <height>840</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>STL2STEP — STL vers CAO</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="layoutCentral">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QWidget" name="viewerHost">
+      <layout class="QVBoxLayout" name="layoutViewer">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <widget class="QMenu" name="menuFichier">
+    <property name="title">
+     <string>&amp;Fichier</string>
+    </property>
+    <addaction name="actionOuvrir"/>
+    <addaction name="actionEnregistrerStep"/>
+    <addaction name="actionEnregistrerStl"/>
+    <addaction name="actionExporterDxf"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuitter"/>
+   </widget>
+   <widget class="QMenu" name="menuAffichage">
+    <property name="title">
+     <string>&amp;Affichage</string>
+    </property>
+    <addaction name="actionVueOmbreAretes"/>
+    <addaction name="actionVueOmbre"/>
+    <addaction name="actionVueFilaire"/>
+    <addaction name="actionVueCarte"/>
+    <addaction name="separator"/>
+    <addaction name="actionVueIso"/>
+    <addaction name="actionVueDessus"/>
+    <addaction name="actionVueFace"/>
+    <addaction name="actionVueDroite"/>
+    <addaction name="actionAjuster"/>
+    <addaction name="separator"/>
+    <addaction name="actionRechargerInterface"/>
+   </widget>
+   <widget class="QMenu" name="menuOutils">
+    <property name="title">
+     <string>&amp;Outils</string>
+    </property>
+    <addaction name="actionConvertir"/>
+    <addaction name="actionMesurer"/>
+    <addaction name="actionCouper"/>
+    <addaction name="actionDecouper"/>
+    <addaction name="separator"/>
+    <addaction name="actionAnnulerModifs"/>
+   </widget>
+   <widget class="QMenu" name="menuAide">
+    <property name="title">
+     <string>Ai&amp;de</string>
+    </property>
+    <addaction name="actionAide"/>
+    <addaction name="actionAPropos"/>
+   </widget>
+   <addaction name="menuFichier"/>
+   <addaction name="menuAffichage"/>
+   <addaction name="menuOutils"/>
+   <addaction name="menuAide"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>Barre d'outils</string>
+   </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonStyle::ToolButtonTextOnly</enum>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionOuvrir"/>
+   <addaction name="actionConvertir"/>
+   <addaction name="actionEnregistrerStep"/>
+   <addaction name="separator"/>
+   <addaction name="actionVueOmbreAretes"/>
+   <addaction name="actionVueOmbre"/>
+   <addaction name="actionVueFilaire"/>
+   <addaction name="actionVueCarte"/>
+   <addaction name="separator"/>
+   <addaction name="actionVueIso"/>
+   <addaction name="actionAjuster"/>
+   <addaction name="separator"/>
+   <addaction name="actionMesurer"/>
+   <addaction name="actionDecouper"/>
+   <addaction name="actionAnnulerModifs"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QDockWidget" name="dockParametres">
+   <property name="windowTitle">
+    <string>Paramètres de conversion</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetClosable|QDockWidget::DockWidgetFeature::DockWidgetMovable|QDockWidget::DockWidgetFeature::DockWidgetFloatable</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockParametresContents">
+    <layout class="QGridLayout" name="gridParams">
+     <item row="0" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkTolAuto">
+       <property name="text">
+        <string>Tolérance automatique (1/10 000 de la diagonale)</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="gridParamsLbl1">
+       <property name="text">
+        <string>Tolérance</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDoubleSpinBox" name="spinTolerance">
+       <property name="decimals">
+        <number>4</number>
+       </property>
+       <property name="minimum">
+        <double>0.0001</double>
+       </property>
+       <property name="maximum">
+        <double>10</double>
+       </property>
+       <property name="singleStep">
+        <double>0.005</double>
+       </property>
+       <property name="value">
+        <double>0.01</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Écart maximal entre le maillage et les faces CAO</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkCylindres">
+       <property name="text">
+        <string>Reconnaître les cylindres</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="gridParamsLbl3">
+       <property name="text">
+        <string>Angle plan</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QDoubleSpinBox" name="spinAnglePlan">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.01</double>
+       </property>
+       <property name="maximum">
+        <double>5</double>
+       </property>
+       <property name="singleStep">
+        <double>0.05</double>
+       </property>
+       <property name="value">
+        <double>0.3</double>
+       </property>
+       <property name="suffix">
+        <string> °</string>
+       </property>
+       <property name="toolTip">
+        <string>Écart maximal entre normales de triangles d'un même plan</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="gridParamsLbl4">
+       <property name="text">
+        <string>Arête vive</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QDoubleSpinBox" name="spinAngleLisse">
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="minimum">
+        <double>5</double>
+       </property>
+       <property name="maximum">
+        <double>89</double>
+       </property>
+       <property name="singleStep">
+        <double>5</double>
+       </property>
+       <property name="value">
+        <double>45</double>
+       </property>
+       <property name="suffix">
+        <string> °</string>
+       </property>
+       <property name="toolTip">
+        <string>Au-delà, une arête sépare deux faces (pas de cylindre à travers)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkLimite">
+       <property name="text">
+        <string>Limite de 120 000 triangles</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="2">
+      <widget class="QPushButton" name="btnConvertir">
+       <property name="text">
+        <string>Convertir</string>
+       </property>
+       <property name="toolTip">
+        <string>F5</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="2">
+      <widget class="QPushButton" name="btnEnregistrerStep">
+       <property name="text">
+        <string>Enregistrer le STEP…</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0" colspan="2">
+      <spacer name="gridParamsSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>10</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockInfos">
+   <property name="windowTitle">
+    <string>Infos</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetClosable|QDockWidget::DockWidgetFeature::DockWidgetMovable|QDockWidget::DockWidgetFeature::DockWidgetFloatable</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockInfosContents">
+    <layout class="QVBoxLayout" name="layoutInfos">
+     <item>
+      <widget class="QTextBrowser" name="textInfos">
+       <property name="openExternalLinks">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockCoupe">
+   <property name="windowTitle">
+    <string>Coupe</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetClosable|QDockWidget::DockWidgetFeature::DockWidgetMovable|QDockWidget::DockWidgetFeature::DockWidgetFloatable</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockCoupeContents">
+    <layout class="QGridLayout" name="gridCoupe">
+     <item row="0" column="0">
+      <widget class="QLabel" name="gridCoupeLbl0">
+       <property name="text">
+        <string>Axe normal</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboAxeCoupe">
+       <property name="currentIndex">
+        <number>2</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>X</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Y</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Z</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QSlider" name="sliderCoupe">
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>500</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="gridCoupeLbl2">
+       <property name="text">
+        <string>Position</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QDoubleSpinBox" name="spinPosCoupe">
+       <property name="decimals">
+        <number>3</number>
+       </property>
+       <property name="minimum">
+        <double>-1000000.0</double>
+       </property>
+       <property name="maximum">
+        <double>1000000.0</double>
+       </property>
+       <property name="singleStep">
+        <double>0.5</double>
+       </property>
+       <property name="value">
+        <double>0</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="gridCoupeLbl3">
+       <property name="text">
+        <string>Garder</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="comboGarder">
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>dessous (côté −)</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>dessus (côté +)</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="4" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkBoucher">
+       <property name="text">
+        <string>Reboucher la coupe (solide fermé)</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkApercuCoupe">
+       <property name="text">
+        <string>Montrer le plan de coupe</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="2">
+      <widget class="QPushButton" name="btnCouper">
+       <property name="text">
+        <string>Couper</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="2">
+      <widget class="QPushButton" name="btnAnnulerModifs">
+       <property name="text">
+        <string>Revenir à la pièce d'origine</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0" colspan="2">
+      <spacer name="gridCoupeSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>10</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockSections">
+   <property name="windowTitle">
+    <string>Sections DXF</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetClosable|QDockWidget::DockWidgetFeature::DockWidgetMovable|QDockWidget::DockWidgetFeature::DockWidgetFloatable</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockSectionsContents">
+    <layout class="QGridLayout" name="gridSections">
+     <item row="0" column="0">
+      <widget class="QLabel" name="gridSectionsLbl0">
+       <property name="text">
+        <string>Axe normal</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboAxeSections">
+       <property name="currentIndex">
+        <number>2</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>X</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Y</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Z</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="gridSectionsLbl1">
+       <property name="text">
+        <string>Nombre</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QSpinBox" name="spinNbSections">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>500</number>
+       </property>
+       <property name="value">
+        <number>5</number>
+       </property>
+       <property name="toolTip">
+        <string>Sections régulièrement espacées</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="gridSectionsLbl2">
+       <property name="text">
+        <string>Ou cotes</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="editPositions">
+       <property name="placeholderText">
+        <string>ex. 2,5 ; 10 ; 17,5</string>
+       </property>
+       <property name="toolTip">
+        <string>Positions précises en mm, séparées par ;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkUnFichierParSection">
+       <property name="text">
+        <string>Un fichier DXF par section</string>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkCoord3D">
+       <property name="text">
+        <string>Coordonnées 3D réelles (sinon : dans le plan)</string>
+       </property>
+       <property name="checked">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
+      <widget class="QCheckBox" name="checkApercuSections">
+       <property name="text">
+        <string>Montrer les sections dans la vue</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="2">
+      <widget class="QPushButton" name="btnSections">
+       <property name="text">
+        <string>Exporter les sections DXF…</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="2">
+      <spacer name="gridSectionsSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>10</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockMesure">
+   <property name="windowTitle">
+    <string>Mesure</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetClosable|QDockWidget::DockWidgetFeature::DockWidgetMovable|QDockWidget::DockWidgetFeature::DockWidgetFloatable</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockMesureContents">
+    <layout class="QGridLayout" name="gridMesure">
+     <item row="0" column="0" colspan="2">
+      <widget class="QPushButton" name="btnMesurer">
+       <property name="text">
+        <string>Mesurer (cliquer deux points)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QLabel" name="labelMesure">
+       <property name="text">
+        <string>—</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+       <property name="textInteractionFlags">
+        <set>Qt::TextInteractionFlag::TextSelectableByMouse</set>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="2">
+      <widget class="QPushButton" name="btnEffacerMesure">
+       <property name="text">
+        <string>Effacer la mesure</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0" colspan="2">
+      <spacer name="gridMesureSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>10</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="dockDecoupe">
+   <property name="windowTitle">
+    <string>Découpe en 2 pièces (plots)</string>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetClosable|QDockWidget::DockWidgetFeature::DockWidgetMovable|QDockWidget::DockWidgetFeature::DockWidgetFloatable</set>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>1</number>
+   </attribute>
+   <widget class="QWidget" name="dockDecoupeContents">
+    <layout class="QGridLayout" name="gridDecoupe">
+     <item row="0" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl0">
+       <property name="text">
+        <string>Axe normal</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QComboBox" name="comboAxeDecoupe">
+       <property name="currentIndex">
+        <number>2</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>X</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Y</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Z</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QSlider" name="sliderDecoupe">
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>500</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl2">
+       <property name="text">
+        <string>Position</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QDoubleSpinBox" name="spinPosDecoupe">
+       <property name="decimals">
+        <number>3</number>
+       </property>
+       <property name="minimum">
+        <double>-1000000.0</double>
+       </property>
+       <property name="maximum">
+        <double>1000000.0</double>
+       </property>
+       <property name="singleStep">
+        <double>0.5</double>
+       </property>
+       <property name="value">
+        <double>0</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl3">
+       <property name="text">
+        <string>Jonction</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QComboBox" name="comboModePlots">
+       <property name="toolTip">
+        <string>Mâle/femelle : plots sur la pièce basse, trous dans la haute. Goupilles : trous des deux côtés, goupilles à imprimer à part.</string>
+       </property>
+       <property name="currentIndex">
+        <number>0</number>
+       </property>
+       <item>
+        <property name="text">
+         <string>Plots mâles / trous femelles</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Trous + goupilles séparées</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Sans plots</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl4">
+       <property name="text">
+        <string>Diamètre</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QDoubleSpinBox" name="spinDiametrePlot">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>1</double>
+       </property>
+       <property name="maximum">
+        <double>100</double>
+       </property>
+       <property name="singleStep">
+        <double>0.5</double>
+       </property>
+       <property name="value">
+        <double>5</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Diamètre du plot ou de la goupille</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl5">
+       <property name="text">
+        <string>Longueur</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QDoubleSpinBox" name="spinLongueurPlot">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>1</double>
+       </property>
+       <property name="maximum">
+        <double>200</double>
+       </property>
+       <property name="singleStep">
+        <double>0.5</double>
+       </property>
+       <property name="value">
+        <double>6</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Plot : hauteur qui dépasse. Goupille : longueur totale.</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl6">
+       <property name="text">
+        <string>Jeu radial</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QDoubleSpinBox" name="spinJeuPlot">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0</double>
+       </property>
+       <property name="maximum">
+        <double>2</double>
+       </property>
+       <property name="singleStep">
+        <double>0.05</double>
+       </property>
+       <property name="value">
+        <double>0.15</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Jeu entre le plot et son trou (0,1 à 0,2 mm en FDM)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl7">
+       <property name="text">
+        <string>Profondeur en plus</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QDoubleSpinBox" name="spinProfondeurPlot">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0</double>
+       </property>
+       <property name="maximum">
+        <double>10</double>
+       </property>
+       <property name="singleStep">
+        <double>0.1</double>
+       </property>
+       <property name="value">
+        <double>0.5</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Le trou est plus profond que le plot de cette valeur</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl8">
+       <property name="text">
+        <string>Chanfrein</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QDoubleSpinBox" name="spinChanfreinPlot">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0</double>
+       </property>
+       <property name="maximum">
+        <double>5</double>
+       </property>
+       <property name="singleStep">
+        <double>0.1</double>
+       </property>
+       <property name="value">
+        <double>0.5</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Chanfrein en bout de plot pour l'emboîtement</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl9">
+       <property name="text">
+        <string>Paroi mini</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QDoubleSpinBox" name="spinParoiPlot">
+       <property name="decimals">
+        <number>2</number>
+       </property>
+       <property name="minimum">
+        <double>0.2</double>
+       </property>
+       <property name="maximum">
+        <double>20</double>
+       </property>
+       <property name="singleStep">
+        <double>0.2</double>
+       </property>
+       <property name="value">
+        <double>1.2</double>
+       </property>
+       <property name="suffix">
+        <string> mm</string>
+       </property>
+       <property name="toolTip">
+        <string>Matière minimale autour et au fond des trous</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl10">
+       <property name="text">
+        <string>Plots par zone</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QSpinBox" name="spinNbPlots">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>20</number>
+       </property>
+       <property name="value">
+        <number>2</number>
+       </property>
+       <property name="toolTip">
+        <string>Nombre de plots par zone de coupe (placement automatique)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0">
+      <widget class="QLabel" name="gridDecoupeLbl11">
+       <property name="text">
+        <string>Positions</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="1">
+      <widget class="QLineEdit" name="editPositionsPlots">
+       <property name="placeholderText">
+        <string>auto, ou ex. 10,5 ; 40,20</string>
+       </property>
+       <property name="toolTip">
+        <string>Centres imposés dans le plan de coupe : « u,v » séparés par ; (u, v = les deux autres axes, ex. X,Y pour une coupe en Z)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="0" colspan="2">
+      <widget class="QPushButton" name="btnApercuDecoupe">
+       <property name="text">
+        <string>Aperçu de la découpe</string>
+       </property>
+      </widget>
+     </item>
+     <item row="13" column="0" colspan="2">
+      <widget class="QPushButton" name="btnEnregistrerDecoupe">
+       <property name="text">
+        <string>Enregistrer les pièces…</string>
+       </property>
+      </widget>
+     </item>
+     <item row="14" column="0" colspan="2">
+      <widget class="QPushButton" name="btnGarderBasse">
+       <property name="text">
+        <string>Continuer avec la pièce basse</string>
+       </property>
+      </widget>
+     </item>
+     <item row="15" column="0" colspan="2">
+      <widget class="QPushButton" name="btnGarderHaute">
+       <property name="text">
+        <string>Continuer avec la pièce haute</string>
+       </property>
+      </widget>
+     </item>
+     <item row="16" column="0" colspan="2">
+      <widget class="QLabel" name="labelDecoupe">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="17" column="0" colspan="2">
+      <spacer name="gridDecoupeSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>10</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <action name="actionOuvrir">
+   <property name="text">
+    <string>&amp;Ouvrir un STL…</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+   <property name="toolTip">
+    <string>Ouvrir un fichier STL (binaire ou texte)</string>
+   </property>
+  </action>
+  <action name="actionEnregistrerStep">
+   <property name="text">
+    <string>Enregistrer le &amp;STEP…</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+   <property name="toolTip">
+    <string>Enregistrer le solide converti</string>
+   </property>
+  </action>
+  <action name="actionEnregistrerStl">
+   <property name="text">
+    <string>Enregistrer le S&amp;TL modifié…</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+   <property name="toolTip">
+    <string>Enregistrer le maillage (après coupe)</string>
+   </property>
+  </action>
+  <action name="actionExporterDxf">
+   <property name="text">
+    <string>Exporter les sections &amp;DXF…</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+   <property name="toolTip">
+    <string>Sections planes à décalquer en CAO</string>
+   </property>
+  </action>
+  <action name="actionQuitter">
+   <property name="text">
+    <string>&amp;Quitter</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="actionConvertir">
+   <property name="text">
+    <string>&amp;Convertir</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+   <property name="toolTip">
+    <string>Reconnaître les faces et construire le solide</string>
+   </property>
+  </action>
+  <action name="actionMesurer">
+   <property name="text">
+    <string>&amp;Mesurer</string>
+   </property>
+   <property name="shortcut">
+    <string>M</string>
+   </property>
+   <property name="toolTip">
+    <string>Cliquer deux points de la pièce</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionCouper">
+   <property name="text">
+    <string>Co&amp;uper</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
+   </property>
+   <property name="toolTip">
+    <string>Couper par le plan du panneau Coupe</string>
+   </property>
+  </action>
+  <action name="actionDecouper">
+   <property name="text">
+    <string>&amp;Découper en 2 pièces (plots)…</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+J</string>
+   </property>
+   <property name="toolTip">
+    <string>Deux pièces assemblables par plots de jonction</string>
+   </property>
+  </action>
+  <action name="actionAnnulerModifs">
+   <property name="text">
+    <string>&amp;Revenir à la pièce d'origine</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+   <property name="toolTip">
+    <string>Annuler les coupes</string>
+   </property>
+  </action>
+  <action name="actionVueOmbreAretes">
+   <property name="text">
+    <string>Ombré + arêtes</string>
+   </property>
+   <property name="shortcut">
+    <string>1</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionVueOmbre">
+   <property name="text">
+    <string>Ombré</string>
+   </property>
+   <property name="shortcut">
+    <string>2</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionVueFilaire">
+   <property name="text">
+    <string>Filaire</string>
+   </property>
+   <property name="shortcut">
+    <string>3</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionVueCarte">
+   <property name="text">
+    <string>Carte de conversion</string>
+   </property>
+   <property name="shortcut">
+    <string>4</string>
+   </property>
+   <property name="toolTip">
+    <string>Bleu : plan · orange : cylindre · gris : facette</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionVueIso">
+   <property name="text">
+    <string>Vue isométrique</string>
+   </property>
+   <property name="shortcut">
+    <string>0</string>
+   </property>
+  </action>
+  <action name="actionVueDessus">
+   <property name="text">
+    <string>Vue de dessus</string>
+   </property>
+   <property name="shortcut">
+    <string>7</string>
+   </property>
+  </action>
+  <action name="actionVueFace">
+   <property name="text">
+    <string>Vue de face</string>
+   </property>
+   <property name="shortcut">
+    <string>8</string>
+   </property>
+  </action>
+  <action name="actionVueDroite">
+   <property name="text">
+    <string>Vue de droite</string>
+   </property>
+   <property name="shortcut">
+    <string>9</string>
+   </property>
+  </action>
+  <action name="actionAjuster">
+   <property name="text">
+    <string>Tout voir</string>
+   </property>
+   <property name="shortcut">
+    <string>F</string>
+   </property>
+  </action>
+  <action name="actionRechargerInterface">
+   <property name="text">
+    <string>Recharger le style</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+R</string>
+   </property>
+   <property name="toolTip">
+    <string>Relit style.qss sans redémarrer</string>
+   </property>
+  </action>
+  <action name="actionAide">
+   <property name="text">
+    <string>&amp;Aide</string>
+   </property>
+   <property name="shortcut">
+    <string>F1</string>
+   </property>
+  </action>
+  <action name="actionAPropos">
+   <property name="text">
+    <string>À &amp;propos</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

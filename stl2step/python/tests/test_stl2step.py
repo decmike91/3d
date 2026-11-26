@@ -88,3 +88,82 @@ def test_occ_validation(tmp_path):
         g = GProp_GProps()
         BRepGProp.VolumeProperties_s(s, g)
         assert abs(g.Mass() - m.volume) / m.volume < 0.01, name
+
+
+# ------------------------------------------------------------ découpe + plots
+from stl2step.split import PegSettings, pin_mesh, split  # noqa: E402
+
+
+@pytest.mark.parametrize("mode", ["male", "pins", "none"])
+def test_split_closed_parts(mode):
+    m = load("box")
+    r = split(m, 0, 30, PegSettings(mode=mode, length=10 if mode == "pins" else 6))
+    assert r.low.open_edge_count() == 0 and r.high.open_edge_count() == 0
+    assert r.low.volume > 0 and r.high.volume > 0
+    if mode == "none":
+        assert not r.centers and abs(r.low.volume - 24000) < 1e-6
+    else:
+        assert len(r.centers) == 2 and not r.warnings
+    if mode == "male":
+        # plots en plus d'un côté, trous (plus larges et plus profonds) de l'autre
+        assert 24000 < r.low.volume < 24000 + 2 * np.pi * 2.5 ** 2 * 6
+        assert r.high.volume < 24000 - 2 * np.pi * 2.5 ** 2 * 6
+    if mode == "pins":
+        assert r.pins is not None and r.pins.open_edge_count() == 0
+        assert abs(r.low.volume - r.high.volume) < 1e-6
+
+
+def test_split_respects_wall_thickness():
+    # 7,5 mm de matière au-dessus : un plot de 6 mm + 0,5 + paroi 1,2 ne tient pas
+    r = split(load("fillet_vert"), 2, 7.5, PegSettings(mode="male"))
+    assert not r.centers and r.warnings
+    r = split(load("fillet_vert"), 2, 7.5, PegSettings(mode="male", length=4))
+    assert r.centers and r.high.open_edge_count() == 0
+
+
+def test_split_two_zones_and_positions():
+    r = split(load("plate_hole"), 0, 30, PegSettings(mode="male"))
+    assert len(r.centers) == 4                         # le trou partage la section en 2 zones
+    r = split(load("box"), 2, 10, PegSettings(mode="male", positions=[(15, 20), (45, 20)]))
+    assert r.centers == [(15.0, 20.0), (45.0, 20.0)] and not r.warnings
+
+
+def test_split_parts_convert_to_step():
+    r = split(load("box"), 0, 30, PegSettings(mode="male"))
+    assert convert_mesh(r.high).report()["cylinders"] == 2
+
+
+def test_pin_mesh():
+    p = pin_mesh(5, 10, 0.5)
+    assert p.open_edge_count() == 0 and 0.9 * np.pi * 2.5 ** 2 * 10 < p.volume < np.pi * 2.5 ** 2 * 10
+
+
+def test_qt_ui_loads_and_survives_edits(tmp_path):
+    pytest.importorskip("PyQt6")
+    pytest.importorskip("pyqtgraph")
+    import os as _os
+    _os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PyQt6 import QtWidgets
+    from stl2step.qt import app as qtapp
+    a = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+    ui = _os.path.join(_os.path.dirname(qtapp.__file__), "main_window.ui")
+    w = qtapp.MainWindow(ui, _os.path.join(_os.path.dirname(ui), "style.qss"))
+    for name in ("actionOuvrir", "actionConvertir", "dockDecoupe", "btnApercuDecoupe", "spinDiametrePlot",
+                 "dockCoupe", "dockSections", "dockMesure", "dockParametres", "textInfos", "viewerHost"):
+        assert w.w(name) is not None, name
+    st = w.peg_settings()
+    assert st.mode == "male" and st.diameter == 5
+    w.close()
+    # Interface modifiée dans Qt Designer : panneaux et boutons supprimés -> pas d'erreur
+    import re
+    txt = open(ui, encoding="utf-8").read()
+    for dock in ("dockDecoupe", "dockMesure", "dockSections"):
+        txt = re.sub(r'<widget class="QDockWidget" name="%s">.*?</widget>\s*</widget>' % dock, "", txt, flags=re.S)
+    p = tmp_path / "edited.ui"
+    p.write_text(txt, encoding="utf-8")
+    w2 = qtapp.MainWindow(str(p), "")
+    assert w2.w("dockDecoupe") is None and w2.w("btnApercuDecoupe") is None
+    st = w2.peg_settings()           # valeurs par défaut quand les champs n'existent plus
+    assert st.diameter == 5 and st.per_island == 2
+    w2.preview_split()               # sans pièce : ne fait rien
+    w2.close()

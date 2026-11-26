@@ -1,0 +1,38 @@
+/*
+  Apparence de STL2STEP (feuille de style Qt, syntaxe proche du CSS).
+  Modifiez les couleurs ci-dessous puis Affichage › Recharger le style (Ctrl+R).
+  Référence : https://doc.qt.io/qt-6/stylesheet-reference.html
+  Couleurs de la vue 3D : dictionnaire COLORS dans viewer.py.
+*/
+QMainWindow, QDialog { background: #1b222c; }
+QWidget { color: #dde6f0; font-size: 10pt; }
+QMenuBar, QMenu { background: #121a24; }
+QMenuBar::item:selected, QMenu::item:selected { background: #2b3a4e; }
+QMenu::item:disabled { color: #6b7685; }
+QToolBar { background: #121a24; border: none; spacing: 4px; padding: 3px; }
+QToolButton { background: #2b3a4e; border-radius: 6px; padding: 5px 10px; }
+QToolButton:hover { background: #3a4d66; }
+QToolButton:checked { background: #f28c28; color: #111; }
+QToolButton:disabled { color: #6b7685; background: #222c38; }
+QDockWidget { titlebar-close-icon: none; }
+QDockWidget::title { background: #121a24; padding: 6px; font-weight: bold; }
+QPushButton { background: #2b3a4e; border: none; border-radius: 6px; padding: 7px 12px; }
+QPushButton:hover { background: #3a4d66; }
+QPushButton:pressed { background: #f28c28; color: #111; }
+QPushButton:disabled { color: #6b7685; background: #222c38; }
+QPushButton#btnConvertir, QPushButton#btnCouper, QPushButton#btnSections { background: #2f6fd6; }
+QPushButton#btnConvertir:hover, QPushButton#btnCouper:hover, QPushButton#btnSections:hover { background: #3d82f0; }
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextBrowser {
+    background: #121a24; border: 1px solid #2b3a4e; border-radius: 4px; padding: 3px;
+}
+QComboBox QAbstractItemView { background: #121a24; selection-background-color: #2b3a4e; }
+QSlider::groove:horizontal { height: 6px; background: #2b3a4e; border-radius: 3px; }
+QSlider::handle:horizontal { width: 16px; margin: -6px 0; background: #f28c28; border-radius: 8px; }
+QCheckBox::indicator { width: 15px; height: 15px; }
+QLabel#labelMesure { color: #ffd84a; font-size: 11pt; font-weight: bold; }
+QStatusBar { background: #121a24; color: #b8c4d2; }
+QToolTip { background: #121a24; color: #dde6f0; border: 1px solid #f28c28; }
+QTabBar::tab { background: #121a24; color: #b8c4d2; padding: 6px 10px; border: none; }
+QTabBar::tab:selected { background: #2b3a4e; color: #ffffff; }
+QTabBar::tab:hover { background: #3a4d66; }
+QScrollArea, QScrollBar { background: #121a24; }

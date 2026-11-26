@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.text.InputType;
 import android.util.TypedValue;
@@ -23,6 +24,9 @@ import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
@@ -43,6 +47,7 @@ import fr.stl2step.core.Converter;
 import fr.stl2step.core.Cutter;
 import fr.stl2step.core.Mesh;
 import fr.stl2step.core.Sections;
+import fr.stl2step.core.Splitter;
 import fr.stl2step.core.Stl;
 import fr.stl2step.core.V3;
 
@@ -51,7 +56,7 @@ import fr.stl2step.core.V3;
  * l'affiche, le mesure, le coupe, et génère des sections DXF.
  */
 public class MainActivity extends Activity {
-    private static final int REQ_OPEN = 1, REQ_STEP = 2, REQ_STL = 3, REQ_DXF = 4;
+    private static final int REQ_OPEN = 1, REQ_STEP = 2, REQ_STL = 3, REQ_DXF = 4, REQ_TREE = 5;
 
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -68,6 +73,9 @@ public class MainActivity extends Activity {
     private boolean measuring;
     private final List<double[]> picks = new ArrayList<>();
     private byte[] pendingSave;
+    private Splitter.Result split;
+    private final Splitter.Settings splitSettings = new Splitter.Settings();
+    private int splitAxis = 2, splitPos = 500;
 
     // ------------------------------------------------------------------ UI
     private int dp(float v) {
@@ -115,6 +123,7 @@ public class MainActivity extends Activity {
         modeBtn = button(bar, "Vue : " + MeshView.MODE_NAMES[0], v -> cycleMode());
         measureBtn = button(bar, "Mesurer", v -> toggleMeasure());
         button(bar, "Couper", v -> cutDialog());
+        button(bar, "Découper (plots)", v -> splitDialog());
         button(bar, "Sections DXF", v -> sectionsDialog());
         button(bar, "Enregistrer STL", v -> saveStl());
         button(bar, "Infos", v -> showInfo());
@@ -251,6 +260,8 @@ public class MainActivity extends Activity {
         Uri u = data.getData();
         if (req == REQ_OPEN) {
             load(u);
+        } else if (req == REQ_TREE) {
+            saveSplitTo(u);
         } else if (pendingSave != null) {
             final byte[] bytes = pendingSave;
             pendingSave = null;
@@ -290,6 +301,7 @@ public class MainActivity extends Activity {
             Object[] o = (Object[]) r;
             original = mesh = (Mesh) o[0];
             result = null;
+            split = null;
             String b = name.replaceAll("(?i)\\.stl$", "");
             baseName = b.isEmpty() ? "piece" : b;
             clearMeasure();
@@ -486,12 +498,212 @@ public class MainActivity extends Activity {
             Object[] o = (Object[]) r;
             mesh = (Mesh) o[0];
             result = null;
+            split = null;
             clearMeasure();
             view.setScene((MeshView.Scene) o[1], false);
             setMode(MeshView.SHADED_EDGES);
             info.setText("Pièce coupée\n" + mesh.info());
             status.setText("Coupe appliquée : convertissez, ou enregistrez le STL modifié.");
         });
+    }
+
+    // ------------------------------------------------- découpe en 2 pièces (plots)
+    private EditText numField(LinearLayout l, String lab, double val) {
+        l.addView(label(lab));
+        EditText e = new EditText(this);
+        e.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        e.setText(String.format(Locale.ROOT, "%s", val == Math.rint(val) ? String.valueOf((long) val) : String.valueOf(val)));
+        l.addView(e);
+        return e;
+    }
+
+    private static double num(EditText e, double def) {
+        try {
+            return Double.parseDouble(e.getText().toString().trim().replace(',', '.'));
+        } catch (NumberFormatException x) {
+            return def;
+        }
+    }
+
+    private void splitDialog() {
+        if (!need()) return;
+        if (split != null) { splitResultDialog(); return; }
+        final Splitter.Settings st = splitSettings;
+        LinearLayout l = column();
+        l.addView(label("Plan de coupe perpendiculaire à l'axe :"));
+        RadioGroup axes = axisGroup(splitAxis);
+        l.addView(axes);
+        TextView posText = label("");
+        l.addView(posText);
+        SeekBar sb = new SeekBar(this);
+        sb.setMax(1000);
+        sb.setProgress(splitPos);
+        l.addView(sb);
+        l.addView(label("Jonction :"));
+        Spinner mode = new Spinner(this);
+        mode.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"Plots mâles / trous femelles", "Trous + goupilles séparées", "Sans plots"}));
+        mode.setSelection(st.mode);
+        l.addView(mode);
+        EditText dia = numField(l, "Diamètre du plot (mm)", st.diameter);
+        EditText len = numField(l, "Longueur (mm) — plot : hauteur ; goupille : longueur totale", st.length);
+        EditText clr = numField(l, "Jeu radial du trou (mm)", st.clearance);
+        EditText ext = numField(l, "Profondeur de trou en plus (mm)", st.extraDepth);
+        EditText chf = numField(l, "Chanfrein en bout de plot (mm)", st.chamfer);
+        EditText wal = numField(l, "Paroi minimale autour des trous (mm)", st.wall);
+        EditText per = numField(l, "Plots par zone de coupe", st.perIsland);
+        l.addView(label("Centres imposés (facultatif) « u,v ; u,v » — u, v : les deux autres axes"));
+        EditText pos = new EditText(this);
+        pos.setHint("auto");
+        pos.setInputType(InputType.TYPE_CLASS_TEXT);
+        l.addView(pos);
+        final double[] lo = mesh.min(), hi = mesh.max();
+        Runnable upd = () -> {
+            int ax = axes.getCheckedRadioButtonId() - 100;
+            double h = lo[ax] + (hi[ax] - lo[ax]) * sb.getProgress() / 1000.0;
+            String uv = "YZX".charAt(ax) + "," + "ZXY".charAt(ax);
+            posText.setText(String.format(Locale.FRANCE, "Position : %s = %.3f mm  (plan %s)", "XYZ".charAt(ax), h, uv));
+        };
+        upd.run();
+        axes.setOnCheckedChangeListener((g, id) -> upd.run());
+        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar s, int p, boolean u) { upd.run(); }
+            @Override public void onStartTrackingTouch(SeekBar s) {}
+            @Override public void onStopTrackingTouch(SeekBar s) {}
+        });
+        mode.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> p, View v, int i, long id) {
+                double cur = num(len, 6);
+                if (i == Splitter.PINS && cur < 8) len.setText("10");
+                else if (i == Splitter.MALE && cur == 10) len.setText("6");
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> p) {}
+        });
+        ScrollView sv = new ScrollView(this);
+        sv.addView(l);
+        new AlertDialog.Builder(this).setTitle("Découper en 2 pièces").setView(sv)
+                .setPositiveButton("Découper", (d, w) -> {
+                    splitAxis = axes.getCheckedRadioButtonId() - 100;
+                    splitPos = sb.getProgress();
+                    st.mode = mode.getSelectedItemPosition();
+                    st.diameter = num(dia, 5);
+                    st.length = num(len, 6);
+                    st.clearance = num(clr, 0.15);
+                    st.extraDepth = num(ext, 0.5);
+                    st.chamfer = num(chf, 0.5);
+                    st.wall = num(wal, 1.2);
+                    st.perIsland = (int) Math.max(1, num(per, 2));
+                    st.positions = null;
+                    String spec = pos.getText().toString().trim();
+                    if (!spec.isEmpty()) {
+                        st.positions = new ArrayList<>();
+                        for (String part : spec.split(";")) {
+                            String[] xy = part.trim().split("[,\\s]+");
+                            if (xy.length == 2) {
+                                try {
+                                    st.positions.add(new double[]{Double.parseDouble(xy[0]), Double.parseDouble(xy[1])});
+                                } catch (NumberFormatException ignored) {
+                                }
+                            }
+                        }
+                    }
+                    double h = lo[splitAxis] + (hi[splitAxis] - lo[splitAxis]) * splitPos / 1000.0;
+                    doSplit(splitAxis, h);
+                })
+                .setNegativeButton("Annuler", null).show();
+    }
+
+    private void doSplit(int ax, double h) {
+        final Mesh m = mesh;
+        runJob("Découpe et placement des plots…", () -> {
+            Splitter.Result r = Splitter.split(m, ax, h, splitSettings);
+            int[][] part = new int[1][];
+            Mesh all = Splitter.concat(Splitter.exploded(r), part);
+            return new Object[]{r, SceneBuilder.build(all, null, part[0])};
+        }, o -> {
+            Object[] a = (Object[]) o;
+            split = (Splitter.Result) a[0];
+            clearMeasure();
+            view.setScene((MeshView.Scene) a[1], true);
+            setMode(MeshView.SHADED_EDGES);
+            info.setText(splitSummary() + "\n\nBleu : pièce basse · orange : haute · vert : goupilles");
+            status.setText("Aperçu de la découpe : touchez « Découper (plots) » pour enregistrer.");
+            splitResultDialog();
+        });
+    }
+
+    private String splitSummary() {
+        Splitter.Result r = split;
+        int iu = new int[]{1, 2, 0}[r.axis], iv = new int[]{2, 0, 1}[r.axis];
+        StringBuilder sb = new StringBuilder(String.format(Locale.FRANCE, "Coupe %s = %.3f mm — %d plot(s)",
+                "XYZ".charAt(r.axis), r.h, r.centers.size()));
+        for (double[] c : r.centers)
+            sb.append(String.format(Locale.FRANCE, "\n • %s %.2f  %s %.2f", "XYZ".charAt(iu), c[0], "XYZ".charAt(iv), c[1]));
+        sb.append(String.format(Locale.FRANCE, "\nPièce basse : %d triangles, %.1f mm³", r.low.nt(), Math.abs(r.low.volume())));
+        sb.append(String.format(Locale.FRANCE, "\nPièce haute : %d triangles, %.1f mm³", r.high.nt(), Math.abs(r.high.volume())));
+        if (r.pins != null) sb.append("\nGoupilles : ").append(r.centers.size()).append(" (à imprimer debout)");
+        for (String w : r.warnings) sb.append("\n⚠ ").append(w);
+        return sb.toString();
+    }
+
+    private void splitResultDialog() {
+        if (split == null) return;
+        new AlertDialog.Builder(this).setTitle("Pièces découpées").setMessage(splitSummary())
+                .setPositiveButton("Enregistrer…", (d, w) -> {
+                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+                    startActivityForResult(i, REQ_TREE);
+                })
+                .setNeutralButton("Refaire", (d, w) -> {
+                    split = null;
+                    restoreView();
+                    splitDialog();
+                })
+                .setNegativeButton("Continuer avec…", (d, w) -> keepPartDialog())
+                .show();
+    }
+
+    private void keepPartDialog() {
+        new AlertDialog.Builder(this).setTitle("Continuer avec")
+                .setItems(new String[]{"la pièce basse", "la pièce haute", "la pièce entière (annuler la découpe)"}, (d, which) -> {
+                    if (which < 2) mesh = which == 0 ? split.low : split.high;
+                    split = null;
+                    result = null;
+                    restoreView();
+                    info.setText((which == 0 ? "Pièce basse\n" : which == 1 ? "Pièce haute\n" : "") + mesh.info());
+                }).show();
+    }
+
+    private void restoreView() {
+        final Mesh m = mesh;
+        runJob("Affichage…", () -> SceneBuilder.build(m, null), r -> {
+            view.setScene((MeshView.Scene) r, true);
+            setMode(MeshView.SHADED_EDGES);
+        });
+    }
+
+    private void saveSplitTo(Uri tree) {
+        final Splitter.Result r = split;
+        if (r == null) return;
+        final String base = baseName;
+        runJob("Enregistrement des pièces…", () -> {
+            Uri dir = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
+            List<Object[]> files = new ArrayList<>();
+            files.add(new Object[]{base + "_basse.stl", r.low});
+            files.add(new Object[]{base + "_haute.stl", r.high});
+            if (r.pins != null) files.add(new Object[]{base + "_goupilles.stl", r.pins});
+            StringBuilder names = new StringBuilder();
+            for (Object[] f : files) {
+                Uri doc = DocumentsContract.createDocument(getContentResolver(), dir, "application/octet-stream", (String) f[0]);
+                if (doc == null) throw new Exception("Impossible de créer " + f[0]);
+                try (OutputStream os = getContentResolver().openOutputStream(doc, "wt")) {
+                    if (os == null) throw new Exception("Impossible d'écrire " + f[0]);
+                    os.write(Stl.toBytes((Mesh) f[1]));
+                }
+                if (names.length() > 0) names.append(", ");
+                names.append(f[0]);
+            }
+            return names.toString();
+        }, n -> status.setText("Enregistré : " + n));
     }
 
     private void sectionsDialog() {
@@ -562,6 +774,7 @@ public class MainActivity extends Activity {
         if (!need() || mesh == original) return;
         mesh = original;
         result = null;
+        split = null;
         clearMeasure();
         final Mesh m = mesh;
         runJob("Retour à la pièce d'origine…", () -> SceneBuilder.build(m, null), r -> {
@@ -581,6 +794,8 @@ public class MainActivity extends Activity {
                         + "3. Vue : ombré + arêtes, ombré, filaire, ou carte de conversion (triangles d'origine et "
                         + "limites des faces CAO).\n"
                         + "4. Modifier (facultatif) : mesurer, couper par un plan, enregistrer le STL modifié.\n"
+                        + "   Découper (plots) : deux pièces assemblables par plots mâles/femelles ou par goupilles "
+                        + "séparées, placés automatiquement là où la matière est assez épaisse.\n"
                         + "5. Enregistrer STEP.\n\n"
                         + "Sections DXF : coupe le STL en sections planes à décalquer dans la CAO.\n\n"
                         + "Tout est calculé sur le téléphone, sans connexion.")
