@@ -1,0 +1,33 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace = 'fr.stl2step.app'
+    compileSdk = 36
+    defaultConfig {
+        applicationId 'fr.stl2step.app'
+        minSdk = 24
+        targetSdk = 36
+        // Numéro de version augmenté à chaque compilation GitHub : Android accepte la mise à jour
+        def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
+        versionCode 1 + runNumber
+        versionName '1.0.' + runNumber
+    }
+    // Clé de signature FIXE : chaque nouvelle version s'installe par-dessus l'ancienne.
+    // (Variables STL2STEP_KEYSTORE_* pour utiliser une autre clé.)
+    signingConfigs {
+        stl2step {
+            storeFile file(System.getenv('STL2STEP_KEYSTORE_FILE') ?: '../stl2step.keystore')
+            storePassword System.getenv('STL2STEP_KEYSTORE_PASSWORD') ?: 'stl2step'
+            keyAlias System.getenv('STL2STEP_KEY_ALIAS') ?: 'stl2step'
+            keyPassword System.getenv('STL2STEP_KEY_PASSWORD') ?: 'stl2step'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.stl2step }
+        release { signingConfig signingConfigs.stl2step; minifyEnabled false }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

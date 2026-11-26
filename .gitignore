@@ -7,3 +7,9 @@ android/build/
 android/.gradle/
 android/app/src/main/assets/public/
 test/out_cura_patched.cjs
+stl2step/android/app/build/
+stl2step/android/build/
+stl2step/android/.gradle/
+stl2step/STL2STEP-*
+__pycache__/
+.pytest_cache/
